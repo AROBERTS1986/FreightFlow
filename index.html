@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FreightFlow TMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+<style>
+:root {
+  --bg:#0b0f1a;--surface:#111827;--surface2:#1a2235;--surface3:#1f2a40;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#3b82f6;--accent2:#60a5fa;--accent-dim:rgba(59,130,246,0.12);
+  --green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --amber:#f59e0b;--amber-dim:rgba(245,158,11,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);
+  --purple:#8b5cf6;--purple-dim:rgba(139,92,246,0.12);
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+  --sidebar-w:220px;--header-h:58px;
+}
+/* Light mode */
+body.light-mode {
+  --bg:#f0f4f8;--surface:#ffffff;--surface2:#f8fafc;--surface3:#eef2f7;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);
+  --text:#0f172a;--text2:#334155;--text3:#64748b;
+  --accent-dim:rgba(59,130,246,0.10);
+  --green-dim:rgba(16,185,129,0.10);
+  --amber-dim:rgba(245,158,11,0.10);
+  --red-dim:rgba(239,68,68,0.10);
+  --purple-dim:rgba(139,92,246,0.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden;font-size:14px;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:fixed;left:0;top:0;z-index:100;}
+.logo{padding:18px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--text);letter-spacing:-0.3px;}
+.logo-text span{color:var(--accent2);}
+.sidebar-section{padding:16px 12px 4px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:1px 8px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:13.5px;font-weight:500;transition:all 0.15s ease;position:relative;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:var(--accent-dim);color:var(--accent2);}
+.nav-item.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--accent);border-radius:0 3px 3px 0;}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-bottom{margin-top:auto;padding:12px;border-top:1px solid var(--border);}
+.db-status{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--surface2);font-size:12px;}
+.db-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.db-dot.disconnected{background:var(--red);}
+.db-dot.connecting{background:var(--amber);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* MAIN */
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.topbar{height:var(--header-h);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0;}
+.page-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);}
+.page-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s ease;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:white;}
+.btn-primary:hover{background:#2563eb;transform:translateY(-1px);}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+.btn-danger:hover{background:var(--red);color:white;}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:24px;display:none;}
+.content.active{display:block;animation:fadeSlide 0.2s ease both;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.content::-webkit-scrollbar{width:4px;}
+.content::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi-card.blue::before{background:var(--accent);}
+.kpi-card.green::before{background:var(--green);}
+.kpi-card.amber::before{background:var(--amber);}
+.kpi-card.purple::before{background:var(--purple);}
+.kpi-label{font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+.kpi-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--text);line-height:1;margin-bottom:6px;}
+.kpi-sub{font-size:12px;color:var(--text3);}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);}
+
+/* TABLE */
+.table{width:100%;border-collapse:collapse;}
+.table th{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);}
+.table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text2);font-size:13.5px;}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:var(--surface2);color:var(--text);cursor:pointer;}
+.table td strong{color:var(--text);font-weight:500;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+.badge::before{content:'●';font-size:7px;}
+.badge-green{background:var(--green-dim);color:var(--green);}
+.badge-amber{background:var(--amber-dim);color:var(--amber);}
+.badge-blue{background:var(--accent-dim);color:var(--accent2);}
+.badge-red{background:var(--red-dim);color:var(--red);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);}
+.badge-gray{background:rgba(255,255,255,0.05);color:var(--text3);}
+
+/* FORMS */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text3);}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13.5px;padding:9px 12px;outline:none;transition:border-color 0.15s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+input::placeholder,textarea::placeholder{color:var(--text3);}
+select option{background:var(--surface);}
+textarea{resize:vertical;min-height:80px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:660px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.6);animation:fadeSlide 0.2s ease both;}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+.modal-close{width:30px;height:30px;background:var(--surface2);border:none;border-radius:8px;color:var(--text2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.modal-close:hover{background:var(--surface3);color:var(--text);}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+
+/* FORM SECTIONS */
+.form-section-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:toastIn 0.3s ease both;display:flex;align-items:center;gap:10px;min-width:260px;}
+.toast.success{border-left:3px solid var(--green);}
+.toast.error{border-left:3px solid var(--red);}
+.toast.info{border-left:3px solid var(--accent);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:12px;font-size:13px;}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* EMPTY STATE */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:12px;text-align:center;}
+.empty-state .empty-icon{font-size:40px;opacity:0.4;}
+.empty-state p{font-size:13px;max-width:280px;line-height:1.6;}
+
+/* DISPATCH BOARD */
+.dispatch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.dispatch-col{display:flex;flex-direction:column;gap:10px;}
+.dispatch-col-header{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.load-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s ease;position:relative;overflow:hidden;}
+.load-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.load-card.Available::after{background:var(--accent);}
+.load-card.Assigned::after{background:var(--amber);}
+.load-card.In\ Transit::after{background:var(--green);}
+.load-card.Delivered::after{background:var(--text3);}
+.load-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,0,0,0.3);}
+.load-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:6px;}
+.load-route{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;}
+.load-meta-row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text3);margin-bottom:3px;}
+.load-meta-row strong{color:var(--text2);font-weight:500;}
+.load-carrier{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text3);}
+
+/* LOAD DETAIL */
+.load-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.detail-section { background: var(--surface2); border-radius: 10px; padding: 16px; }
+.detail-section-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.detail-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.detail-row:last-child { border-bottom: none; }
+.detail-label { color: var(--text3); }
+.detail-val { color: var(--text); font-weight: 500; text-align: right; max-width: 60%; }
+
+/* STATUS BUTTONS */
+.status-btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.status-btn { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid; transition: all 0.15s; font-family: 'Outfit', sans-serif; }
+.status-btn.active-status { transform: scale(1.05); }
+.status-btn.s-available { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.status-btn.s-available.active-status { background: var(--accent); color: white; }
+.status-btn.s-assigned { border-color: var(--amber); color: var(--amber); background: var(--amber-dim); }
+.status-btn.s-assigned.active-status { background: var(--amber); color: #1a1a1a; }
+.status-btn.s-transit { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+.status-btn.s-transit.active-status { background: var(--green); color: white; }
+.status-btn.s-delivered { border-color: var(--text3); color: var(--text3); background: rgba(255,255,255,0.05); }
+.status-btn.s-delivered.active-status { background: var(--text3); color: white; }
+
+/* CHECK CALLS */
+.check-call-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
+.check-call-item { background: var(--surface3); border-radius: 8px; padding: 12px; border-left: 3px solid var(--green); }
+.check-call-item.delayed { border-left-color: var(--amber); }
+.check-call-item.issue { border-left-color: var(--red); }
+.check-call-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.check-call-time { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text3); }
+.check-call-status { font-size: 10px; font-weight: 700; }
+.check-call-location { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.check-call-meta { font-size: 12px; color: var(--text3); }
+.check-call-notes { font-size: 12px; color: var(--text2); margin-top: 4px; font-style: italic; }
+
+/* RATE CON */
+.rate-con-preview { background: white; color: #1a1a1a; border-radius: 10px; padding: 24px; font-family: Arial, sans-serif; }
+.rate-con-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 3px solid #1B2A4A; padding-bottom: 16px; }
+.rate-con-logo { font-size: 22px; font-weight: 900; color: #1B2A4A; letter-spacing: -0.5px; }
+.rate-con-logo span { color: #2563EB; }
+.rate-con-title { font-size: 18px; font-weight: 800; color: #1B2A4A; text-align: right; }
+.rate-con-num { font-size: 11px; color: #666; text-align: right; margin-top: 2px; }
+.rate-con-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.rate-con-section { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+.rate-con-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #666; margin-bottom: 8px; }
+.rate-con-field { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #f1f5f9; }
+.rate-con-field:last-child { border-bottom: none; }
+.rate-con-field-label { color: #666; }
+.rate-con-field-val { font-weight: 600; color: #1a1a1a; }
+.rate-con-total { background: #1B2A4A; color: white; border-radius: 8px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.rate-con-total-label { font-size: 13px; font-weight: 600; }
+.rate-con-total-val { font-size: 22px; font-weight: 900; color: #60A5FA; }
+.rate-con-terms { font-size: 11px; color: #666; line-height: 1.6; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+.rate-con-sig { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; }
+.rate-con-sig-box { border-top: 1px solid #1a1a1a; padding-top: 6px; font-size: 10px; color: #666; }
+
+/* STAT BARS */
+
+.stat-bar{margin-bottom:14px;}
+.stat-bar-header{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12.5px;}
+.bar-track{height:5px;background:var(--surface3);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;}
+
+/* ALERTS */
+.alert-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:12.5px;margin-bottom:6px;}
+.alert-item.red{background:var(--red-dim);}
+.alert-item.amber{background:var(--amber-dim);}
+.alert-item.green{background:var(--green-dim);}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px;}
+
+/* ── AUTH SCREENS ─────────────────────────────────────────── */
+.auth-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.auth-overlay.visible { display: flex; }
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 40px;
+  width: 420px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  animation: fadeSlide 0.3s ease both;
+}
+.auth-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.auth-logo-text {
+  font-family: 'Syne', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+.auth-logo-text span { color: var(--accent2); }
+.auth-logo-sub {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+.auth-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.auth-sub {
+  font-size: 13px;
+  color: var(--text3);
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  color: var(--text3);
+  font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.auth-error {
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--red);
+  display: none;
+}
+.auth-error.visible { display: block; }
+.auth-success {
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--green);
+  display: none;
+}
+.auth-success.visible { display: block; }
+.btn-auth {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+}
+.btn-auth:hover { background: #2563eb; transform: translateY(-1px); }
+.btn-auth:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.auth-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+/* ADMIN PANEL */
+.admin-panel {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.user-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+}
+.role-admin { background: var(--purple-dim); color: var(--purple); }
+.role-dispatcher { background: var(--accent-dim); color: var(--accent2); }
+.role-accounting { background: var(--green-dim); color: var(--green); }
+.role-readonly { background: rgba(255,255,255,0.05); color: var(--text3); }
+.role-sales { background: var(--amber-dim); color: var(--amber); }
+.role-dispatcher { background: var(--accent-dim); color: var(--accent2); }
+
+
+/* ── MOBILE RESPONSIVE ────────────────────────────────────── */
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; z-index: 200; }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .mobile-menu-btn { display: flex !important; }
+  .kpi-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .form-grid { grid-template-columns: 1fr !important; }
+  .dispatch-grid { grid-template-columns: repeat(2,1fr) !important; }
+  .modal { width: 95vw !important; margin: 10px; }
+  .topbar { padding: 0 12px; }
+  .content { padding: 12px; }
+  .load-detail-grid { grid-template-columns: 1fr !important; }
+}
+.mobile-menu-btn { display: none; background: transparent; border: none; color: var(--text2); cursor: pointer; font-size: 22px; padding: 4px; }
+.mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; }
+.mobile-overlay.visible { display: block; }
+
+/* ── CRM ──────────────────────────────────────────────────── */
+.pipeline-board { display: grid; grid-template-columns: repeat(5,1fr); gap:12px; overflow-x: auto; padding-bottom: 8px; }
+.pipeline-col { background: var(--surface2); border-radius: 10px; padding: 12px; min-width: 200px; }
+.pipeline-col-header { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+.pipeline-count { background: var(--surface3); color: var(--text2); font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+.crm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+.crm-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.crm-card-company { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.crm-card-contact { font-size: 11.5px; color: var(--text3); margin-bottom: 6px; }
+.crm-card-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); }
+.priority-high { color: var(--red); }
+.priority-medium { color: var(--amber); }
+.priority-low { color: var(--green); }
+
+/* ── QUICK PAY CALC ───────────────────────────────────────── */
+.quickpay-box { background: var(--amber-dim); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px; padding: 14px 16px; }
+.quickpay-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+.quickpay-total { font-size: 18px; font-weight: 700; color: var(--amber); }
+
+/* ── CUSTOMER PORTAL ──────────────────────────────────────── */
+.portal-overlay { display: none; position: fixed; inset: 0; background: #f0f4f8; z-index: 800; flex-direction: column; }
+.portal-overlay.visible { display: flex; }
+.portal-header { background: #1B2A4A; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+.portal-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: white; }
+.portal-logo span { color: #60A5FA; }
+.portal-content { flex: 1; overflow-y: auto; padding: 24px; max-width: 1000px; margin: 0 auto; width: 100%; }
+.portal-load-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.portal-load-route { font-size: 15px; font-weight: 700; color: #1B2A4A; }
+.portal-load-meta { font-size: 12px; color: #666; margin-top: 4px; }
+.portal-status { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.portal-status.available { background: #EFF6FF; color: #2563EB; }
+.portal-status.assigned { background: #FFFBEB; color: #D97706; }
+.portal-status.transit { background: #ECFDF5; color: #059669; }
+.portal-status.delivered { background: #F8FAFC; color: #64748B; }
+
+/* ── DARK/LIGHT TOGGLE ────────────────────────────────────── */
+.theme-toggle { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 8px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.15s; }
+.theme-toggle:hover { border-color: var(--border2); color: var(--text); }
+
+
+/* ── PERMISSIONS MATRIX ───────────────────────────────────── */
+.settings-tab-bar { display:flex; gap:2px; background:var(--surface2); border-bottom:1px solid var(--border); padding:10px 20px; }
+.settings-tab { padding:7px 16px; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:500; color:var(--text2); transition:all 0.15s; }
+.settings-tab.active { background:var(--accent); color:white; font-weight:600; }
+.settings-tab:hover:not(.active) { background:var(--surface3); color:var(--text); }
+
+.role-tabs-bar { display:flex; gap:8px; padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface2); flex-wrap:wrap; }
+.role-tab-btn { display:flex; align-items:center; gap:8px; padding:7px 14px; border-radius:8px; cursor:pointer; border:1px solid var(--border2); transition:all 0.15s; background:transparent; }
+.role-tab-btn:hover { background:var(--surface3); }
+.role-tab-btn.active { border-color:var(--accent); background:var(--accent-dim); }
+.role-tab-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.role-tab-name { font-size:12.5px; font-weight:600; color:var(--text); }
+.role-tab-count { font-size:10px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
+
+.perm-matrix { width:100%; border-collapse:collapse; }
+.perm-matrix th { padding:10px 16px; text-align:left; font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--text3); background:var(--surface2); border-bottom:1px solid var(--border); }
+.perm-matrix th.center { text-align:center; }
+.perm-matrix td { padding:0; border-bottom:1px solid var(--border); }
+.perm-matrix tr:last-child td { border-bottom:none; }
+.perm-matrix tr:hover td { background:rgba(255,255,255,0.015); }
+
+.perm-module-cell { padding:12px 16px; display:flex; align-items:center; gap:10px; }
+.perm-module-icon { font-size:16px; width:24px; text-align:center; }
+.perm-module-name { font-size:13px; font-weight:600; color:var(--text); }
+.perm-module-desc { font-size:11px; color:var(--text3); }
+
+.perm-btn-group { display:flex; justify-content:center; padding:10px 8px; }
+.perm-option { padding:5px 12px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid var(--border2); background:transparent; color:var(--text3); font-family:'Outfit',sans-serif; transition:all 0.15s; border-radius:6px; }
+.perm-option:hover { background:var(--surface2); color:var(--text); }
+.perm-option.sel-full { background:var(--green); border-color:var(--green); color:white; }
+.perm-option.sel-view { background:var(--accent); border-color:var(--accent); color:white; }
+.perm-option.sel-hidden { background:var(--surface3); border-color:var(--border2); color:var(--text3); }
+.perm-lock { display:flex; justify-content:center; align-items:center; padding:10px; font-size:11px; color:var(--text3); gap:4px; }
+
+.perm-save-bar { background:var(--surface2); border-top:1px solid var(--border); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+.perm-change-info { font-size:12px; color:var(--text3); }
+
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🚛</div>
+    <div class="logo-text">Freight<span>Flow</span></div>
+  </div>
+  <div class="sidebar-section">Operations</div>
+  <div class="nav-item active" onclick="switchPage('dashboard')"><span class="nav-icon">⬛</span> Dashboard</div>
+  <div class="nav-item" onclick="switchPage('dispatch')"><span class="nav-icon">📋</span> Dispatch Board</div>
+  <div class="nav-item" onclick="switchPage('loads')"><span class="nav-icon">📦</span> Load Management</div>
+  <div class="sidebar-section">Growth</div>
+  <div class="nav-item" onclick="switchPage('crm')"><span class="nav-icon">🎯</span> CRM</div>
+  <div class="sidebar-section">Network</div>
+  <div class="nav-item" onclick="switchPage('carriers')"><span class="nav-icon">🚚</span> Carriers</div>
+  <div class="nav-item" onclick="switchPage('customers')"><span class="nav-icon">🏢</span> Customers</div>
+  <div class="sidebar-section">Finance</div>
+  <div class="nav-item" onclick="switchPage('invoices')"><span class="nav-icon">🧾</span> Invoicing</div>
+  <div class="sidebar-section">Insights</div>
+  <div class="nav-item" onclick="switchPage('reports')"><span class="nav-icon">📊</span> Reports</div>
+  <div class="sidebar-section">Settings</div>
+  <div class="nav-item admin-only" onclick="switchPage('users')"><span class="nav-icon">👥</span> Users</div>
+  <div class="nav-item admin-only" onclick="switchPage('settings')"><span class="nav-icon">⚙️</span> Company</div>
+  <div class="sidebar-bottom">
+    <div class="db-status" style="margin-bottom:8px;">
+      <div class="db-dot connecting" id="dbDot"></div>
+      <span id="dbStatusText" style="color:var(--text3);font-size:11px;">Connecting…</span>
+    </div>
+    <div class="user-card" id="sidebar-user-card" style="display:none;" onclick="showUserMenu()">
+      <div class="user-avatar" id="sidebar-avatar">?</div>
+      <div style="flex:1;min-width:0;">
+        <div class="user-name" id="sidebar-username" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Loading…</div>
+        <div id="sidebar-role-badge" style="margin-top:2px;"></div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+      <div class="page-sub" id="pageSub">Live data from your Supabase database</div>
+    </div>
+    <div class="topbar-right">
+      <div class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span id="theme-icon">☀️</span>
+        <span id="theme-label" style="font-size:12px;">Light</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="openCustomerPortal()" title="Customer Portal Preview">👥 Portal</button>
+      <button class="btn btn-primary" id="primaryBtn" onclick="openModal('load')">+ New Load</button>
+    </div>
+    <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">☰</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="content active" id="page-dashboard">
+    <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr);">
+      <div class="kpi-card blue"><div class="kpi-label">Active Loads</div><div class="kpi-value" id="kpi-active">—</div><div class="kpi-sub">In system</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="kpi-revenue">—</div><div class="kpi-sub">All loads</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Gross Profit</div><div class="kpi-value" id="kpi-gp">—</div><div class="kpi-sub">Revenue minus carrier pay</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">GP %</div><div class="kpi-value" id="kpi-gp-pct">—</div><div class="kpi-sub">Overall margin</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Carriers</div><div class="kpi-value" id="kpi-carriers">—</div><div class="kpi-sub">In network</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub">Active accounts</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Recent Loads</div><button class="btn btn-ghost btn-sm" onclick="switchPage('loads')">View All</button></div>
+        <div id="dash-loads-body"><div class="loading"><div class="spinner"></div> Loading loads…</div></div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Alerts</div></div>
+          <div id="dash-alerts" style="padding:12px 16px;">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer Profitability Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📊 Customer Profitability</div>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('reports')">Full Report</button>
+      </div>
+      <div id="dash-customer-gp">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISPATCH -->
+  <div class="content" id="page-dispatch">
+    <div id="dispatch-board">
+      <div class="loading"><div class="spinner"></div> Loading dispatch board…</div>
+    </div>
+  </div>
+
+  <!-- LOADS -->
+  <div class="content" id="page-loads">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Loads</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="openModal('load')">+ New Load</button>
+        </div>
+      </div>
+      <div id="loads-body"><div class="loading"><div class="spinner"></div> Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- CARRIERS -->
+  <div class="content" id="page-carriers">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" id="carriers-title">Carriers</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('carrier')">+ Add Carrier</button>
+      </div>
+      <div id="carriers-body"><div class="loading"><div class="spinner"></div> Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div class="content" id="page-customers">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" id="customers-title">Customers</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('customer')">+ Add Customer</button>
+      </div>
+      <div id="customers-body"><div class="loading"><div class="spinner"></div> Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- INVOICES -->
+  <div class="content" id="page-invoices">
+    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="kpi-card green"><div class="kpi-label">Paid</div><div class="kpi-value" id="inv-paid">—</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Pending</div><div class="kpi-value" id="inv-pending">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Overdue</div><div class="kpi-value" id="inv-overdue" style="color:var(--red)">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Invoice Register</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('invoice')">+ Create Invoice</button>
+      </div>
+      <div id="invoices-body"><div class="loading"><div class="spinner"></div> Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- CRM -->
+  <div class="content" id="page-crm">
+    <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px;">
+      <div class="kpi-card blue"><div class="kpi-label">Total Leads</div><div class="kpi-value" id="crm-total">—</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Active</div><div class="kpi-value" id="crm-active">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Converted</div><div class="kpi-value" id="crm-converted">—</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Follow-ups Today</div><div class="kpi-value" id="crm-followups">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Est. Monthly Loads</div><div class="kpi-value" id="crm-loads">—</div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;">
+      <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);">Pipeline</div>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="switchCrmView('list')" id="crm-view-list">☰ List</button>
+        <button class="btn btn-ghost btn-sm" onclick="switchCrmView('board')" id="crm-view-board" style="background:var(--accent-dim);color:var(--accent2);">⬛ Board</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('lead')">+ New Lead</button>
+      </div>
+    </div>
+    <div id="crm-board-view">
+      <div class="pipeline-board" id="crm-pipeline">
+        <div class="loading"><div class="spinner"></div> Loading pipeline…</div>
+      </div>
+    </div>
+    <div id="crm-list-view" style="display:none;">
+      <div class="card">
+        <div id="crm-list-body"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div class="content" id="page-users">
+    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+      <div class="kpi-card blue"><div class="kpi-label">Total Users</div><div class="kpi-value" id="u-total">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Active</div><div class="kpi-value" id="u-active">—</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Admins</div><div class="kpi-value" id="u-admins">—</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Last Login</div><div class="kpi-value" id="u-lastlogin" style="font-size:16px;">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Team Members</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('create-user')">+ Add User</button>
+      </div>
+      <div id="users-page-body"><div class="loading"><div class="spinner"></div> Loading users…</div></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="content" id="page-settings">
+    <!-- Settings Tab Bar -->
+    <div class="card" style="margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;">
+      <div class="settings-tab-bar">
+        <div class="settings-tab active" onclick="switchSettingsTab('profile')">🏢 Company Profile</div>
+        <div class="settings-tab" onclick="switchSettingsTab('branding')">🎨 Branding</div>
+        <div class="settings-tab" onclick="switchSettingsTab('permissions')">🔐 Permissions</div>
+        <div class="settings-tab" onclick="switchSettingsTab('subscription')">💳 Subscription</div>
+      </div>
+    </div>
+
+    <!-- Profile Tab -->
+    <div id="stab-profile" class="card" style="border-top-left-radius:0;border-top-right-radius:0;border-top:none;">
+      <div class="card-header"><div class="card-title">Company Profile</div><button class="btn btn-primary btn-sm" onclick="saveCompanySettings()">Save Changes</button></div>
+      <div style="padding:20px;">
+        <div class="form-grid" style="margin-bottom:14px;">
+          <div class="form-group full"><label>Company Name</label><input type="text" id="s-company-name" placeholder="Your Brokerage Name"/></div>
+          <div class="form-group"><label>MC Number</label><input type="text" id="s-mc" placeholder="123456"/></div>
+          <div class="form-group"><label>DOT Number</label><input type="text" id="s-dot" placeholder="789012"/></div>
+          <div class="form-group"><label>Dispatch Email</label><input type="email" id="s-email" placeholder="dispatch@yourbrokerage.com"/></div>
+          <div class="form-group"><label>Main Phone</label><input type="tel" id="s-phone" placeholder="(555) 000-0000"/></div>
+          <div class="form-group"><label>City</label><input type="text" id="s-city" placeholder="Dallas"/></div>
+          <div class="form-group"><label>State</label><input type="text" id="s-state" placeholder="TX" maxlength="2"/></div>
+          <div class="form-group"><label>Zip</label><input type="text" id="s-zip" placeholder="75201"/></div>
+        </div>
+        <div class="form-group"><label>Standard T&C (Rate Confirmations)</label><textarea id="s-terms" placeholder="Enter your standard rate confirmation terms and conditions…" style="min-height:120px;"></textarea></div>
+      </div>
+    </div>
+
+    <!-- Branding Tab -->
+    <div id="stab-branding" class="card" style="display:none;border-top-left-radius:0;border-top-right-radius:0;border-top:none;">
+      <div class="card-header"><div class="card-title">Branding & White-Label</div></div>
+      <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label>Company Logo</label>
+            <div style="background:var(--surface2);border:2px dashed var(--border2);border-radius:10px;padding:32px;text-align:center;color:var(--text3);font-size:13px;">
+              <div style="font-size:32px;margin-bottom:8px;">🖼️</div>
+              <div>Drop your logo here or click to upload</div>
+              <div style="font-size:11px;margin-top:4px;">PNG or SVG · Max 2MB</div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:12px;">Choose File</button>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Primary Color</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="color" id="s-color-primary" value="#3b82f6" style="width:48px;height:38px;padding:2px;cursor:pointer;border-radius:6px;" oninput="document.getElementById('s-color-primary-hex').value=this.value;document.getElementById('rc-preview-name').style.color=this.value;"/>
+                <input type="text" value="#3b82f6" id="s-color-primary-hex" style="flex:1;"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Accent Color</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="color" id="s-color-accent" value="#10b981" style="width:48px;height:38px;padding:2px;cursor:pointer;border-radius:6px;"/>
+                <input type="text" value="#10b981" id="s-color-accent-hex" style="flex:1;"/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:10px;">Rate Con Preview</div>
+          <div style="background:white;border-radius:10px;padding:16px;border:1px solid #e2e8f0;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1B2A4A;padding-bottom:12px;margin-bottom:12px;">
+              <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#1B2A4A;" id="rc-preview-name">Your Brokerage</div>
+              <div style="text-align:right;"><div style="font-size:14px;font-weight:800;color:#1B2A4A;">RATE CONFIRMATION</div><div style="font-size:10px;color:#666;">RC-FF8841 · Generated by FreightFlow</div></div>
+            </div>
+            <div style="font-size:11px;color:#666;">Logo, colors and company name will appear on all rate confirmations sent to carriers.</div>
+          </div>
+          <div style="margin-top:12px;background:var(--accent-dim);border-radius:8px;padding:12px;font-size:12px;color:var(--accent2);">
+            💡 <strong>Professional Plan</strong> — Full white-label removes all FreightFlow branding from rate cons and customer portal.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permissions Tab -->
+    <div id="stab-permissions" class="card" style="display:none;border-top-left-radius:0;border-top-right-radius:0;border-top:none;">
+      <div class="card-header">
+        <div><div class="card-title">🔐 Role Permissions</div><div style="font-size:12px;color:var(--text3);margin-top:2px;">Customize what each role can see and do. Changes apply on next login.</div></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="font-size:11px;color:var(--text3);">Legend:</div>
+          <span style="font-size:11px;background:var(--green);color:white;padding:2px 8px;border-radius:4px;font-weight:600;">Full</span>
+          <span style="font-size:11px;background:var(--accent);color:white;padding:2px 8px;border-radius:4px;font-weight:600;">View</span>
+          <span style="font-size:11px;background:var(--surface3);color:var(--text3);padding:2px 8px;border-radius:4px;border:1px solid var(--border2);font-weight:600;">Hide</span>
+        </div>
+      </div>
+
+      <!-- Role selector -->
+      <div class="role-tabs-bar">
+        <button class="role-tab-btn active" id="rtab-dispatcher" onclick="selectPermRole('dispatcher')">
+          <div class="role-tab-dot" style="background:var(--accent);"></div>
+          <div><div class="role-tab-name">Dispatcher</div><div class="role-tab-count">0 users</div></div>
+        </button>
+        <button class="role-tab-btn" id="rtab-accounting" onclick="selectPermRole('accounting')">
+          <div class="role-tab-dot" style="background:var(--green);"></div>
+          <div><div class="role-tab-name">Accounting</div><div class="role-tab-count">0 users</div></div>
+        </button>
+        <button class="role-tab-btn" id="rtab-sales" onclick="selectPermRole('sales')">
+          <div class="role-tab-dot" style="background:var(--amber);"></div>
+          <div><div class="role-tab-name">Sales</div><div class="role-tab-count">0 users</div></div>
+        </button>
+        <button class="role-tab-btn" id="rtab-readonly" onclick="selectPermRole('readonly')">
+          <div class="role-tab-dot" style="background:var(--text3);"></div>
+          <div><div class="role-tab-name">Read-Only</div><div class="role-tab-count">0 users</div></div>
+        </button>
+      </div>
+
+      <!-- Role description -->
+      <div style="padding:12px 20px;background:var(--surface2);border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--text3);" id="perm-role-desc">Manages day-to-day load operations — creating, assigning, and tracking loads</div>
+      </div>
+
+      <!-- Matrix -->
+      <div style="overflow-x:auto;">
+        <table class="perm-matrix">
+          <thead>
+            <tr>
+              <th style="width:40%;">Module</th>
+              <th class="center" style="width:20%;">✅ Full Access</th>
+              <th class="center" style="width:20%;">👁 View Only</th>
+              <th class="center" style="width:20%;">— Hidden</th>
+            </tr>
+          </thead>
+          <tbody id="perm-matrix-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Save bar -->
+      <div class="perm-save-bar">
+        <div class="perm-change-info"><span id="perm-change-count" style="font-weight:600;color:var(--text3);">No changes</span> <span id="perm-change-text">— permissions are up to date</span></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="resetPermissions()">Reset to Default</button>
+          <button class="btn btn-primary btn-sm" onclick="savePermissions()">Save Permissions →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscription Tab -->
+    <div id="stab-subscription" class="card" style="display:none;border-top-left-radius:0;border-top-right-radius:0;border-top:none;">
+      <div class="card-header"><div class="card-title">Subscription & Billing</div></div>
+      <div style="padding:20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div><div style="font-size:15px;font-weight:700;color:var(--text);">Growth Plan</div><div style="font-size:12px;color:var(--text3);">4–10 users · $129/user/month</div></div>
+              <span class="badge badge-green">● Active</span>
+            </div>
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Users: <strong>1 of 10</strong></div>
+            <div style="height:5px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-bottom:16px;"><div style="width:10%;height:100%;background:var(--accent);border-radius:4px;"></div></div>
+            <button class="btn btn-ghost btn-sm" style="width:100%;">Upgrade Plan →</button>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border);">
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">Plan Features</div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--text2);">
+              <div>✅ Unlimited loads & carriers</div>
+              <div>✅ DAT integration (V1.1)</div>
+              <div>✅ Priority support</div>
+              <div>✅ Company logo on rate cons</div>
+              <div style="color:var(--text3);">❌ Full white-label (Professional)</div>
+              <div style="color:var(--text3);">❌ Custom permissions (Professional)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="content" id="page-reports">
+    <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr);">
+      <div class="kpi-card blue"><div class="kpi-label">Total Loads</div><div class="kpi-value" id="rep-loads">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="rep-revenue">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Gross Profit</div><div class="kpi-value" id="rep-gp">—</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">GP %</div><div class="kpi-value" id="rep-gp-pct">—</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">Avg Load Value</div><div class="kpi-value" id="rep-avg">—</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Delivered</div><div class="kpi-value" id="rep-delivered">—</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Revenue by Customer</div></div>
+        <div id="rep-customers" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Loads by Status</div></div>
+        <div id="rep-status" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<!-- New Load Modal -->
+<div class="modal-overlay" id="modal-load">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="load-modal-title">Create New Load</div>
+      <button class="modal-close" onclick="closeModal('load')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="load-id"/>
+      <div class="form-section-title">📦 Shipment Details</div>
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group"><label>Customer</label><select id="load-customer"><option value="">Select customer…</option></select></div>
+        <div class="form-group"><label>Equipment Type</label>
+          <select id="load-equipment"><option>Dry Van</option><option>Reefer</option><option>Flatbed</option><option>LTL</option><option>Step Deck</option><option>Tanker</option></select>
+        </div>
+        <div class="form-group"><label>Origin City</label><input type="text" id="load-origin-city" placeholder="Dallas"/></div>
+        <div class="form-group"><label>Origin State</label><input type="text" id="load-origin-state" placeholder="TX" maxlength="2"/></div>
+        <div class="form-group"><label>Destination City</label><input type="text" id="load-dest-city" placeholder="Chicago"/></div>
+        <div class="form-group"><label>Destination State</label><input type="text" id="load-dest-state" placeholder="IL" maxlength="2"/></div>
+        <div class="form-group"><label>Pickup Date</label><input type="datetime-local" id="load-pickup"/></div>
+        <div class="form-group"><label>Delivery Date</label><input type="datetime-local" id="load-delivery"/></div>
+        <div class="form-group"><label>Weight (lbs)</label><input type="number" id="load-weight" placeholder="42000"/></div>
+        <div class="form-group"><label>Commodity</label><input type="text" id="load-commodity" placeholder="General Freight"/></div>
+      </div>
+      <div class="form-section-title">💰 Rate & Carrier</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Customer Rate ($)</label><input type="number" id="load-rate" placeholder="2840"/></div>
+        <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="load-carrier-pay" placeholder="2250"/></div>
+        <div class="form-group"><label>Assign Carrier</label><select id="load-carrier"><option value="">Unassigned</option></select></div>
+        <div class="form-group"><label>Status</label>
+          <select id="load-status"><option>Available</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select>
+        </div>
+        <div class="form-group full"><label>Reference # / Notes</label><input type="text" id="load-ref" placeholder="Customer PO or reference number"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('load')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLoad()">Save Load →</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Carrier Modal -->
+<div class="modal-overlay" id="modal-carrier">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="carrier-modal-title">Add Carrier</div>
+      <button class="modal-close" onclick="closeModal('carrier')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="carrier-id"/>
+      <div class="form-grid">
+        <div class="form-group full"><label>Carrier Name</label><input type="text" id="carrier-name" placeholder="Swift Transportation"/></div>
+        <div class="form-group"><label>MC Number</label><input type="text" id="carrier-mc" placeholder="107949"/></div>
+        <div class="form-group"><label>DOT Number</label><input type="text" id="carrier-dot" placeholder="281728"/></div>
+        <div class="form-group"><label>Contact Name</label><input type="text" id="carrier-contact" placeholder="John Smith"/></div>
+        <div class="form-group"><label>Email</label><input type="email" id="carrier-email" placeholder="dispatch@carrier.com"/></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="carrier-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>Insurance Expiry</label><input type="date" id="carrier-insurance"/></div>
+        <div class="form-group"><label>Safety Score</label><input type="number" id="carrier-safety" placeholder="95.0" min="0" max="100" step="0.1"/></div>
+        <div class="form-group full"><label>Equipment Types (comma separated)</label><input type="text" id="carrier-equipment" placeholder="Dry Van, Reefer, Flatbed"/></div>
+        <div class="form-group full"><label>Notes</label><textarea id="carrier-notes" placeholder="Any additional notes…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('carrier')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCarrier()">Save Carrier →</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Customer Modal -->
+<div class="modal-overlay" id="modal-customer">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="customer-modal-title">Add Customer</div>
+      <button class="modal-close" onclick="closeModal('customer')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="customer-id"/>
+      <div class="form-grid">
+        <div class="form-group full"><label>Company Name</label><input type="text" id="customer-name" placeholder="AcmeCorp Logistics"/></div>
+        <div class="form-group"><label>Contact Name</label><input type="text" id="customer-contact" placeholder="Sarah Kim"/></div>
+        <div class="form-group"><label>Email</label><input type="email" id="customer-email" placeholder="contact@company.com"/></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="customer-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>City</label><input type="text" id="customer-city" placeholder="Dallas"/></div>
+        <div class="form-group"><label>State</label><input type="text" id="customer-state" placeholder="TX" maxlength="2"/></div>
+        <div class="form-group full"><label>Notes</label><textarea id="customer-notes" placeholder="Any additional notes…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('customer')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">Save Customer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Modal -->
+<div class="modal-overlay" id="modal-invoice">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Create Invoice</div>
+      <button class="modal-close" onclick="closeModal('invoice')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Load #</label><select id="inv-load"><option value="">Select load…</option></select></div>
+        <div class="form-group"><label>Customer</label><select id="inv-customer"><option value="">Select customer…</option></select></div>
+        <div class="form-group"><label>Amount ($)</label><input type="number" id="inv-amount" placeholder="2840"/></div>
+        <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="inv-carrier-pay" placeholder="2250"/></div>
+        <div class="form-group"><label>Due Date</label><input type="date" id="inv-due"/></div>
+        <div class="form-group"><label>Status</label>
+          <select id="inv-status"><option>Pending</option><option>Paid</option><option>Overdue</option></select>
+        </div>
+      </div>
+    </div>
+      <div id="quickpay-calc" style="display:none;margin-top:12px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('invoice')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInvoice()">Create Invoice →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOAD DETAIL MODAL -->
+<div class="modal-overlay" id="modal-detail" style="z-index:600;">
+  <div class="modal" style="width:820px;max-height:92vh;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="detail-load-number">Load Detail</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="detail-load-route"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
+        <button class="modal-close" onclick="closeModal('detail')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+
+      <!-- Status Bar -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Load Status</div>
+        <div class="status-btn-group">
+          <button class="status-btn s-available" onclick="updateLoadStatus('Available')">📋 Available</button>
+          <button class="status-btn s-assigned" onclick="updateLoadStatus('Assigned')">✅ Assigned</button>
+          <button class="status-btn s-transit" onclick="updateLoadStatus('In Transit')">🚛 In Transit</button>
+          <button class="status-btn s-delivered" onclick="updateLoadStatus('Delivered')">📦 Delivered</button>
+        </div>
+      </div>
+
+      <!-- Load Info Grid -->
+      <div class="load-detail-grid">
+        <div class="detail-section">
+          <div class="detail-section-title">Shipment Info</div>
+          <div class="detail-row"><span class="detail-label">Customer</span><span class="detail-val" id="d-customer">—</span></div>
+          <div class="detail-row"><span class="detail-label">Origin</span><span class="detail-val" id="d-origin">—</span></div>
+          <div class="detail-row"><span class="detail-label">Destination</span><span class="detail-val" id="d-dest">—</span></div>
+          <div class="detail-row"><span class="detail-label">Equipment</span><span class="detail-val" id="d-equipment">—</span></div>
+          <div class="detail-row"><span class="detail-label">Weight</span><span class="detail-val" id="d-weight">—</span></div>
+          <div class="detail-row"><span class="detail-label">Commodity</span><span class="detail-val" id="d-commodity">—</span></div>
+          <div class="detail-row"><span class="detail-label">Pickup</span><span class="detail-val" id="d-pickup">—</span></div>
+          <div class="detail-row"><span class="detail-label">Delivery</span><span class="detail-val" id="d-delivery">—</span></div>
+        </div>
+        <div>
+          <div class="detail-section" style="margin-bottom:12px;">
+            <div class="detail-section-title">Financials</div>
+            <div class="detail-row"><span class="detail-label">Customer Rate</span><span class="detail-val" id="d-rate" style="color:var(--green)">—</span></div>
+            <div class="detail-row"><span class="detail-label">Carrier Pay</span><span class="detail-val" id="d-carrier-pay">—</span></div>
+            <div class="detail-row"><span class="detail-label">Gross Margin</span><span class="detail-val" id="d-margin" style="color:var(--green)">—</span></div>
+            <div class="detail-row"><span class="detail-label">Reference #</span><span class="detail-val" id="d-ref">—</span></div>
+          </div>
+          <div class="detail-section">
+            <div class="detail-section-title">Carrier</div>
+            <div class="detail-row"><span class="detail-label">Carrier Name</span><span class="detail-val" id="d-carrier">—</span></div>
+            <div class="detail-row"><span class="detail-label">MC #</span><span class="detail-val" id="d-mc">—</span></div>
+            <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-val" id="d-carrier-phone">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rate Confirmation Section -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid rgba(59,130,246,0.2);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--accent2);">📄 Rate Confirmation</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleRateCon()">👁 Preview</button>
+            <button class="btn btn-primary btn-sm" onclick="printRateCon()">🖨️ Print / Save PDF</button>
+          </div>
+        </div>
+        <div id="rate-con-preview-area" style="display:none;margin-top:12px;">
+          <div class="rate-con-preview" id="rate-con-content"></div>
+        </div>
+        <div id="rate-con-collapsed" style="font-size:12px;color:var(--text3);">
+          Rate confirmation ready to generate. Preview or print directly to send to carrier.
+        </div>
+      </div>
+
+      <!-- Check Calls Section -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📞 Check Calls</div>
+          <button class="btn btn-primary btn-sm" onclick="openCheckCallForm()">+ Log Check Call</button>
+        </div>
+
+        <div class="check-call-list" id="check-call-list">
+          <div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No check calls logged yet</div>
+        </div>
+
+        <!-- Check Call Form (hidden by default) -->
+        <div id="check-call-form" style="display:none;background:var(--surface3);border-radius:10px;padding:16px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">Log Check Call</div>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="form-group"><label>Spoke With</label><input type="text" id="cc-contact" placeholder="Driver / Dispatcher name"/></div>
+            <div class="form-group"><label>Call Status</label>
+              <select id="cc-status">
+                <option value="On Time">✅ On Time</option>
+                <option value="Delayed">⚠️ Delayed</option>
+                <option value="Issue">🔴 Issue</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Current City</label><input type="text" id="cc-city" placeholder="Kansas City"/></div>
+            <div class="form-group"><label>Current State</label><input type="text" id="cc-state" placeholder="MO" maxlength="2"/></div>
+            <div class="form-group"><label>Updated ETA</label><input type="datetime-local" id="cc-eta"/></div>
+            <div class="form-group"><label>Next Check Call</label><input type="datetime-local" id="cc-next"/></div>
+            <div class="form-group full"><label>Notes</label><textarea id="cc-notes" placeholder="Any issues, updates, or instructions…" style="min-height:60px;"></textarea></div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="closeCheckCallForm()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveCheckCall()">Save Check Call</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- RATE CON PRINT IFRAME -->
+<iframe id="print-frame" style="display:none;"></iframe>
+
+<!-- Toast container -->
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="auth-overlay">
+  <div id="screen-login" class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-text">Freight<span>Flow</span></div>
+      <div class="auth-logo-sub">Transportation Management System</div>
+    </div>
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">Sign in to your FreightFlow account</div>
+    <div class="auth-error" id="login-error"></div>
+    <div class="auth-form">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="you@company.com" autocomplete="email" onkeydown="if(event.key==='Enter')signIn()"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')signIn()"/>
+      </div>
+      <button class="btn-auth" id="login-btn" onclick="signIn()">Sign In →</button>
+    </div>
+    <div id="debug-log" style="margin-top:12px;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px;font-size:11px;color:#94a3b8;font-family:monospace;max-height:120px;overflow-y:auto;display:none;"></div>
+    <div class="auth-footer">FreightFlow TMS &nbsp;·&nbsp; Contact your administrator for access</div>
+  </div>
+</div>
+
+<!-- CREATE USER MODAL -->
+<div class="modal-overlay" id="modal-create-user">
+  <div class="modal" style="width:500px;">
+    <div class="modal-header"><div class="modal-title">Create New User</div><button class="modal-close" onclick="closeModal('create-user')">✕</button></div>
+    <div class="modal-body">
+      <div class="auth-error" id="create-user-error" style="margin-bottom:16px;"></div>
+      <div class="auth-success" id="create-user-success" style="margin-bottom:16px;"></div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Full Name</label><input type="text" id="cu-name" placeholder="John Smith"/></div>
+        <div class="form-group full"><label>Email Address</label><input type="email" id="cu-email" placeholder="john@company.com"/></div>
+        <div class="form-group"><label>Password</label><input type="password" id="cu-password" placeholder="Min. 6 characters"/></div>
+        <div class="form-group"><label>Role</label><select id="cu-role"><option value="dispatcher">Dispatcher</option><option value="accounting">Accounting</option><option value="sales">Sales</option><option value="readonly">Read-Only</option><option value="admin">Admin</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('create-user')">Cancel</button><button class="btn btn-primary" onclick="createUser()">Create User →</button></div>
+  </div>
+</div>
+
+<!-- CUSTOMER PORTAL -->
+<div class="portal-overlay" id="customer-portal">
+  <div class="portal-header">
+    <div class="portal-logo">Freight<span>Flow</span> <span style="font-size:12px;font-weight:400;color:#94a3b8;margin-left:8px;">Customer Portal</span></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:13px;color:#94a3b8;" id="portal-user-name"></span>
+      <button class="btn btn-ghost btn-sm" style="color:#94a3b8;border-color:rgba(255,255,255,0.2);" onclick="closeCustomerPortal()">✕ Close Portal</button>
+    </div>
+  </div>
+  <div class="portal-content">
+    <div style="margin-bottom:20px;"><div style="font-size:22px;font-weight:700;color:#1B2A4A;margin-bottom:4px;" id="portal-company-name">Welcome</div><div style="font-size:13px;color:#64748b;">Your live shipment tracker</div></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:14px;border-top:3px solid #3b82f6;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:6px;">Active Loads</div><div style="font-size:24px;font-weight:800;color:#1B2A4A;" id="portal-active">—</div></div>
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:14px;border-top:3px solid #10b981;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:6px;">Delivered</div><div style="font-size:24px;font-weight:800;color:#1B2A4A;" id="portal-delivered">—</div></div>
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:14px;border-top:3px solid #f59e0b;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:6px;">Open Invoices</div><div style="font-size:24px;font-weight:800;color:#1B2A4A;" id="portal-invoices">—</div></div>
+      <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:14px;border-top:3px solid #8b5cf6;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:6px;">Amount Due</div><div style="font-size:24px;font-weight:800;color:#1B2A4A;" id="portal-due">—</div></div>
+    </div>
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:16px;">
+      <div style="padding:14px 20px;border-bottom:1px solid #e2e8f0;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#1B2A4A;">Your Loads</div></div>
+      <div id="portal-loads-list" style="padding:16px;"></div>
+    </div>
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+      <div style="padding:14px 20px;border-bottom:1px solid #e2e8f0;"><div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#1B2A4A;">Invoices & Payments</div></div>
+      <div id="portal-invoices-list" style="padding:16px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW LEAD MODAL -->
+<div class="modal-overlay" id="modal-lead">
+  <div class="modal" style="width:620px;">
+    <div class="modal-header"><div class="modal-title">Add New Lead</div><button class="modal-close" onclick="closeModal('lead')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="lead-id"/>
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="form-group full"><label>Company Name</label><input type="text" id="lead-company" placeholder="ABC Logistics Inc."/></div>
+        <div class="form-group"><label>Contact Name</label><input type="text" id="lead-contact" placeholder="John Smith"/></div>
+        <div class="form-group"><label>Email</label><input type="email" id="lead-email" placeholder="john@company.com"/></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="lead-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>City</label><input type="text" id="lead-city" placeholder="Dallas"/></div>
+        <div class="form-group"><label>State</label><input type="text" id="lead-state" placeholder="TX" maxlength="2"/></div>
+        <div class="form-group"><label>Pipeline Stage</label><select id="lead-stage"><option>New Lead</option><option>Contacted</option><option>Qualified</option><option>Proposal Sent</option><option>Converted</option></select></div>
+        <div class="form-group"><label>Priority</label><select id="lead-priority"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+        <div class="form-group"><label>Est. Loads / Month</label><input type="number" id="lead-loads" placeholder="20"/></div>
+        <div class="form-group"><label>Lead Source</label><select id="lead-source"><option>Cold Call</option><option>Referral</option><option>Load Board</option><option>LinkedIn</option><option>Conference</option><option>Website</option><option>Other</option></select></div>
+        <div class="form-group"><label>Next Follow-up</label><input type="date" id="lead-followup"/></div>
+        <div class="form-group"><label>Assigned To</label><input type="text" id="lead-assigned" placeholder="Your name"/></div>
+        <div class="form-group full"><label>Notes</label><textarea id="lead-notes" placeholder="Initial contact notes…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('lead')">Cancel</button><button class="btn btn-primary" onclick="saveLead()">Save Lead →</button></div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ── Supabase init ─────────────────────────────────────────────
+const SUPABASE_URL = 'https://vbkxsenqnjvdmaabsnmz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZia3hzZW5xbmp2ZG1hYWJzbm16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njk0MTgsImV4cCI6MjA5MDU0NTQxOH0.8vjyfNvirR2dOIroCBddpeULuA9GTnPi08DS8AtUFZk';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: window.localStorage }
+});
+
+// ── State ─────────────────────────────────────────────────────
+let allLoads = [], allCarriers = [], allCustomers = [], allInvoices = [];
+let currentPage = 'dashboard';
+let currentUser = null, currentUserRole = null;
+let checkCalls = {};
+let allLeads = [];
+let crmView = 'board';
+let activePermRole = 'dispatcher';
+let rolePerms = {}, savedRolePerms = {};
+let isLightMode = localStorage.getItem('ff-theme') === 'light';
+
+// ── Toast ─────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── DB Status ─────────────────────────────────────────────────
+function setDbStatus(status) {
+  const dot = document.getElementById('dbDot');
+  const txt = document.getElementById('dbStatusText');
+  if (!dot) return;
+  dot.className = 'db-dot';
+  if (status === 'connected') { dot.style.background = 'var(--green)'; txt.textContent = 'Connected'; txt.style.color = 'var(--green)'; }
+  else if (status === 'error') { dot.style.background = 'var(--red)'; txt.textContent = 'Error'; txt.style.color = 'var(--red)'; }
+  else { dot.style.background = 'var(--amber)'; txt.textContent = 'Connecting…'; }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function fmt$(n) { if (!n && n !== 0) return '—'; return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'2-digit'}); }
+function margin(rate, pay) { if (!rate || !pay || rate === 0) return '—'; return ((rate - pay) / rate * 100).toFixed(1) + '%'; }
+function marginColor(rate, pay) {
+  if (!rate || !pay) return 'var(--text3)';
+  const m = (rate - pay) / rate * 100;
+  return m >= 18 ? 'var(--green)' : m >= 12 ? 'var(--amber)' : 'var(--red)';
+}
+function statusBadge(s) {
+  const map = { 'Available':'badge-blue', 'Assigned':'badge-amber', 'In Transit':'badge-green', 'Delivered':'badge-gray', 'Active':'badge-green', 'Inactive':'badge-gray', 'Paid':'badge-green', 'Pending':'badge-amber', 'Overdue':'badge-red', 'Expired':'badge-red' };
+  return `<span class="badge ${map[s] || 'badge-gray'}">${s}</span>`;
+}
+function loadNumber() { return 'FF-' + String(Math.floor(Math.random() * 9000) + 1000); }
+function invoiceNumber() { return 'INV-' + String(Math.floor(Math.random() * 9000) + 1000); }
+
+// ── LOAD DATA ─────────────────────────────────────────────────
+async function loadData() {
+  setDbStatus('connecting');
+  try {
+    const [l, c, cu, inv] = await Promise.all([
+      db.from('loads').select('*, customers(name), carriers(name)').order('created_at', {ascending:false}),
+      db.from('carriers').select('*').order('name'),
+      db.from('customers').select('*').order('name'),
+      db.from('invoices').select('*, customers(name), loads(load_number)').order('created_at', {ascending:false}),
+    ]);
+    if (l.error) throw l.error;
+    allLoads = l.data || [];
+    allCarriers = c.data || [];
+    allCustomers = cu.data || [];
+    allInvoices = inv.data || [];
+    setDbStatus('connected');
+    renderCurrentPage();
+    populateSelects();
+  } catch(e) {
+    setDbStatus('error');
+    toast('Database error: ' + e.message, 'error');
+  }
+}
+
+function populateSelects() {
+  const custOpts = allCustomers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const sel = document.getElementById('load-customer');
+  if(sel) sel.innerHTML = '<option value="">Select customer…</option>' + custOpts;
+  const invCust = document.getElementById('inv-customer');
+  if(invCust) invCust.innerHTML = '<option value="">Select customer…</option>' + custOpts;
+  const carrOpts = allCarriers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  const carrSel = document.getElementById('load-carrier');
+  if(carrSel) carrSel.innerHTML = '<option value="">Unassigned</option>' + carrOpts;
+  const loadOpts = allLoads.map(l => `<option value="${l.id}">${l.load_number} — ${l.origin_city||''}, ${l.origin_state||''} → ${l.destination_city||''}, ${l.destination_state||''}</option>`).join('');
+  const invLoad = document.getElementById('inv-load');
+  if(invLoad) invLoad.innerHTML = '<option value="">Select load…</option>' + loadOpts;
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function renderCurrentPage() {
+  const renderers = { dashboard: renderDashboard, dispatch: renderDispatch, loads: renderLoads, carriers: renderCarriers, customers: renderCustomers, invoices: renderInvoices, reports: renderReports, users: renderUsersPage, settings: renderSettings, crm: renderCRM };
+  if (renderers[currentPage]) renderers[currentPage]();
+}
+
+function renderDashboard() {
+  const active = allLoads.filter(l => l.status !== 'Delivered').length;
+  const revenue = allLoads.reduce((s, l) => s + (Number(l.customer_rate) || 0), 0);
+  const carrierPay = allLoads.reduce((s, l) => s + (Number(l.carrier_pay) || 0), 0);
+  const gp = revenue - carrierPay;
+  const gpPct = revenue > 0 ? (gp / revenue * 100) : 0;
+  const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setEl('kpi-active', active);
+  setEl('kpi-revenue', fmt$(revenue));
+  setEl('kpi-gp', fmt$(gp));
+  setEl('kpi-gp-pct', gpPct.toFixed(1) + '%');
+  setEl('kpi-carriers', allCarriers.length);
+  setEl('kpi-customers', allCustomers.length);
+
+  const recent = allLoads.slice(0, 6);
+  const dashBody = document.getElementById('dash-loads-body');
+  if (dashBody) {
+    if (recent.length === 0) {
+      dashBody.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No loads yet. Create your first load to get started.</p><button class="btn btn-primary btn-sm" onclick="openModal('load')">+ New Load</button></div>`;
+    } else {
+      dashBody.innerHTML = `<table class="table"><thead><tr><th>Load #</th><th>Route</th><th>Carrier</th><th>Status</th><th>Rate</th></tr></thead><tbody>${recent.map(l => `<tr onclick="openLoadDetail('${l.id}')"><td><strong>${l.load_number}</strong></td><td>${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</td><td>${l.carriers?.name || '<span style="color:var(--text3)">Unassigned</span>'}</td><td>${statusBadge(l.status)}</td><td><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></td></tr>`).join('')}</tbody></table>`;
+    }
+  }
+
+  // Alerts
+  const expiredIns = allCarriers.filter(c => c.insurance_expiry && new Date(c.insurance_expiry) < new Date());
+  const expiringSoon = allCarriers.filter(c => { if (!c.insurance_expiry) return false; const days = (new Date(c.insurance_expiry) - new Date()) / 86400000; return days > 0 && days <= 30; });
+  const unassigned = allLoads.filter(l => l.status === 'Available');
+  const overdueInv = allInvoices.filter(i => i.status === 'Overdue');
+  let alerts = '';
+  if (expiredIns.length > 0) alerts += `<div class="alert-item red">🔴 <span style="color:var(--text2)"><strong style="color:var(--red)">${expiredIns.length} carrier${expiredIns.length>1?'s':''}</strong> with expired insurance</span></div>`;
+  if (expiringSoon.length > 0) alerts += `<div class="alert-item amber">🟡 <span style="color:var(--text2)"><strong style="color:var(--amber)">${expiringSoon.length} carrier${expiringSoon.length>1?'s':''}</strong> insurance expiring within 30 days</span></div>`;
+  if (unassigned.length > 0) alerts += `<div class="alert-item amber">🟡 <span style="color:var(--text2)"><strong style="color:var(--amber)">${unassigned.length} load${unassigned.length>1?'s':''}</strong> awaiting carrier assignment</span></div>`;
+  if (overdueInv.length > 0) alerts += `<div class="alert-item red">🔴 <span style="color:var(--text2)"><strong style="color:var(--red)">${overdueInv.length} invoice${overdueInv.length>1?'s':''}</strong> past due</span></div>`;
+  if (!alerts) alerts = `<div class="alert-item green">🟢 <span style="color:var(--text2)">No active alerts — all clear!</span></div>`;
+  const alertsEl = document.getElementById('dash-alerts');
+  if(alertsEl) alertsEl.innerHTML = alerts;
+
+  // Customer GP table
+  const byCustomer = {};
+  allLoads.forEach(l => {
+    const name = l.customers?.name || 'Unknown';
+    const id = l.customer_id || 'unknown';
+    if (!byCustomer[id]) byCustomer[id] = { name, revenue: 0, carrierPay: 0, loads: 0, delivered: 0 };
+    byCustomer[id].revenue += Number(l.customer_rate) || 0;
+    byCustomer[id].carrierPay += Number(l.carrier_pay) || 0;
+    byCustomer[id].loads++;
+    if (l.status === 'Delivered') byCustomer[id].delivered++;
+  });
+  const sorted = Object.values(byCustomer).sort((a, b) => (b.revenue - b.carrierPay) - (a.revenue - a.carrierPay));
+  const totalRev = sorted.reduce((s, c) => s + c.revenue, 0) || 1;
+  const cgp = document.getElementById('dash-customer-gp');
+  if (cgp) {
+    if (sorted.length === 0) {
+      cgp.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p>No load data yet.</p></div>`;
+    } else {
+      const rows = sorted.map(c => {
+        const gp = c.revenue - c.carrierPay;
+        const gpPct = c.revenue > 0 ? (gp / c.revenue * 100) : 0;
+        const gpColor = gpPct >= 18 ? 'var(--green)' : gpPct >= 12 ? 'var(--amber)' : 'var(--red)';
+        return `<tr><td><strong>${c.name}</strong></td><td><strong style="color:var(--text)">${fmt$(c.revenue)}</strong></td><td style="color:var(--text3)">${fmt$(c.carrierPay)}</td><td><strong style="color:${gpColor}">${fmt$(gp)}</strong></td><td><div style="display:flex;align-items:center;gap:8px;"><strong style="color:${gpColor};font-family:'JetBrains Mono',monospace;font-size:12px;min-width:44px;">${gpPct.toFixed(1)}%</strong><div style="flex:1;height:5px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="width:${Math.max(2,(c.revenue/totalRev*100)).toFixed(0)}%;height:100%;background:${gpColor};border-radius:4px;"></div></div></div></td><td style="text-align:center;">${c.loads}</td><td style="text-align:center;color:var(--green);">${c.delivered}</td></tr>`;
+      }).join('');
+      const totalGP = sorted.reduce((s,c)=>s+(c.revenue-c.carrierPay),0);
+      const totalGPPct = totalRev > 0 ? (totalGP/totalRev*100) : 0;
+      const tColor = totalGPPct >= 18 ? 'var(--green)' : totalGPPct >= 12 ? 'var(--amber)' : 'var(--red)';
+      cgp.innerHTML = `<table class="table"><thead><tr><th>Customer</th><th>Revenue</th><th>Carrier Pay</th><th>Gross Profit</th><th>GP %</th><th style="text-align:center;">Loads</th><th style="text-align:center;">Delivered</th></tr></thead><tbody>${rows}<tr style="background:var(--surface2);font-weight:700;"><td><strong style="color:var(--text);">TOTAL</strong></td><td><strong style="color:var(--text);">${fmt$(totalRev)}</strong></td><td style="color:var(--text3);">${fmt$(sorted.reduce((s,c)=>s+c.carrierPay,0))}</td><td><strong style="color:${tColor};">${fmt$(totalGP)}</strong></td><td><strong style="color:${tColor};font-family:'JetBrains Mono',monospace;font-size:12px;">${totalGPPct.toFixed(1)}%</strong></td><td style="text-align:center;"><strong>${sorted.reduce((s,c)=>s+c.loads,0)}</strong></td><td style="text-align:center;color:var(--green);"><strong>${sorted.reduce((s,c)=>s+c.delivered,0)}</strong></td></tr></tbody></table>`;
+    }
+  }
+}
+
+function renderDispatch() {
+  const statuses = ['Available','Assigned','In Transit','Delivered'];
+  const colors = {'Available':'var(--accent)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'};
+  const cols = statuses.map(status => {
+    const loads = allLoads.filter(l => l.status === status);
+    const cards = loads.length === 0 ? `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No ${status.toLowerCase()} loads</div>` : loads.map(l => `<div class="load-card ${l.status}" onclick="openLoadDetail('${l.id}')"><div class="load-id">${l.load_number} · ${l.equipment_type||'Dry Van'}</div><div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div><div class="load-meta-row"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div><div class="load-meta-row"><span>Rate</span><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></div><div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div></div>`).join('');
+    return `<div class="dispatch-col"><div class="dispatch-col-header" style="border-top:3px solid ${colors[status]}">${status} <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span></div>${cards}</div>`;
+  }).join('');
+  const board = document.getElementById('dispatch-board');
+  if(board) board.innerHTML = `<div class="dispatch-grid">${cols}</div>`;
+}
+
+function renderLoads() {
+  const body = document.getElementById('loads-body');
+  if(!body) return;
+  if (allLoads.length === 0) { body.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No loads yet.</p></div>`; return; }
+  body.innerHTML = `<table class="table"><thead><tr><th>Load #</th><th>Customer</th><th>Origin</th><th>Destination</th><th>Equipment</th><th>Pickup</th><th>Carrier</th><th>Rate</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>${allLoads.map(l => `<tr onclick="openLoadDetail('${l.id}')"><td><strong>${l.load_number}</strong></td><td>${l.customers?.name||'—'}</td><td>${l.origin_city||'—'}, ${l.origin_state||''}</td><td>${l.destination_city||'—'}, ${l.destination_state||''}</td><td>${l.equipment_type||'—'}</td><td>${fmtDate(l.pickup_date)}</td><td>${l.carriers?.name||'<span style="color:var(--text3)">—</span>'}</td><td><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></td><td style="color:${marginColor(l.customer_rate,l.carrier_pay)}">${margin(l.customer_rate,l.carrier_pay)}</td><td>${statusBadge(l.status)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLoad('${l.id}')">✕</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderCarriers() {
+  const title = document.getElementById('carriers-title');
+  if(title) title.textContent = `Carrier Network (${allCarriers.length})`;
+  const body = document.getElementById('carriers-body');
+  if(!body) return;
+  if (allCarriers.length === 0) { body.innerHTML = `<div class="empty-state"><div class="empty-icon">🚚</div><p>No carriers yet.</p></div>`; return; }
+  const today = new Date();
+  body.innerHTML = `<table class="table"><thead><tr><th>Carrier</th><th>MC #</th><th>DOT #</th><th>Equipment</th><th>Insurance Exp.</th><th>Safety</th><th>Status</th><th></th></tr></thead><tbody>${allCarriers.map(c => { let insColor='var(--text2)',insStatus='Active'; if(c.insurance_expiry){const d=new Date(c.insurance_expiry);const days=(d-today)/86400000;if(days<0){insColor='var(--red)';insStatus='Expired';}else if(days<=30){insColor='var(--amber)';insStatus='Exp. Soon';}else insColor='var(--green)';} return `<tr onclick="editCarrier('${c.id}')"><td><strong>${c.name}</strong></td><td>${c.mc_number||'—'}</td><td>${c.dot_number||'—'}</td><td style="font-size:12px;">${(c.equipment_types||[]).join(', ')||'—'}</td><td style="color:${insColor}">${c.insurance_expiry?fmtDate(c.insurance_expiry):'—'}</td><td><strong>${c.safety_score||'—'}</strong></td><td>${statusBadge(insStatus)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCarrier('${c.id}')">✕</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+
+function renderCustomers() {
+  const title = document.getElementById('customers-title');
+  if(title) title.textContent = `Customers (${allCustomers.length})`;
+  const body = document.getElementById('customers-body');
+  if(!body) return;
+  if (allCustomers.length === 0) { body.innerHTML = `<div class="empty-state"><div class="empty-icon">🏢</div><p>No customers yet.</p></div>`; return; }
+  body.innerHTML = `<table class="table"><thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>City</th><th>State</th><th>Status</th><th></th></tr></thead><tbody>${allCustomers.map(c => `<tr onclick="editCustomer('${c.id}')"><td><strong>${c.name}</strong></td><td>${c.contact_name||'—'}</td><td style="font-size:12px;">${c.email||'—'}</td><td>${c.phone||'—'}</td><td>${c.city||'—'}</td><td>${c.state||'—'}</td><td>${statusBadge(c.status||'Active')}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCustomer('${c.id}')">✕</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderInvoices() {
+  const paid = allInvoices.filter(i=>i.status==='Paid').reduce((s,i)=>s+(i.amount||0),0);
+  const pending = allInvoices.filter(i=>i.status==='Pending').reduce((s,i)=>s+(i.amount||0),0);
+  const overdue = allInvoices.filter(i=>i.status==='Overdue').reduce((s,i)=>s+(i.amount||0),0);
+  const setEl = (id,val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  setEl('inv-paid', fmt$(paid)); setEl('inv-pending', fmt$(pending)); setEl('inv-overdue', fmt$(overdue));
+  const body = document.getElementById('invoices-body');
+  if(!body) return;
+  if (allInvoices.length===0) { body.innerHTML=`<div class="empty-state"><div class="empty-icon">🧾</div><p>No invoices yet.</p></div>`; return; }
+  body.innerHTML = `<table class="table"><thead><tr><th>Invoice #</th><th>Load #</th><th>Customer</th><th>Issued</th><th>Due</th><th>Amount</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>${allInvoices.map(i=>`<tr><td><strong>${i.invoice_number}</strong></td><td>${i.loads?.load_number||'—'}</td><td>${i.customers?.name||'—'}</td><td>${fmtDate(i.issued_date)}</td><td style="color:${i.status==='Overdue'?'var(--red)':'var(--text2)'}">${fmtDate(i.due_date)}</td><td><strong style="color:var(--green)">${fmt$(i.amount)}</strong></td><td style="color:${marginColor(i.amount,i.carrier_pay)}">${margin(i.amount,i.carrier_pay)}</td><td>${statusBadge(i.status)}</td><td><button class="btn btn-danger btn-sm" onclick="deleteInvoice('${i.id}')">✕</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+function renderReports() {
+  const totalRev = allLoads.reduce((s,l)=>s+(Number(l.customer_rate)||0),0);
+  const totalPay = allLoads.reduce((s,l)=>s+(Number(l.carrier_pay)||0),0);
+  const gp = totalRev - totalPay;
+  const gpPct = totalRev > 0 ? (gp/totalRev*100) : 0;
+  const setEl = (id,val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  setEl('rep-loads', allLoads.length);
+  setEl('rep-revenue', fmt$(totalRev));
+  setEl('rep-gp', fmt$(gp));
+  setEl('rep-gp-pct', gpPct.toFixed(1)+'%');
+  setEl('rep-avg', fmt$(allLoads.length > 0 ? totalRev/allLoads.length : 0));
+  setEl('rep-delivered', allLoads.filter(l=>l.status==='Delivered').length);
+
+  const byCustomer = {};
+  allLoads.forEach(l => { const name=l.customers?.name||'Unknown'; byCustomer[name]=(byCustomer[name]||0)+(l.customer_rate||0); });
+  const sortedCust = Object.entries(byCustomer).sort((a,b)=>b[1]-a[1]);
+  const maxCust = sortedCust[0]?.[1]||1;
+  const colors = ['var(--accent)','var(--green)','var(--amber)','var(--purple)','var(--red)','var(--accent2)'];
+  const custEl = document.getElementById('rep-customers');
+  if(custEl) custEl.innerHTML = sortedCust.length===0 ? '<p style="color:var(--text3);font-size:13px;text-align:center;">No data yet</p>' : sortedCust.map(([name,rev],i)=>`<div class="stat-bar"><div class="stat-bar-header"><span style="color:var(--text2);font-size:12.5px;">${name}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);">${fmt$(rev)}</span></div><div class="bar-track"><div class="bar-fill" style="width:${(rev/maxCust*100).toFixed(0)}%;background:${colors[i%colors.length]}"></div></div></div>`).join('');
+
+  const byStatus = {};
+  allLoads.forEach(l=>{byStatus[l.status]=(byStatus[l.status]||0)+1;});
+  const statusColors = {'Available':'var(--accent)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'};
+  const total = allLoads.length||1;
+  const statEl = document.getElementById('rep-status');
+  if(statEl) statEl.innerHTML = Object.entries(byStatus).length===0 ? '<p style="color:var(--text3);font-size:13px;text-align:center;">No data yet</p>' : Object.entries(byStatus).map(([status,count])=>`<div class="stat-bar"><div class="stat-bar-header"><span style="color:var(--text2);font-size:12.5px;">${status}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);">${count} load${count>1?'s':''}</span></div><div class="bar-track"><div class="bar-fill" style="width:${(count/total*100).toFixed(0)}%;background:${statusColors[status]||'var(--accent)'}"></div></div></div>`).join('');
+}
+
+// ── MODALS ────────────────────────────────────────────────────
+function openModal(type) { const el=document.getElementById('modal-'+type); if(el) el.classList.add('open'); }
+function closeModal(type) {
+  const el=document.getElementById('modal-'+type); if(el) el.classList.remove('open');
+  const idField=document.getElementById(type+'-id'); if(idField) idField.value='';
+}
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal-overlay')) {
+    const id = e.target.id.replace('modal-','');
+    closeModal(id);
+  }
+});
+
+// ── SAVE LOAD ─────────────────────────────────────────────────
+async function saveLoad() {
+  const id = document.getElementById('load-id')?.value;
+  const carrierId = document.getElementById('load-carrier')?.value;
+  const currentStatus = document.getElementById('load-status')?.value;
+  const payload = {
+    customer_id: document.getElementById('load-customer')?.value||null,
+    carrier_id: carrierId||null,
+    origin_city: document.getElementById('load-origin-city')?.value,
+    origin_state: document.getElementById('load-origin-state')?.value?.toUpperCase(),
+    destination_city: document.getElementById('load-dest-city')?.value,
+    destination_state: document.getElementById('load-dest-state')?.value?.toUpperCase(),
+    equipment_type: document.getElementById('load-equipment')?.value,
+    weight: document.getElementById('load-weight')?.value||null,
+    commodity: document.getElementById('load-commodity')?.value,
+    pickup_date: document.getElementById('load-pickup')?.value||null,
+    delivery_date: document.getElementById('load-delivery')?.value||null,
+    customer_rate: document.getElementById('load-rate')?.value||null,
+    carrier_pay: document.getElementById('load-carrier-pay')?.value||null,
+    status: carrierId && currentStatus === 'Available' ? 'Assigned' : currentStatus,
+    reference_number: document.getElementById('load-ref')?.value,
+  };
+  if (!id) payload.load_number = loadNumber();
+  const { error } = id ? await db.from('loads').update(payload).eq('id',id) : await db.from('loads').insert(payload);
+  if (error) { toast('Error: '+error.message, 'error'); return; }
+  toast(id ? 'Load updated!' : 'Load created!', 'success');
+  closeModal('load');
+  await loadData();
+}
+
+async function editLoad(id) {
+  const l = allLoads.find(x=>x.id===id); if(!l) return;
+  document.getElementById('load-id').value = l.id;
+  document.getElementById('load-modal-title').textContent = `Edit Load ${l.load_number}`;
+  document.getElementById('load-customer').value = l.customer_id||'';
+  document.getElementById('load-carrier').value = l.carrier_id||'';
+  document.getElementById('load-origin-city').value = l.origin_city||'';
+  document.getElementById('load-origin-state').value = l.origin_state||'';
+  document.getElementById('load-dest-city').value = l.destination_city||'';
+  document.getElementById('load-dest-state').value = l.destination_state||'';
+  document.getElementById('load-equipment').value = l.equipment_type||'Dry Van';
+  document.getElementById('load-weight').value = l.weight||'';
+  document.getElementById('load-commodity').value = l.commodity||'';
+  document.getElementById('load-pickup').value = l.pickup_date?l.pickup_date.slice(0,16):'';
+  document.getElementById('load-delivery').value = l.delivery_date?l.delivery_date.slice(0,16):'';
+  document.getElementById('load-rate').value = l.customer_rate||'';
+  document.getElementById('load-carrier-pay').value = l.carrier_pay||'';
+  document.getElementById('load-status').value = l.status||'Available';
+  document.getElementById('load-ref').value = l.reference_number||'';
+  openModal('load');
+}
+
+async function deleteLoad(id) {
+  if(!confirm('Delete this load?')) return;
+  await db.from('loads').delete().eq('id',id);
+  toast('Load deleted','info'); await loadData();
+}
+
+// ── SAVE CARRIER ──────────────────────────────────────────────
+async function saveCarrier() {
+  const id = document.getElementById('carrier-id')?.value;
+  const equip = document.getElementById('carrier-equipment')?.value;
+  const payload = {
+    name: document.getElementById('carrier-name')?.value,
+    mc_number: document.getElementById('carrier-mc')?.value,
+    dot_number: document.getElementById('carrier-dot')?.value,
+    contact_name: document.getElementById('carrier-contact')?.value,
+    email: document.getElementById('carrier-email')?.value,
+    phone: document.getElementById('carrier-phone')?.value,
+    insurance_expiry: document.getElementById('carrier-insurance')?.value||null,
+    safety_score: document.getElementById('carrier-safety')?.value||null,
+    equipment_types: equip ? equip.split(',').map(s=>s.trim()).filter(Boolean) : [],
+    notes: document.getElementById('carrier-notes')?.value,
+  };
+  const { error } = id ? await db.from('carriers').update(payload).eq('id',id) : await db.from('carriers').insert(payload);
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  toast(id?'Carrier updated!':'Carrier added!','success'); closeModal('carrier'); await loadData();
+}
+
+async function editCarrier(id) {
+  const c = allCarriers.find(x=>x.id===id); if(!c) return;
+  document.getElementById('carrier-id').value = c.id;
+  document.getElementById('carrier-modal-title').textContent = `Edit ${c.name}`;
+  ['name','mc','dot','contact','email','phone'].forEach(f => { const el=document.getElementById('carrier-'+f); if(el) el.value=c[f==='mc'?'mc_number':f==='dot'?'dot_number':f==='contact'?'contact_name':f]||''; });
+  document.getElementById('carrier-insurance').value = c.insurance_expiry||'';
+  document.getElementById('carrier-safety').value = c.safety_score||'';
+  document.getElementById('carrier-equipment').value = (c.equipment_types||[]).join(', ');
+  document.getElementById('carrier-notes').value = c.notes||'';
+  openModal('carrier');
+}
+
+async function deleteCarrier(id) {
+  if(!confirm('Delete this carrier?')) return;
+  await db.from('carriers').delete().eq('id',id);
+  toast('Carrier deleted','info'); await loadData();
+}
+
+// ── SAVE CUSTOMER ─────────────────────────────────────────────
+async function saveCustomer() {
+  const id = document.getElementById('customer-id')?.value;
+  const payload = {
+    name: document.getElementById('customer-name')?.value,
+    contact_name: document.getElementById('customer-contact')?.value,
+    email: document.getElementById('customer-email')?.value,
+    phone: document.getElementById('customer-phone')?.value,
+    city: document.getElementById('customer-city')?.value,
+    state: document.getElementById('customer-state')?.value?.toUpperCase(),
+    notes: document.getElementById('customer-notes')?.value,
+  };
+  const { error } = id ? await db.from('customers').update(payload).eq('id',id) : await db.from('customers').insert(payload);
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  toast(id?'Customer updated!':'Customer added!','success'); closeModal('customer'); await loadData();
+}
+
+async function editCustomer(id) {
+  const c = allCustomers.find(x=>x.id===id); if(!c) return;
+  document.getElementById('customer-id').value = c.id;
+  document.getElementById('customer-modal-title').textContent = `Edit ${c.name}`;
+  document.getElementById('customer-name').value = c.name||'';
+  document.getElementById('customer-contact').value = c.contact_name||'';
+  document.getElementById('customer-email').value = c.email||'';
+  document.getElementById('customer-phone').value = c.phone||'';
+  document.getElementById('customer-city').value = c.city||'';
+  document.getElementById('customer-state').value = c.state||'';
+  document.getElementById('customer-notes').value = c.notes||'';
+  openModal('customer');
+}
+
+async function deleteCustomer(id) {
+  if(!confirm('Delete this customer?')) return;
+  await db.from('customers').delete().eq('id',id);
+  toast('Customer deleted','info'); await loadData();
+}
+
+// ── SAVE INVOICE ──────────────────────────────────────────────
+async function saveInvoice() {
+  const payload = {
+    invoice_number: invoiceNumber(),
+    load_id: document.getElementById('inv-load')?.value||null,
+    customer_id: document.getElementById('inv-customer')?.value||null,
+    amount: document.getElementById('inv-amount')?.value||null,
+    carrier_pay: document.getElementById('inv-carrier-pay')?.value||null,
+    due_date: document.getElementById('inv-due')?.value||null,
+    status: document.getElementById('inv-status')?.value,
+  };
+  const { error } = await db.from('invoices').insert(payload);
+  if (error) { toast('Error: '+error.message,'error'); return; }
+  toast('Invoice created!','success'); closeModal('invoice'); await loadData();
+}
+
+async function deleteInvoice(id) {
+  if(!confirm('Delete this invoice?')) return;
+  await db.from('invoices').delete().eq('id',id);
+  toast('Invoice deleted','info'); await loadData();
+}
+
+function calcQuickPay() {
+  const amount = parseFloat(document.getElementById('inv-carrier-pay')?.value)||0;
+  const qpBox = document.getElementById('quickpay-calc');
+  if (qpBox && amount > 0) {
+    const fee = amount*0.02; const net = amount-fee;
+    qpBox.style.display = 'block';
+    qpBox.innerHTML = `<div class="quickpay-box"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:8px;">⚡ Quick Pay Calculator</div><div class="quickpay-row"><span style="color:var(--text2);">Carrier Pay</span><span>${fmt$(amount)}</span></div><div class="quickpay-row"><span style="color:var(--text2);">Quick Pay Fee (2%)</span><span style="color:var(--red);">- ${fmt$(fee)}</span></div><div class="quickpay-row" style="border-top:1px solid rgba(245,158,11,0.2);margin-top:6px;padding-top:6px;"><span style="color:var(--text);font-weight:600;">Carrier Receives</span><span style="font-family:Syne,sans-serif;font-size:18px;font-weight:700;color:var(--amber);">${fmt$(net)}</span></div></div>`;
+  }
+}
+
+// ── LOAD DETAIL ───────────────────────────────────────────────
+let currentDetailLoadId = null;
+
+function openLoadDetail(loadId) {
+  const l = allLoads.find(x=>x.id===loadId); if(!l) return;
+  currentDetailLoadId = loadId;
+  document.getElementById('detail-load-number').textContent = l.load_number;
+  document.getElementById('detail-load-route').textContent = `${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}`;
+  document.getElementById('d-customer').textContent = l.customers?.name||'—';
+  document.getElementById('d-origin').textContent = `${l.origin_city||'—'}, ${l.origin_state||''}`;
+  document.getElementById('d-dest').textContent = `${l.destination_city||'—'}, ${l.destination_state||''}`;
+  document.getElementById('d-equipment').textContent = l.equipment_type||'—';
+  document.getElementById('d-weight').textContent = l.weight ? Number(l.weight).toLocaleString()+' lbs':'—';
+  document.getElementById('d-commodity').textContent = l.commodity||'—';
+  document.getElementById('d-pickup').textContent = fmtDate(l.pickup_date);
+  document.getElementById('d-delivery').textContent = fmtDate(l.delivery_date);
+  document.getElementById('d-rate').textContent = fmt$(l.customer_rate);
+  document.getElementById('d-carrier-pay').textContent = fmt$(l.carrier_pay);
+  document.getElementById('d-margin').textContent = l.customer_rate && l.carrier_pay ? `${margin(l.customer_rate,l.carrier_pay)} (${fmt$(l.customer_rate-l.carrier_pay)})` : '—';
+  document.getElementById('d-ref').textContent = l.reference_number||'—';
+  const carrier = allCarriers.find(c=>c.id===l.carrier_id);
+  document.getElementById('d-carrier').textContent = carrier?.name||'Unassigned';
+  document.getElementById('d-mc').textContent = carrier?.mc_number||'—';
+  document.getElementById('d-carrier-phone').textContent = carrier?.phone||'—';
+  document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
+  const map = {'Available':'s-available','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
+  document.querySelector('.status-btn.'+map[l.status])?.classList.add('active-status');
+  const rcPrev = document.getElementById('rate-con-preview-area');
+  const rcColl = document.getElementById('rate-con-collapsed');
+  if(rcPrev) rcPrev.style.display='none';
+  if(rcColl) rcColl.style.display='block';
+  renderCheckCalls(loadId);
+  closeCheckCallForm();
+  openModal('detail');
+}
+
+async function updateLoadStatus(newStatus) {
+  if(!currentDetailLoadId) return;
+  const {error} = await db.from('loads').update({status:newStatus}).eq('id',currentDetailLoadId);
+  if(error){toast('Error: '+error.message,'error');return;}
+  document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
+  const map={'Available':'s-available','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
+  document.querySelector('.status-btn.'+map[newStatus])?.classList.add('active-status');
+  toast('Status updated to '+newStatus,'success');
+  await loadData();
+}
+
+function openEditFromDetail() { closeModal('detail'); setTimeout(()=>editLoad(currentDetailLoadId),200); }
+
+// ── CHECK CALLS ───────────────────────────────────────────────
+function openCheckCallForm(){document.getElementById('check-call-form').style.display='block';}
+function closeCheckCallForm(){
+  const f=document.getElementById('check-call-form');if(f)f.style.display='none';
+  ['cc-contact','cc-city','cc-state','cc-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const eta=document.getElementById('cc-eta');if(eta)eta.value='';
+  const next=document.getElementById('cc-next');if(next)next.value='';
+  const st=document.getElementById('cc-status');if(st)st.value='On Time';
+}
+
+async function saveCheckCall() {
+  const contact=document.getElementById('cc-contact')?.value;
+  const status=document.getElementById('cc-status')?.value;
+  const city=document.getElementById('cc-city')?.value;
+  const state=document.getElementById('cc-state')?.value?.toUpperCase();
+  const eta=document.getElementById('cc-eta')?.value;
+  const next=document.getElementById('cc-next')?.value;
+  const notes=document.getElementById('cc-notes')?.value;
+  if(!city && !notes){toast('Please enter a location or notes','error');return;}
+  const call={id:Date.now(),timestamp:new Date().toISOString(),contact,status,city,state,eta,next,notes};
+  if(!checkCalls[currentDetailLoadId])checkCalls[currentDetailLoadId]=[];
+  checkCalls[currentDetailLoadId].unshift(call);
+  await db.from('check_calls').insert({load_id:currentDetailLoadId,contact,status,city,state,eta:eta||null,next_call:next||null,notes,logged_by:currentUser?.user_metadata?.full_name||currentUser?.email});
+  renderCheckCalls(currentDetailLoadId);
+  closeCheckCallForm();
+  toast('Check call logged!','success');
+}
+
+function renderCheckCalls(loadId) {
+  const calls=checkCalls[loadId]||[];
+  const container=document.getElementById('check-call-list');if(!container)return;
+  if(calls.length===0){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No check calls logged yet</div>';return;}
+  const statusColors={'On Time':'var(--green)','Delayed':'var(--amber)','Issue':'var(--red)'};
+  const statusIcons={'On Time':'✅','Delayed':'⚠️','Issue':'🔴'};
+  const classMap={'On Time':'','Delayed':'delayed','Issue':'issue'};
+  container.innerHTML=calls.map(c=>`<div class="check-call-item ${classMap[c.status]}"><div class="check-call-header"><span class="check-call-time">${new Date(c.timestamp).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span><span class="check-call-status" style="color:${statusColors[c.status]}">${statusIcons[c.status]} ${c.status}</span></div>${c.city?`<div class="check-call-location">📍 ${c.city}${c.state?', '+c.state:''}</div>`:''}<div class="check-call-meta">${c.contact?'👤 '+c.contact:''}${c.eta?' &nbsp;·&nbsp; 🕐 ETA: '+new Date(c.eta).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>${c.notes?`<div class="check-call-notes">"${c.notes}"</div>`:''}</div>`).join('');
+}
+
+// ── RATE CON ──────────────────────────────────────────────────
+function toggleRateCon() {
+  const preview=document.getElementById('rate-con-preview-area');
+  const collapsed=document.getElementById('rate-con-collapsed');
+  if(preview.style.display==='none'){buildRateCon();preview.style.display='block';if(collapsed)collapsed.style.display='none';}
+  else{preview.style.display='none';if(collapsed)collapsed.style.display='block';}
+}
+
+function buildRateCon() {
+  const l=allLoads.find(x=>x.id===currentDetailLoadId);if(!l)return;
+  const carrier=allCarriers.find(c=>c.id===l.carrier_id);
+  const customer=allCustomers.find(c=>c.id===l.customer_id);
+  const rcNum='RC-'+l.load_number;
+  const today=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const el=document.getElementById('rate-con-content');if(!el)return;
+  el.innerHTML=`<div class="rate-con-header"><div><div class="rate-con-logo">Freight<span>Flow</span></div><div style="font-size:11px;color:#666;margin-top:4px;">Transportation Management System</div></div><div><div class="rate-con-title">RATE CONFIRMATION</div><div class="rate-con-num">${rcNum} · ${today}</div></div></div><div class="rate-con-grid"><div class="rate-con-section"><div class="rate-con-section-title">Carrier Information</div><div class="rate-con-field"><span class="rate-con-field-label">Carrier</span><span class="rate-con-field-val">${carrier?.name||'TBD'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">MC #</span><span class="rate-con-field-val">${carrier?.mc_number||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">DOT #</span><span class="rate-con-field-val">${carrier?.dot_number||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Phone</span><span class="rate-con-field-val">${carrier?.phone||'—'}</span></div></div><div class="rate-con-section"><div class="rate-con-section-title">Load Info</div><div class="rate-con-field"><span class="rate-con-field-label">Load #</span><span class="rate-con-field-val">${l.load_number}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Customer</span><span class="rate-con-field-val">${customer?.name||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Equipment</span><span class="rate-con-field-val">${l.equipment_type||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Weight</span><span class="rate-con-field-val">${l.weight?Number(l.weight).toLocaleString()+' lbs':'—'}</span></div></div><div class="rate-con-section"><div class="rate-con-section-title">Pickup</div><div class="rate-con-field"><span class="rate-con-field-label">Origin</span><span class="rate-con-field-val">${l.origin_city||'—'}, ${l.origin_state||''}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Date</span><span class="rate-con-field-val">${fmtDate(l.pickup_date)}</span></div></div><div class="rate-con-section"><div class="rate-con-section-title">Delivery</div><div class="rate-con-field"><span class="rate-con-field-label">Destination</span><span class="rate-con-field-val">${l.destination_city||'—'}, ${l.destination_state||''}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Date</span><span class="rate-con-field-val">${fmtDate(l.delivery_date)}</span></div></div></div><div class="rate-con-total"><div><div class="rate-con-total-label">Carrier Pay</div><div style="font-size:11px;color:#94a3b8;">All-in rate</div></div><div class="rate-con-total-val">${fmt$(l.carrier_pay)}</div></div><div class="rate-con-terms">Carrier agrees to transport the above shipment in full compliance with all applicable DOT regulations. Payment processed upon receipt of signed BOL and POD. Carrier shall not re-broker without prior written consent.</div><div class="rate-con-sig"><div class="rate-con-sig-box">Broker Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div><div class="rate-con-sig-box">Carrier Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div></div>`;
+}
+
+function printRateCon() {
+  buildRateCon();
+  const rcContent = document.getElementById('rate-con-content')?.innerHTML || '';
+  const printWin = window.open('', '_blank', 'width=800,height=900');
+  if (!printWin) { toast('Please allow popups to print', 'error'); return; }
+  const rcStyles = 'body{font-family:Arial,sans-serif;margin:0;padding:20px;}.rate-con-header{display:flex;justify-content:space-between;border-bottom:3px solid #1B2A4A;padding-bottom:16px;margin-bottom:20px;}.rate-con-logo{font-size:22px;font-weight:900;color:#1B2A4A;}.rate-con-logo span{color:#2563EB;}.rate-con-title{font-size:18px;font-weight:800;color:#1B2A4A;text-align:right;}.rate-con-num{font-size:11px;color:#666;text-align:right;}.rate-con-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}.rate-con-section{border:1px solid #e2e8f0;border-radius:8px;padding:12px;}.rate-con-section-title{font-size:10px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:8px;}.rate-con-field{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f1f5f9;}.rate-con-field:last-child{border-bottom:none;}.rate-con-field-label{color:#666;}.rate-con-field-val{font-weight:600;}.rate-con-total{background:#1B2A4A;color:white;border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}.rate-con-total-label{font-size:13px;font-weight:600;}.rate-con-total-val{font-size:22px;font-weight:900;color:#60A5FA;}.rate-con-terms{font-size:11px;color:#666;line-height:1.6;border-top:1px solid #e2e8f0;padding-top:12px;}.rate-con-sig{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;}.rate-con-sig-box{border-top:1px solid #1a1a1a;padding-top:6px;font-size:10px;color:#666;}@media print{body{margin:0;}}';
+  printWin.document.write('<!DOCTYPE html><html><head><title>Rate Confirmation</title><style>' + rcStyles + '</style></head><body>' + rcContent + '>');
+  printWin.document.close();
+  setTimeout(() => { printWin.focus(); printWin.print(); }, 500);
+}
+
+// ── CRM ───────────────────────────────────────────────────────
+const PIPELINE_STAGES = ['New Lead','Contacted','Qualified','Proposal Sent','Converted'];
+const STAGE_COLORS = {'New Lead':'var(--text3)','Contacted':'var(--accent)','Qualified':'var(--amber)','Proposal Sent':'var(--purple)','Converted':'var(--green)'};
+
+async function renderCRM() {
+  const {data} = await db.from('crm_leads').select('*').order('created_at',{ascending:false});
+  allLeads = data||[];
+  const today = new Date().toISOString().split('T')[0];
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setEl('crm-total',allLeads.length);
+  setEl('crm-active',allLeads.filter(l=>l.pipeline_stage!=='Converted').length);
+  setEl('crm-converted',allLeads.filter(l=>l.pipeline_stage==='Converted').length);
+  setEl('crm-followups',allLeads.filter(l=>l.next_followup===today).length);
+  setEl('crm-loads',allLeads.reduce((s,l)=>s+(l.estimated_loads_month||0),0));
+  if(crmView==='board') renderCRMBoard(); else renderCRMList();
+}
+
+function renderCRMBoard() {
+  const el=document.getElementById('crm-pipeline');if(!el)return;
+  el.innerHTML=PIPELINE_STAGES.map(stage=>{
+    const leads=allLeads.filter(l=>l.pipeline_stage===stage);
+    const cards=leads.length===0?`<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No leads</div>`:leads.map(l=>`<div class="crm-card" onclick="editLead('${l.id}')"><div class="crm-card-company">${l.company_name}</div><div class="crm-card-contact">${l.contact_name||'—'} ${l.phone?'· '+l.phone:''}</div><div class="crm-card-meta"><span class="priority-${(l.priority||'medium').toLowerCase()}">● ${l.priority||'Medium'}</span><span>${l.estimated_loads_month?l.estimated_loads_month+' loads/mo':''}</span></div>${l.next_followup?`<div style="margin-top:6px;font-size:10px;color:var(--accent2);">📅 ${fmtDate(l.next_followup)}</div>`:''}</div>`).join('');
+    return `<div class="pipeline-col"><div class="pipeline-col-header" style="color:${STAGE_COLORS[stage]}">${stage}<span class="pipeline-count">${leads.length}</span></div>${cards}</div>`;
+  }).join('');
+}
+
+function renderCRMList() {
+  const el=document.getElementById('crm-list-body');if(!el)return;
+  if(allLeads.length===0){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🎯</div><p>No leads yet.</p></div>`;return;}
+  el.innerHTML=`<table class="table"><thead><tr><th>Company</th><th>Contact</th><th>Phone</th><th>Stage</th><th>Priority</th><th>Est. Loads</th><th>Follow-up</th><th></th></tr></thead><tbody>${allLeads.map(l=>`<tr onclick="editLead('${l.id}')"><td><strong>${l.company_name}</strong></td><td>${l.contact_name||'—'}</td><td>${l.phone||'—'}</td><td><span style="color:${STAGE_COLORS[l.pipeline_stage]};font-weight:600;font-size:12px;">● ${l.pipeline_stage}</span></td><td class="priority-${(l.priority||'medium').toLowerCase()}">${l.priority||'Medium'}</td><td>${l.estimated_loads_month||'—'}</td><td style="font-size:12px;">${l.next_followup?fmtDate(l.next_followup):'—'}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLead('${l.id}')">✕</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+function switchCrmView(view) {
+  crmView=view;
+  document.getElementById('crm-board-view').style.display=view==='board'?'block':'none';
+  document.getElementById('crm-list-view').style.display=view==='list'?'block':'none';
+  ['board','list'].forEach(v=>{const btn=document.getElementById('crm-view-'+v);if(btn){btn.style.background=v===view?'var(--accent-dim)':'transparent';btn.style.color=v===view?'var(--accent2)':'var(--text2)';}});
+  if(view==='board')renderCRMBoard();else renderCRMList();
+}
+
+async function saveLead() {
+  const id=document.getElementById('lead-id')?.value;
+  const payload={company_name:document.getElementById('lead-company')?.value,contact_name:document.getElementById('lead-contact')?.value,email:document.getElementById('lead-email')?.value,phone:document.getElementById('lead-phone')?.value,city:document.getElementById('lead-city')?.value,state:document.getElementById('lead-state')?.value?.toUpperCase(),pipeline_stage:document.getElementById('lead-stage')?.value,priority:document.getElementById('lead-priority')?.value,estimated_loads_month:document.getElementById('lead-loads')?.value||null,source:document.getElementById('lead-source')?.value,next_followup:document.getElementById('lead-followup')?.value||null,assigned_to:document.getElementById('lead-assigned')?.value,notes:document.getElementById('lead-notes')?.value};
+  const {error}=id?await db.from('crm_leads').update(payload).eq('id',id):await db.from('crm_leads').insert(payload);
+  if(error){toast('Error: '+error.message,'error');return;}
+  toast(id?'Lead updated!':'Lead added!','success');closeModal('lead');renderCRM();
+}
+
+function editLead(id) {
+  const l=allLeads.find(x=>x.id===id);if(!l)return;
+  const setVal=(elId,val)=>{const el=document.getElementById(elId);if(el)el.value=val||'';};
+  setVal('lead-id',l.id);setVal('lead-company',l.company_name);setVal('lead-contact',l.contact_name);setVal('lead-email',l.email);setVal('lead-phone',l.phone);setVal('lead-city',l.city);setVal('lead-state',l.state);setVal('lead-stage',l.pipeline_stage||'New Lead');setVal('lead-priority',l.priority||'Medium');setVal('lead-loads',l.estimated_loads_month);setVal('lead-source',l.source||'Cold Call');setVal('lead-followup',l.next_followup);setVal('lead-assigned',l.assigned_to);setVal('lead-notes',l.notes);
+  openModal('lead');
+}
+
+async function deleteLead(id) {
+  if(!confirm('Delete this lead?'))return;
+  await db.from('crm_leads').delete().eq('id',id);
+  toast('Lead deleted','info');renderCRM();
+}
+
+// ── CUSTOMER PORTAL ───────────────────────────────────────────
+function openCustomerPortal(customerId) {
+  const portal=document.getElementById('customer-portal');if(portal)portal.classList.add('visible');
+  const customer=customerId?allCustomers.find(c=>c.id===customerId):allCustomers[0];
+  if(!customer){const el=document.getElementById('portal-company-name');if(el)el.textContent='No customers found';return;}
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setEl('portal-company-name','Welcome, '+customer.name);
+  setEl('portal-user-name',customer.contact_name||customer.name);
+  const customerLoads=allLoads.filter(l=>l.customer_id===customer.id);
+  const customerInvoices=allInvoices.filter(i=>i.customer_id===customer.id&&i.status!=='Paid');
+  setEl('portal-active',customerLoads.filter(l=>l.status!=='Delivered').length);
+  setEl('portal-delivered',customerLoads.filter(l=>l.status==='Delivered').length);
+  setEl('portal-invoices',customerInvoices.length);
+  setEl('portal-due',fmt$(customerInvoices.reduce((s,i)=>s+(Number(i.amount)||0),0)));
+  const statusMap={'Available':{class:'available',label:'📋 Available'},'Assigned':{class:'assigned',label:'✅ Assigned'},'In Transit':{class:'transit',label:'🚛 In Transit'},'Delivered':{class:'delivered',label:'📦 Delivered'}};
+  const loadsEl=document.getElementById('portal-loads-list');
+  if(loadsEl)loadsEl.innerHTML=customerLoads.length===0?'<p style="color:#64748b;font-size:13px;text-align:center;padding:20px;">No loads found.</p>':customerLoads.map(l=>{const s=statusMap[l.status]||statusMap['Available'];return `<div class="portal-load-card"><div><div class="portal-load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div><div class="portal-load-meta">Load ${l.load_number} · ${l.equipment_type||'Dry Van'} · Pickup: ${fmtDate(l.pickup_date)}</div></div><span class="portal-status ${s.class}">${s.label}</span></div>`;}).join('');
+  const invEl=document.getElementById('portal-invoices-list');
+  if(invEl)invEl.innerHTML=allInvoices.filter(i=>i.customer_id===customer.id).length===0?'<p style="color:#64748b;font-size:13px;text-align:center;padding:20px;">No invoices found.</p>':allInvoices.filter(i=>i.customer_id===customer.id).map(i=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f1f5f9;"><div><div style="font-size:13px;font-weight:600;color:#1B2A4A;">${i.invoice_number}</div><div style="font-size:11px;color:#64748b;">Due: ${fmtDate(i.due_date)} · ${i.status}</div></div><div style="display:flex;align-items:center;gap:10px;"><div style="font-size:15px;font-weight:700;color:#1B2A4A;">${fmt$(i.amount)}</div>${i.status!=='Paid'?'<button style="background:#2563EB;color:white;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;">Pay Now</button>':'<span style="color:#10b981;font-weight:600;font-size:12px;">✓ Paid</span>'}</div></div>`).join('');
+}
+
+function closeCustomerPortal(){const p=document.getElementById('customer-portal');if(p)p.classList.remove('visible');}
+
+// ── USER MANAGEMENT ───────────────────────────────────────────
+const ROLES_CONFIG = {
+  admin:{label:'Admin',color:'role-admin',desc:'Full access'},
+  dispatcher:{label:'Dispatcher',color:'role-dispatcher',desc:'Create and manage loads'},
+  accounting:{label:'Accounting',color:'role-accounting',desc:'Invoices and billing'},
+  readonly:{label:'Read-Only',color:'role-readonly',desc:'View only'},
+  sales:{label:'Sales',color:'role-sales',desc:'CRM and customers'},
+};
+
+async function renderUsersPage() {
+  const {data} = await db.from('user_profiles').select('*').order('created_at',{ascending:false});
+  const users = data&&data.length>0?data:[{id:currentUser?.id,full_name:currentUser?.user_metadata?.full_name||currentUser?.email?.split('@')[0],email:currentUser?.email,role:currentUser?.user_metadata?.role||'admin',status:'active',created_at:currentUser?.created_at}];
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setEl('u-total',users.length);setEl('u-active',users.filter(u=>u.status!=='inactive').length);setEl('u-admins',users.filter(u=>u.role==='admin').length);setEl('u-lastlogin','Today');
+  const body=document.getElementById('users-page-body');if(!body)return;
+  body.innerHTML=`<table class="table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Added</th><th>Actions</th></tr></thead><tbody>${users.map(u=>{const role=ROLES_CONFIG[u.role]||ROLES_CONFIG.dispatcher;const isMe=u.email===currentUser?.email;return `<tr><td><div style="display:flex;align-items:center;gap:10px;"><div class="user-avatar" style="width:34px;height:34px;font-size:12px;flex-shrink:0;">${(u.full_name||u.email||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}</div><div><div style="font-weight:600;color:var(--text);font-size:13px;">${u.full_name||'—'} ${isMe?'<span style="font-size:10px;color:var(--text3);">(you)</span>':''}</div><div style="font-size:11px;color:var(--text3);">${u.email}</div></div></div></td><td><span class="user-role-badge ${role.color}">${role.label}</span></td><td>${statusBadge(u.status==='inactive'?'Inactive':'Active')}</td><td style="font-size:12px;color:var(--text3);">${u.created_at?new Date(u.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'}):'—'}</td><td>${!isMe?`<div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}','${u.full_name||''}','${u.email}','${u.role}')">Edit</button><button class="btn btn-ghost btn-sm" onclick="toggleUserStatus('${u.id}','${u.status||'active'}')" style="color:${u.status==='inactive'?'var(--green)':'var(--red)'};">${u.status==='inactive'?'Activate':'Deactivate'}</button></div>`:'<span style="font-size:11px;color:var(--text3);">Current user</span>'}</td></tr>`;}).join('')}</tbody></table>`;
+}
+
+function editUser(id,name,email,role){
+  document.getElementById('cu-name').value=name;document.getElementById('cu-email').value=email;document.getElementById('cu-password').value='';document.getElementById('cu-role').value=role;openModal('create-user');
+}
+
+async function toggleUserStatus(id,currentStatus){
+  const newStatus=currentStatus==='inactive'?'active':'inactive';
+  await db.from('user_profiles').update({status:newStatus}).eq('id',id);
+  toast('User '+(newStatus==='inactive'?'deactivated':'activated'),'success');renderUsersPage();
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────
+const PERM_MODULES=[
+  {id:'dashboard',icon:'⬛',name:'Dashboard',desc:'KPIs, profitability, alerts'},
+  {id:'dispatch',icon:'📋',name:'Dispatch Board',desc:'Live load kanban board'},
+  {id:'loads',icon:'📦',name:'Load Management',desc:'Create, edit, manage loads'},
+  {id:'crm',icon:'🎯',name:'CRM',desc:'Lead pipeline and contacts'},
+  {id:'carriers',icon:'🚚',name:'Carriers',desc:'Carrier network and vetting'},
+  {id:'customers',icon:'🏢',name:'Customers',desc:'Shipper account management'},
+  {id:'invoices',icon:'🧾',name:'Invoicing',desc:'Invoices, payments, quick pay'},
+  {id:'reports',icon:'📊',name:'Reports',desc:'Revenue, GP%, analytics'},
+  {id:'users',icon:'👥',name:'Users',desc:'Admin only — cannot change',locked:true},
+  {id:'settings',icon:'⚙️',name:'Company Settings',desc:'Admin only — cannot change',locked:true},
+];
+
+const PERM_ROLES_DEF={
+  dispatcher:{desc:'Manages loads and dispatch operations',defaults:{dashboard:'full',dispatch:'full',loads:'full',crm:'hidden',carriers:'full',customers:'view',invoices:'view',reports:'view',users:'hidden',settings:'hidden'}},
+  accounting:{desc:'Handles invoicing and financial reporting',defaults:{dashboard:'view',dispatch:'hidden',loads:'view',crm:'hidden',carriers:'view',customers:'view',invoices:'full',reports:'full',users:'hidden',settings:'hidden'}},
+  sales:{desc:'Focuses on CRM and customer development',defaults:{dashboard:'view',dispatch:'hidden',loads:'view',crm:'full',carriers:'hidden',customers:'full',invoices:'hidden',reports:'view',users:'hidden',settings:'hidden'}},
+  readonly:{desc:'View-only access across all modules',defaults:{dashboard:'view',dispatch:'view',loads:'view',crm:'view',carriers:'view',customers:'view',invoices:'view',reports:'view',users:'hidden',settings:'hidden'}},
+};
+
+function initRolePerms(){Object.keys(PERM_ROLES_DEF).forEach(r=>{rolePerms[r]={...PERM_ROLES_DEF[r].defaults};savedRolePerms[r]={...PERM_ROLES_DEF[r].defaults};});}
+
+function renderSettings(){switchSettingsTab('profile');}
+
+function switchSettingsTab(tab){
+  ['profile','branding','permissions','subscription'].forEach(t=>{const el=document.getElementById('stab-'+t);if(el)el.style.display=t===tab?'block':'none';});
+  document.querySelectorAll('.settings-tab').forEach((el,i)=>{const tabs=['profile','branding','permissions','subscription'];el.classList.toggle('active',tabs[i]===tab);});
+  if(tab==='permissions')renderPermMatrix();
+}
+
+async function saveCompanySettings(){toast('Company settings saved!','success');}
+
+function selectPermRole(role){
+  activePermRole=role;
+  document.querySelectorAll('.role-tab-btn').forEach(btn=>btn.classList.remove('active'));
+  const activeBtn=document.getElementById('rtab-'+role);if(activeBtn)activeBtn.classList.add('active');
+  const descEl=document.getElementById('perm-role-desc');if(descEl)descEl.textContent=PERM_ROLES_DEF[role]?.desc||'';
+  renderPermMatrix();updatePermChangeCount();
+}
+
+function renderPermMatrix(){
+  const el=document.getElementById('perm-matrix-body');if(!el)return;
+  const perms=rolePerms[activePermRole]||{};
+  el.innerHTML=PERM_MODULES.map(mod=>{
+    if(mod.locked)return `<tr><td><div class="perm-module-cell" style="opacity:0.45;"><div class="perm-module-icon">${mod.icon}</div><div><div class="perm-module-name">${mod.name}</div><div class="perm-module-desc">${mod.desc}</div></div></div></td><td colspan="3"><div class="perm-lock">🔒 Admin Only</div></td></tr>`;
+    const cur=perms[mod.id]||'hidden';
+    return `<tr><td><div class="perm-module-cell"><div class="perm-module-icon">${mod.icon}</div><div><div class="perm-module-name">${mod.name}</div><div class="perm-module-desc">${mod.desc}</div></div></div></td><td><div class="perm-btn-group"><button class="perm-option ${cur==='full'?'sel-full':''}" onclick="setPerm('${mod.id}','full',this)">✅ Full</button></div></td><td><div class="perm-btn-group"><button class="perm-option ${cur==='view'?'sel-view':''}" onclick="setPerm('${mod.id}','view',this)">👁 View</button></div></td><td><div class="perm-btn-group"><button class="perm-option ${cur==='hidden'?'sel-hidden':''}" onclick="setPerm('${mod.id}','hidden',this)">— Hide</button></div></td></tr>`;
+  }).join('');
+}
+
+function setPerm(moduleId,level,btn){
+  rolePerms[activePermRole][moduleId]=level;
+  btn.closest('tr').querySelectorAll('.perm-option').forEach(b=>b.classList.remove('sel-full','sel-view','sel-hidden'));
+  btn.classList.add('sel-'+level);updatePermChangeCount();
+}
+
+function updatePermChangeCount(){
+  let changes=0;PERM_MODULES.forEach(mod=>{if(!mod.locked&&rolePerms[activePermRole][mod.id]!==savedRolePerms[activePermRole][mod.id])changes++;});
+  const countEl=document.getElementById('perm-change-count');const textEl=document.getElementById('perm-change-text');if(!countEl)return;
+  if(changes===0){countEl.textContent='No changes';countEl.style.color='var(--text3)';if(textEl)textEl.textContent='— permissions are up to date';}
+  else{countEl.textContent=`${changes} change${changes>1?'s':''} pending`;countEl.style.color='var(--amber)';if(textEl)textEl.textContent=`for ${activePermRole} role — save to apply`;}
+}
+
+function resetPermissions(){rolePerms[activePermRole]={...PERM_ROLES_DEF[activePermRole].defaults};renderPermMatrix();updatePermChangeCount();}
+function savePermissions(){savedRolePerms[activePermRole]={...rolePerms[activePermRole]};updatePermChangeCount();toast('Permissions saved for '+activePermRole+' role!','success');}
+
+// ── THEME ─────────────────────────────────────────────────────
+function applyTheme(){
+  if(isLightMode){document.body.classList.add('light-mode');const i=document.getElementById('theme-icon');const l=document.getElementById('theme-label');if(i)i.textContent='🌙';if(l)l.textContent='Dark';}
+  else{document.body.classList.remove('light-mode');const i=document.getElementById('theme-icon');const l=document.getElementById('theme-label');if(i)i.textContent='☀️';if(l)l.textContent='Light';}
+}
+function toggleTheme(){isLightMode=!isLightMode;localStorage.setItem('ff-theme',isLightMode?'light':'dark');applyTheme();}
+
+// ── MOBILE ────────────────────────────────────────────────────
+function toggleMobileMenu(){const s=document.querySelector('.sidebar');const o=document.getElementById('mobileOverlay');if(s)s.classList.toggle('mobile-open');if(o)o.classList.toggle('visible');}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+const pageConfig={
+  dashboard:{title:'Dashboard',sub:'Live overview of your brokerage',btn:'+ New Load',btnAction:"openModal('load')"},
+  dispatch:{title:'Dispatch Board',sub:'Live load status board',btn:'+ New Load',btnAction:"openModal('load')"},
+  loads:{title:'Load Management',sub:'All loads in the system',btn:'+ New Load',btnAction:"openModal('load')"},
+  carriers:{title:'Carrier Network',sub:'Your carrier relationships',btn:'+ Add Carrier',btnAction:"openModal('carrier')"},
+  customers:{title:'Customers',sub:'Shipper accounts',btn:'+ Add Customer',btnAction:"openModal('customer')"},
+  invoices:{title:'Invoicing',sub:'Receivables and carrier payments',btn:'+ Create Invoice',btnAction:"openModal('invoice')"},
+  reports:{title:'Reports & Analytics',sub:'Performance insights',btn:'Refresh',btnAction:'loadData()'},
+  users:{title:'User Management',sub:'Manage your team and permissions',btn:'+ Add User',btnAction:"openModal('create-user')"},
+  settings:{title:'Company Settings',sub:'Branding, profile and subscription',btn:'Save Changes',btnAction:'saveCompanySettings()'},
+  crm:{title:'CRM — Pipeline',sub:'Lead tracking and sales pipeline',btn:'+ New Lead',btnAction:"openModal('lead')"},
+};
+
+function switchPage(id){
+  currentPage=id;
+  document.querySelectorAll('.content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const page=document.getElementById('page-'+id);if(page)page.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el=>{if(el.getAttribute('onclick')?.includes("'"+id+"'"))el.classList.add('active');});
+  const cfg=pageConfig[id];
+  if(cfg){
+    const pt=document.getElementById('pageTitle');if(pt)pt.textContent=cfg.title;
+    const ps=document.getElementById('pageSub');if(ps)ps.textContent=cfg.sub;
+    const btn=document.getElementById('primaryBtn');if(btn){btn.textContent=cfg.btn;btn.setAttribute('onclick',cfg.btnAction);}
+  }
+  renderCurrentPage();
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+async function checkAuth(){
+  const {data:{session}}=await db.auth.getSession();
+  if(session?.user){await onSignedIn(session.user);}
+  else{const o=document.getElementById('auth-overlay');if(o)o.classList.add('visible');}
+}
+
+async function onSignedIn(user){
+  currentUser=user;
+  currentUserRole=user.user_metadata?.role||'dispatcher';
+  const o=document.getElementById('auth-overlay');if(o)o.classList.remove('visible');
+  updateSidebarUser(user);
+  await loadData();
+  applyRolePermissions();
+}
+
+function updateSidebarUser(user){
+  const card=document.getElementById('sidebar-user-card');if(card)card.style.display='flex';
+  const avatar=document.getElementById('sidebar-avatar');
+  const username=document.getElementById('sidebar-username');
+  const roleBadge=document.getElementById('sidebar-role-badge');
+  const name=user.user_metadata?.full_name||user.email.split('@')[0];
+  const initials=name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+  if(avatar)avatar.textContent=initials;
+  if(username)username.textContent=name;
+  const role=user.user_metadata?.role||'dispatcher';
+  if(roleBadge)roleBadge.innerHTML=`<span class="user-role-badge role-${role}">${role}</span>`;
+}
+
+function applyRolePermissions(){
+  const role=currentUserRole;
+  if(role!=='admin'){document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');}
+  if(role==='accounting'){['dispatch','loads','carriers'].forEach(page=>{document.querySelectorAll('.nav-item').forEach(el=>{if(el.getAttribute('onclick')?.includes("'"+page+"'"))el.style.display='none';});});}
+  if(role==='sales'){['dispatch','invoices'].forEach(page=>{document.querySelectorAll('.nav-item').forEach(el=>{if(el.getAttribute('onclick')?.includes("'"+page+"'"))el.style.display='none';});});}
+  if(role==='readonly'){document.querySelectorAll('.btn-primary').forEach(btn=>{if(btn.id!=='primaryBtn')btn.style.display='none';});const pb=document.getElementById('primaryBtn');if(pb)pb.style.display='none';}
+}
+
+async function signIn(){
+  const email=document.getElementById('login-email')?.value?.trim();
+  const password=document.getElementById('login-password')?.value;
+  const btn=document.getElementById('login-btn');
+  const errorEl=document.getElementById('login-error');
+  const debugLog=document.getElementById('debug-log');
+  if(!email||!password){if(errorEl){errorEl.textContent='Please enter your email and password.';errorEl.classList.add('visible');}return;}
+  if(btn){btn.disabled=true;btn.textContent='Signing in…';}
+  if(errorEl)errorEl.classList.remove('visible');
+  if(debugLog){debugLog.style.display='block';debugLog.innerHTML='⏳ Connecting…<br>';}
+  try{
+    const {data,error}=await db.auth.signInWithPassword({email,password});
+    if(debugLog)debugLog.innerHTML+=`📦 Response: ${error?'Error':'OK'}<br>`;
+    if(error){
+      if(errorEl){errorEl.textContent=error.message==='Invalid login credentials'?'Incorrect email or password.':error.message;errorEl.classList.add('visible');}
+      if(debugLog)debugLog.innerHTML+=`❌ ${error.message}<br>`;
+      if(btn){btn.disabled=false;btn.textContent='Sign In →';}return;
+    }
+    if(data?.user){if(debugLog)debugLog.innerHTML+=`✅ Signed in!<br>`;await onSignedIn(data.user);}
+  }catch(e){
+    if(errorEl){errorEl.textContent='Connection error: '+e.message;errorEl.classList.add('visible');}
+    if(btn){btn.disabled=false;btn.textContent='Sign In →';}
+  }
+}
+
+async function signOut(){await db.auth.signOut();currentUser=null;const card=document.getElementById('sidebar-user-card');if(card)card.style.display='none';const o=document.getElementById('auth-overlay');if(o)o.classList.add('visible');toast('Signed out','info');}
+function showUserMenu(){if(confirm('Sign out of FreightFlow?'))signOut();}
+
+async function createUser(){
+  const name=document.getElementById('cu-name')?.value?.trim();
+  const email=document.getElementById('cu-email')?.value?.trim();
+  const password=document.getElementById('cu-password')?.value;
+  const role=document.getElementById('cu-role')?.value;
+  const errorEl=document.getElementById('create-user-error');
+  const successEl=document.getElementById('create-user-success');
+  if(errorEl)errorEl.classList.remove('visible');if(successEl)successEl.classList.remove('visible');
+  if(!name||!email||!password){if(errorEl){errorEl.textContent='Please fill in all fields.';errorEl.classList.add('visible');}return;}
+  const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name:name,role}}});
+  if(error){if(errorEl){errorEl.textContent=error.message;errorEl.classList.add('visible');}return;}
+  if(data?.user)await db.from('user_profiles').insert({id:data.user.id,full_name:name,email,role,status:'active'});
+  if(successEl){successEl.textContent=`✅ User "${name}" created! They can log in with ${email}.`;successEl.classList.add('visible');}
+  document.getElementById('cu-name').value='';document.getElementById('cu-email').value='';document.getElementById('cu-password').value='';
+  toast('User created!','success');if(currentPage==='users')renderUsersPage();
+}
+
+// ── BOOT ──────────────────────────────────────────────────────
+applyTheme();
+initRolePerms();
+checkAuth();
+</script>
+
+</body></html>
