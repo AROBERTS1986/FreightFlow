@@ -2692,10 +2692,6 @@ function openLoadDetail(loadId) {
   renderCheckCalls(loadId);
   closeCheckCallForm();
   openModal('detail');
-  setTimeout(() => {
-    renderDetailDocs(loadId);
-    renderDetailAccessorials(loadId);
-  }, 200);
 }
 
 async function updateLoadStatus(newStatus) {
@@ -3556,4 +3552,506 @@ function buildInvoiceTable(invoices) {
 }
 
 // ── INVOICE QUEUE ─────────────────────────────────────────────
->
+
+async function saveLoadTemplate() {
+  const loadId = document.getElementById('lt-load-id')?.value;
+  const name = document.getElementById('lt-name')?.value?.trim();
+  if(!name) { toast('Please enter a template name', 'error'); return; }
+
+  const load = allLoads.find(l => l.id === loadId);
+  if(!load) { toast('Load not found', 'error'); return; }
+
+  const { error } = await db.from('load_templates').insert({
+    name,
+    origin_city: load.origin_city,
+    origin_state: load.origin_state,
+    destination_city: load.destination_city,
+    destination_state: load.destination_state,
+    equipment_type: load.equipment_type,
+    commodity: load.commodity,
+    customer_id: load.customer_id,
+    customer_rate: load.customer_rate,
+    carrier_pay: load.carrier_pay,
+    created_by: currentUser?.user_metadata?.full_name || currentUser?.email,
+  });
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+
+  toast(`Template "${name}" saved!`, 'success');
+  closeModal('load-template');
+  loadLoadTemplates();
+}
+
+async function loadLoadTemplates() {
+  const { data } = await db.from('load_templates').select('*, customers(name)').order('created_at', {ascending:false});
+  allLoadTemplates = data || [];
+  renderTemplatesPanel();
+}
+
+function renderTemplatesPanel() {
+  const el = document.getElementById('templates-list-panel');
+  if(!el) return;
+  if(allLoadTemplates.length === 0) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px;">No templates yet — open a load and click "Save Template"</div>';
+    return;
+  }
+  el.innerHTML = allLoadTemplates.map(t => `
+    <div class="template-load-card" onclick="createLoadFromTemplate('${t.id}')">
+      <div style="font-size:22px;">📋</div>
+      <div style="flex:1;">
+        <div class="template-load-route">${t.name}</div>
+        <div class="template-load-meta">${t.origin_city||'?'}, ${t.origin_state||''} → ${t.destination_city||'?'}, ${t.destination_state||''} · ${t.equipment_type||'Dry Van'} · ${fmt$(t.customer_rate)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteTemplate('${t.id}')">✕</button>
+    </div>`).join('');
+}
+
+function showLoadTemplates() {
+  const panel = document.getElementById('load-templates-panel');
+  if(!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if(panel.style.display === 'block') loadLoadTemplates();
+}
+
+async function createLoadFromTemplate(templateId) {
+  const t = allLoadTemplates.find(x => x.id === templateId);
+  if(!t) return;
+
+  // Pre-fill the new load modal
+  document.getElementById('load-id').value = '';
+  document.getElementById('load-modal-title').textContent = 'New Load from Template';
+  document.getElementById('load-origin-city').value = t.origin_city || '';
+  document.getElementById('load-origin-state').value = t.origin_state || '';
+  document.getElementById('load-dest-city').value = t.destination_city || '';
+  document.getElementById('load-dest-state').value = t.destination_state || '';
+  document.getElementById('load-equipment').value = t.equipment_type || 'Dry Van';
+  document.getElementById('load-commodity').value = t.commodity || '';
+  document.getElementById('load-customer').value = t.customer_id || '';
+  document.getElementById('load-rate').value = t.customer_rate || '';
+  document.getElementById('load-carrier-pay').value = t.carrier_pay || '';
+  document.getElementById('load-status').value = 'Available';
+
+  // Close template panel and open load modal
+  document.getElementById('load-templates-panel').style.display = 'none';
+  openModal('load');
+  toast(`Loaded template: ${t.name}`, 'info');
+}
+
+async function deleteTemplate(id) {
+  if(!confirm('Delete this template?')) return;
+  await db.from('load_templates').delete().eq('id', id);
+  toast('Template deleted', 'info');
+  loadLoadTemplates();
+}
+
+// ════════════════════════════════════════════════════════════
+// ── QUICK QUOTE TOOL ────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+function calcQuote() {
+  const rate = parseFloat(document.getElementById('qq-rate')?.value) || 0;
+  const carrierPay = parseFloat(document.getElementById('qq-carrier-pay')?.value) || 0;
+  const result = document.getElementById('qq-result');
+  if(!result) return;
+
+  if(rate > 0) {
+    result.style.display = 'block';
+    const gp = rate - carrierPay;
+    const gpPct = rate > 0 ? (gp / rate * 100) : 0;
+    const gpColor = gpPct >= 18 ? 'var(--green)' : gpPct >= 12 ? 'var(--amber)' : 'var(--red)';
+
+    const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+    setEl('qq-res-rate', fmt$(rate));
+    setEl('qq-res-carrier', fmt$(carrierPay));
+    document.getElementById('qq-res-gp').textContent = fmt$(gp);
+    document.getElementById('qq-res-gp').style.color = gpColor;
+    document.getElementById('qq-res-pct').textContent = gpPct.toFixed(1) + '%';
+    document.getElementById('qq-res-pct').style.color = gpColor;
+  } else {
+    result.style.display = 'none';
+  }
+}
+
+function createLoadFromQuote() {
+  const origin = document.getElementById('qq-origin-city')?.value;
+  const originState = document.getElementById('qq-origin-state')?.value;
+  const dest = document.getElementById('qq-dest-city')?.value;
+  const destState = document.getElementById('qq-dest-state')?.value;
+
+  if(!origin || !dest) { toast('Please enter origin and destination', 'error'); return; }
+
+  // Pre-fill load modal from quote
+  document.getElementById('load-id').value = '';
+  document.getElementById('load-modal-title').textContent = 'New Load from Quote';
+  document.getElementById('load-origin-city').value = origin;
+  document.getElementById('load-origin-state').value = originState;
+  document.getElementById('load-dest-city').value = dest;
+  document.getElementById('load-dest-state').value = destState;
+  document.getElementById('load-equipment').value = document.getElementById('qq-equipment')?.value || 'Dry Van';
+  document.getElementById('load-customer').value = document.getElementById('qq-customer')?.value || '';
+  document.getElementById('load-rate').value = document.getElementById('qq-rate')?.value || '';
+  document.getElementById('load-carrier-pay').value = document.getElementById('qq-carrier-pay')?.value || '';
+  document.getElementById('load-pickup').value = document.getElementById('qq-pickup')?.value || '';
+  document.getElementById('load-commodity').value = document.getElementById('qq-commodity')?.value || '';
+  document.getElementById('load-status').value = 'Available';
+
+  closeModal('quick-quote');
+  openModal('load');
+}
+
+function printQuote() {
+  const origin = document.getElementById('qq-origin-city')?.value;
+  const originState = document.getElementById('qq-origin-state')?.value;
+  const dest = document.getElementById('qq-dest-city')?.value;
+  const destState = document.getElementById('qq-dest-state')?.value;
+  const rate = document.getElementById('qq-rate')?.value;
+  const equipment = document.getElementById('qq-equipment')?.value;
+  const pickup = document.getElementById('qq-pickup')?.value;
+  const commodity = document.getElementById('qq-commodity')?.value;
+  const gp = (parseFloat(rate)||0) - (parseFloat(document.getElementById('qq-carrier-pay')?.value)||0);
+  const gpPct = rate > 0 ? ((gp / rate) * 100).toFixed(1) : 0;
+
+  const printWin = window.open('', '_blank', 'width=700,height=800');
+  if(!printWin) { toast('Allow popups to print', 'error'); return; }
+
+  printWin.document.write(`<!DOCTYPE html><html><head><title>Freight Quote</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:40px;color:#1a1a1a;}
+    .header{border-bottom:3px solid #1B2A4A;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;}
+    .logo{font-size:24px;font-weight:900;color:#1B2A4A;}
+    .logo span{color:#2563EB;}
+    .title{font-size:18px;font-weight:700;color:#1B2A4A;text-align:right;}
+    .section{margin-bottom:20px;}
+    .section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;}
+    .field{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;}
+    .field-label{color:#666;}
+    .field-value{font-weight:600;}
+    .total-box{background:#1B2A4A;color:white;padding:16px 20px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin:20px 0;}
+    .total-label{font-size:14px;}
+    .total-value{font-size:28px;font-weight:900;color:#60A5FA;}
+    .footer{margin-top:32px;font-size:11px;color:#888;border-top:1px solid #e2e8f0;padding-top:12px;}
+    @media print{body{padding:20px;}}
+  </style></head><body>
+  <div class="header">
+    <div class="logo">Freight<span>FlowHQ</span></div>
+    <div class="title">FREIGHT QUOTE<div style="font-size:11px;color:#888;margin-top:4px;">Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title">Shipment Details</div>
+    <div class="field"><span class="field-label">Origin</span><span class="field-value">${origin||'—'}, ${originState||''}</span></div>
+    <div class="field"><span class="field-label">Destination</span><span class="field-value">${dest||'—'}, ${destState||''}</span></div>
+    <div class="field"><span class="field-label">Equipment</span><span class="field-value">${equipment||'Dry Van'}</span></div>
+    ${pickup ? `<div class="field"><span class="field-label">Pickup Date</span><span class="field-value">${fmtDate(pickup)}</span></div>` : ''}
+    ${commodity ? `<div class="field"><span class="field-label">Commodity</span><span class="field-value">${commodity}</span></div>` : ''}
+  </div>
+  <div class="total-box">
+    <div class="total-label">All-In Rate</div>
+    <div class="total-value">$${parseFloat(rate||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+  </div>
+  <div class="footer">This quote is valid for 24 hours from the date generated. Subject to carrier availability and final confirmation. FreightFlowHQ · freightflowhq.com</div>
+  </body></html>`);
+  printWin.document.close();
+  setTimeout(() => { printWin.focus(); printWin.print(); }, 500);
+}
+
+// ════════════════════════════════════════════════════════════
+// ── INVOICE AGING REPORT ─────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+function renderInvoiceAging() {
+  const today = new Date();
+  const unpaid = allInvoices.filter(i => i.status !== 'Paid' && i.due_date);
+
+  const bands = { current:[], days30:[], days60:[], days90:[] };
+
+  unpaid.forEach(inv => {
+    const due = new Date(inv.due_date);
+    const daysOverdue = Math.floor((today - due) / 86400000);
+    if(daysOverdue <= 0) bands.current.push(inv);
+    else if(daysOverdue <= 30) bands.days30.push(inv);
+    else if(daysOverdue <= 60) bands.days60.push(inv);
+    else bands.days90.push(inv);
+  });
+
+  const bandTotal = (band) => band.reduce((s,i) => s + (Number(i.amount)||0), 0);
+  const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+
+  setEl('aging-current', fmt$(bandTotal(bands.current)));
+  setEl('aging-current-count', bands.current.length + ' invoice' + (bands.current.length !== 1 ? 's' : ''));
+  setEl('aging-30', fmt$(bandTotal(bands.days30)));
+  setEl('aging-30-count', bands.days30.length + ' invoice' + (bands.days30.length !== 1 ? 's' : ''));
+  setEl('aging-60', fmt$(bandTotal(bands.days60)));
+  setEl('aging-60-count', bands.days60.length + ' invoice' + (bands.days60.length !== 1 ? 's' : ''));
+  setEl('aging-90', fmt$(bandTotal(bands.days90)));
+  setEl('aging-90-count', bands.days90.length + ' invoice' + (bands.days90.length !== 1 ? 's' : ''));
+
+  // Show overdue detail
+  const overdue = [...bands.days30, ...bands.days60, ...bands.days90].sort((a,b) => new Date(a.due_date) - new Date(b.due_date));
+  const el = document.getElementById('aging-overdue-list');
+  if(el && overdue.length > 0) {
+    el.innerHTML = `<table class="table" style="font-size:12px;">
+      <thead><tr><th>Invoice #</th><th>Customer</th><th>Due Date</th><th>Days Overdue</th><th>Amount</th><th></th></tr></thead>
+      <tbody>${overdue.map(i => {
+        const daysOver = Math.floor((today - new Date(i.due_date)) / 86400000);
+        const color = daysOver > 60 ? 'var(--red)' : daysOver > 30 ? 'var(--amber)' : 'var(--accent2)';
+        return `<tr>
+          <td><strong>${i.invoice_number}</strong></td>
+          <td>${i.customers?.name||'—'}</td>
+          <td>${fmtDate(i.due_date)}</td>
+          <td style="color:${color};font-weight:700;">${daysOver} days</td>
+          <td style="color:var(--green);font-weight:700;">${fmt$(i.amount)}</td>
+          <td><button class="btn btn-ghost btn-sm" style="font-size:10px;" onclick="sendPaymentReminder('${i.id}')">📧 Remind</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  }
+}
+
+function sendPaymentReminder(invoiceId) {
+  const inv = allInvoices.find(i => i.id === invoiceId);
+  if(!inv) return;
+  toast(`Payment reminder sent for ${inv.invoice_number}`, 'success');
+}
+
+function exportAging() {
+  const today = new Date();
+  const unpaid = allInvoices.filter(i => i.status !== 'Paid');
+  const rows = [['Invoice #','Customer','Issued','Due Date','Days Overdue','Amount','Status']];
+  unpaid.forEach(i => {
+    const daysOver = i.due_date ? Math.max(0, Math.floor((today - new Date(i.due_date)) / 86400000)) : 0;
+    rows.push([i.invoice_number, i.customers?.name||'—', fmtDate(i.issued_date), fmtDate(i.due_date), daysOver, i.amount, i.status]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'AR_Aging_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('Aging report exported!', 'success');
+}
+
+// ── OVERRIDE renderInvoices to include aging ──────────────────
+
+// ── OVERRIDE openLoadDetail to load docs + accessorials ───────
+
+// ── POPULATE quick quote customer dropdown ────────────────────
+function populateQuoteCustomers() {
+  const sel = document.getElementById('qq-customer');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">Select customer...</option>' +
+    allCustomers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+// Override loadData to also load templates + populate quote
+
+// ── BOOT ──────────────────────────────────────────────────────
+applyTheme();
+initRolePerms();
+checkAuth();
+loadRememberedEmail();
+// Init city autocomplete after modals are in DOM
+document.addEventListener('DOMContentLoaded', initCityAutocomplete);
+setTimeout(initCityAutocomplete, 500);
+</script>
+
+
+<!-- ACCESSORIAL MODAL -->
+<div class="modal-overlay" id="modal-accessorial">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header"><div class="modal-title">Add Accessorial</div><button class="modal-close" onclick="closeModal('accessorial')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="acc-load-id"/>
+      <div class="form-grid">
+        <div class="form-group full"><label>Type</label>
+          <select id="acc-type">
+            <option>Detention</option>
+            <option>Lumper</option>
+            <option>TONU (Truck Ordered Not Used)</option>
+            <option>Layover</option>
+            <option>Fuel Surcharge</option>
+            <option>Overweight</option>
+            <option>Redelivery</option>
+            <option>Storage</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Amount ($)</label><input type="number" id="acc-amount" placeholder="150.00"/></div>
+        <div class="form-group"><label>Billable To</label>
+          <select id="acc-billable">
+            <option>Customer</option>
+            <option>Carrier</option>
+            <option>Internal</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Notes</label><textarea id="acc-notes" placeholder="Detention — driver waited 3.5 hours at shipper..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('accessorial')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAccessorial()">Add Accessorial →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARRIER SCORE MODAL -->
+<div class="modal-overlay" id="modal-carrier-score">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header"><div class="modal-title">Rate This Carrier</div><button class="modal-close" onclick="closeModal('carrier-score')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="cs-load-id"/>
+      <input type="hidden" id="cs-carrier-id"/>
+      <div style="background:var(--accent-dim);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--accent2);margin-bottom:20px;">
+        Rate this carrier on their performance for this load. Scores build their overall rating over time.
+      </div>
+      <div class="score-category">
+        <div class="score-category-label">On-Time Pickup</div>
+        <div class="score-stars" id="stars-pickup" data-category="pickup">
+          <span class="star" onclick="setScore('pickup',1)">★</span>
+          <span class="star" onclick="setScore('pickup',2)">★</span>
+          <span class="star" onclick="setScore('pickup',3)">★</span>
+          <span class="star" onclick="setScore('pickup',4)">★</span>
+          <span class="star" onclick="setScore('pickup',5)">★</span>
+        </div>
+      </div>
+      <div class="score-category">
+        <div class="score-category-label">On-Time Delivery</div>
+        <div class="score-stars" id="stars-delivery" data-category="delivery">
+          <span class="star" onclick="setScore('delivery',1)">★</span>
+          <span class="star" onclick="setScore('delivery',2)">★</span>
+          <span class="star" onclick="setScore('delivery',3)">★</span>
+          <span class="star" onclick="setScore('delivery',4)">★</span>
+          <span class="star" onclick="setScore('delivery',5)">★</span>
+        </div>
+      </div>
+      <div class="score-category">
+        <div class="score-category-label">Communication</div>
+        <div class="score-stars" id="stars-communication" data-category="communication">
+          <span class="star" onclick="setScore('communication',1)">★</span>
+          <span class="star" onclick="setScore('communication',2)">★</span>
+          <span class="star" onclick="setScore('communication',3)">★</span>
+          <span class="star" onclick="setScore('communication',4)">★</span>
+          <span class="star" onclick="setScore('communication',5)">★</span>
+        </div>
+      </div>
+      <div class="score-category">
+        <div class="score-category-label">Freight Condition</div>
+        <div class="score-stars" id="stars-condition" data-category="condition">
+          <span class="star" onclick="setScore('condition',1)">★</span>
+          <span class="star" onclick="setScore('condition',2)">★</span>
+          <span class="star" onclick="setScore('condition',3)">★</span>
+          <span class="star" onclick="setScore('condition',4)">★</span>
+          <span class="star" onclick="setScore('condition',5)">★</span>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:4px;">
+        <label>Comments</label>
+        <textarea id="cs-notes" placeholder="Any additional feedback about this carrier..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('carrier-score')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCarrierScore()">Submit Rating →</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK QUOTE MODAL -->
+<div class="modal-overlay" id="modal-quick-quote">
+  <div class="modal" style="width:580px;">
+    <div class="modal-header"><div class="modal-title">⚡ Quick Quote</div><button class="modal-close" onclick="closeModal('quick-quote')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group" style="position:relative;">
+          <label>Origin City</label>
+          <input type="text" id="qq-origin-city" placeholder="Dallas" oninput="setupCityAutocomplete('qq-origin-city','qq-origin-state')"/>
+        </div>
+        <div class="form-group"><label>State</label><input type="text" id="qq-origin-state" placeholder="TX" maxlength="2"/></div>
+        <div class="form-group" style="position:relative;">
+          <label>Destination City</label>
+          <input type="text" id="qq-dest-city" placeholder="Chicago" oninput="setupCityAutocomplete('qq-dest-city','qq-dest-state')"/>
+        </div>
+        <div class="form-group"><label>State</label><input type="text" id="qq-dest-state" placeholder="IL" maxlength="2"/></div>
+        <div class="form-group"><label>Equipment</label>
+          <select id="qq-equipment">
+            <option>Dry Van 53'</option><option>Reefer 53'</option><option>Flatbed 48'</option><option>Step Deck</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Customer</label>
+          <select id="qq-customer"><option value="">Select customer...</option></select>
+        </div>
+        <div class="form-group"><label>Market Rate (what you'll charge $)</label><input type="number" id="qq-rate" placeholder="2500" oninput="calcQuote()"/></div>
+        <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="qq-carrier-pay" placeholder="2100" oninput="calcQuote()"/></div>
+        <div class="form-group"><label>Pickup Date</label><input type="date" id="qq-pickup"/></div>
+        <div class="form-group"><label>Commodity</label><input type="text" id="qq-commodity" placeholder="General Freight"/></div>
+      </div>
+      <!-- Quote result -->
+      <div id="qq-result" style="display:none;" class="quote-calc">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">Quote Summary</div>
+        <div class="quote-result-row"><span style="color:var(--text2);">Customer Rate</span><span id="qq-res-rate" style="font-weight:600;">—</span></div>
+        <div class="quote-result-row"><span style="color:var(--text2);">Carrier Pay</span><span id="qq-res-carrier" style="color:var(--text3);">—</span></div>
+        <div class="quote-result-row"><span style="color:var(--text2);">Gross Profit</span><span id="qq-res-gp" style="color:var(--green);font-weight:700;">—</span></div>
+        <div class="quote-result-row" style="border-bottom:none;margin-top:4px;">
+          <span style="font-weight:600;color:var(--text);">GP %</span>
+          <span id="qq-res-pct" class="quote-result-total">—</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('quick-quote')">Cancel</button>
+      <button class="btn btn-ghost" onclick="createLoadFromQuote()">Create Load →</button>
+      <button class="btn btn-primary" onclick="printQuote()">Print Quote →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOAD TEMPLATE MODAL -->
+<div class="modal-overlay" id="modal-load-template">
+  <div class="modal" style="width:500px;">
+    <div class="modal-header"><div class="modal-title">Save as Template</div><button class="modal-close" onclick="closeModal('load-template')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="lt-load-id"/>
+      <div class="form-group">
+        <label>Template Name</label>
+        <input type="text" id="lt-name" placeholder="Dallas → Chicago Weekly"/>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text3);margin-top:12px;">
+        This will save the lane, equipment, customer, and rate details as a reusable template.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('load-template')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLoadTemplate()">Save Template →</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENT UPLOAD MODAL -->
+<div class="modal-overlay" id="modal-doc-upload">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header"><div class="modal-title">Upload Document</div><button class="modal-close" onclick="closeModal('doc-upload')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="doc-load-id"/>
+      <div class="form-grid">
+        <div class="form-group full"><label>Document Type</label>
+          <select id="doc-type">
+            <option>BOL (Bill of Lading)</option>
+            <option>POD (Proof of Delivery)</option>
+            <option>Rate Confirmation</option>
+            <option>Invoice</option>
+            <option>Lumper Receipt</option>
+            <option>Detention Receipt</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>File</label>
+          <input type="file" id="doc-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="padding:8px;"/>
+        </div>
+        <div class="form-group full"><label>Notes</label><textarea id="doc-notes" placeholder="Optional notes about this document..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('doc-upload')">Cancel</button>
+      <button class="btn btn-primary" onclick="uploadDocument()">Upload Document →</button>
+    </div>
+  </div>
+</div>
+
+</body></html>
