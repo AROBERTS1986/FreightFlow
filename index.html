@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>FreightFlowHQ</title>
 <meta name="description" content="FreightFlowHQ is the all-in-one logistics platform for freight brokers and asset carriers. Dispatch, CRM, invoicing, and real-time tracking in one place."/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231A56DB'/%3E%3Ctext x='20' y='27' text-anchor='middle' font-family='DM Sans,system-ui,sans-serif' font-size='16' font-weight='700' fill='white'%3EHQ%3C/text%3E%3C/svg%3E"/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
@@ -17,994 +18,221 @@
   --gold: #F0A500;
   --green: #10B981;
   --white: #FFFFFF;
-  --off: #F8FAFC;
   --gray: #94A3B8;
   --gray2: #CBD5E1;
   --border: rgba(255,255,255,0.08);
-  --border-light: rgba(0,0,0,0.08);
+  --border2: rgba(255,255,255,0.12);
 }
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--white); overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; z-index: 0; opacity: 0.4; }
 
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--navy);
-  color: var(--white);
-  overflow-x: hidden;
-}
-
-/* ── NOISE TEXTURE OVERLAY ─────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.4;
-}
-
-/* ── NAV ──────────────────────────────────────────────── */
-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 100;
-  padding: 20px 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.3s ease;
-}
-nav.scrolled {
-  background: rgba(8,15,28,0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 60px;
-}
-.nav-logo {
-  font-family: 'Instrument Serif', serif;
-  font-size: 24px;
-  color: var(--white);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+/* NAV */
+nav { position: fixed; top: 44px; left: 0; right: 0; z-index: 100; padding: 20px 60px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; }
+nav.scrolled { top: 0; background: rgba(8,15,28,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 14px 60px; }
+.nav-logo { font-family: 'Instrument Serif', serif; font-size: 24px; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 10px; }
 .nav-logo span { color: var(--blue3); }
-.nav-logo-icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--blue), var(--blue2));
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-}
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-  list-style: none;
-}
-.nav-links a {
-  color: var(--gray);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: color 0.2s;
-}
+.nav-links { display: flex; align-items: center; gap: 36px; list-style: none; }
+.nav-links a { color: var(--gray); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
 .nav-links a:hover { color: var(--white); }
-.nav-cta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.btn-nav-ghost {
-  padding: 9px 20px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--gray2);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  background: transparent;
-  text-decoration: none;
-  transition: all 0.2s;
-}
+.nav-cta { display: flex; align-items: center; gap: 12px; }
+.btn-nav-ghost { padding: 9px 20px; border: 1px solid var(--border); border-radius: 8px; color: var(--gray2); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; background: transparent; text-decoration: none; transition: all 0.2s; }
 .btn-nav-ghost:hover { border-color: var(--blue2); color: var(--white); }
-.btn-nav-primary {
-  padding: 9px 20px;
-  background: var(--blue);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-}
+.btn-nav-primary { padding: 9px 20px; background: var(--blue); border: none; border-radius: 8px; color: white; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
 .btn-nav-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
 
-/* ── HERO ─────────────────────────────────────────────── */
-.hero {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 120px 60px 80px;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Animated gradient mesh background */
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(26,86,219,0.15) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 60% at 10% 60%, rgba(96,165,250,0.08) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-/* Animated grid */
-.hero-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
-  pointer-events: none;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: rgba(26,86,219,0.12);
-  border: 1px solid rgba(59,130,246,0.25);
-  border-radius: 20px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--blue3);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-bottom: 28px;
-  animation: fadeUp 0.8s ease both;
-}
-.hero-badge::before {
-  content: '';
-  width: 6px; height: 6px;
-  background: var(--green);
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--green);
-  animation: blink 2s infinite;
-}
+/* HERO */
+.hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 140px 60px 80px; position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(26,86,219,0.15) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 50%), radial-gradient(ellipse 40% 60% at 10% 60%, rgba(96,165,250,0.08) 0%, transparent 50%); pointer-events: none; }
+.hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%); pointer-events: none; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; background: rgba(26,86,219,0.12); border: 1px solid rgba(59,130,246,0.25); border-radius: 20px; font-size: 12.5px; font-weight: 600; color: var(--blue3); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 28px; animation: fadeUp 0.8s ease both; }
+.hero-badge::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 6px var(--green); animation: blink 2s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-.hero h1 {
-  font-family: 'Instrument Serif', serif;
-  font-size: clamp(48px, 6vw, 88px);
-  font-weight: 400;
-  line-height: 1.05;
-  letter-spacing: -1px;
-  color: var(--white);
-  max-width: 900px;
-  margin-bottom: 24px;
-  animation: fadeUp 0.8s 0.1s ease both;
-}
-.hero h1 em {
-  font-style: italic;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255,255,255,0.4);
-}
+.hero h1 { font-family: 'Instrument Serif', serif; font-size: clamp(48px, 6vw, 88px); font-weight: 400; line-height: 1.05; letter-spacing: -1px; color: var(--white); max-width: 900px; margin-bottom: 24px; animation: fadeUp 0.8s 0.1s ease both; }
 .hero h1 .accent { color: var(--blue3); font-style: italic; }
-
-.hero-sub {
-  font-size: 18px;
-  color: var(--gray);
-  max-width: 560px;
-  line-height: 1.7;
-  margin-bottom: 44px;
-  font-weight: 400;
-  animation: fadeUp 0.8s 0.2s ease both;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 80px;
-  animation: fadeUp 0.8s 0.3s ease both;
-}
-.btn-hero-primary {
-  padding: 14px 32px;
-  background: var(--blue);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 8px 32px rgba(26,86,219,0.35);
-}
-.btn-hero-primary:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 40px rgba(26,86,219,0.45); }
-.btn-hero-ghost {
-  padding: 14px 28px;
-  background: transparent;
-  color: var(--gray2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.hero-sub { font-size: 18px; color: var(--gray); max-width: 560px; line-height: 1.7; margin-bottom: 44px; font-weight: 400; animation: fadeUp 0.8s 0.2s ease both; }
+.hero-actions { display: flex; gap: 14px; align-items: center; justify-content: center; margin-bottom: 80px; animation: fadeUp 0.8s 0.3s ease both; }
+.btn-hero-primary { padding: 14px 32px; background: var(--blue); color: white; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 32px rgba(26,86,219,0.35); }
+.btn-hero-primary:hover { background: #1d4ed8; transform: translateY(-2px); }
+.btn-hero-ghost { padding: 14px 28px; background: transparent; color: var(--gray2); border: 1px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
 .btn-hero-ghost:hover { border-color: rgba(255,255,255,0.2); color: var(--white); }
 
-/* App screenshot mockup */
-.hero-screenshot {
-  position: relative;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  animation: fadeUp 0.8s 0.4s ease both;
-}
-.screenshot-frame {
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.05),
-    0 40px 80px rgba(0,0,0,0.6),
-    0 0 120px rgba(26,86,219,0.12);
-}
-.screenshot-titlebar {
-  background: var(--navy3);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* SCREENSHOT */
+.hero-screenshot { position: relative; width: 100%; max-width: 1100px; margin: 0 auto; animation: fadeUp 0.8s 0.4s ease both; }
+.screenshot-frame { background: var(--navy2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 40px 80px rgba(0,0,0,0.6), 0 0 120px rgba(26,86,219,0.12); }
+.screenshot-titlebar { background: var(--navy3); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
 .titlebar-dots { display: flex; gap: 6px; }
-.titlebar-dot {
-  width: 12px; height: 12px;
-  border-radius: 50%;
-}
-.titlebar-url {
-  flex: 1;
-  background: rgba(0,0,0,0.3);
-  border-radius: 6px;
-  padding: 5px 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--gray);
-  text-align: center;
-}
-.screenshot-app {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  height: 480px;
-}
-.screenshot-sidebar {
-  background: #0D1829;
-  border-right: 1px solid var(--border);
-  padding: 16px 0;
-}
-.ss-logo {
-  padding: 8px 16px 20px;
-  font-family: 'Instrument Serif', serif;
-  font-size: 18px;
-  color: var(--white);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
-}
+.titlebar-dot { width: 12px; height: 12px; border-radius: 50%; }
+.titlebar-url { flex: 1; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 5px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gray); text-align: center; }
+.screenshot-app { display: grid; grid-template-columns: 200px 1fr; height: 480px; }
+.screenshot-sidebar { background: #0D1829; border-right: 1px solid var(--border); padding: 16px 0; }
+.ss-logo { padding: 8px 16px 20px; font-family: 'Instrument Serif', serif; font-size: 18px; color: var(--white); border-bottom: 1px solid var(--border); margin-bottom: 12px; }
 .ss-logo span { color: var(--blue3); }
-.ss-section {
-  padding: 8px 16px 4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: #334155;
-}
-.ss-item {
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #64748B;
-  cursor: pointer;
-}
-.ss-item.active {
-  background: rgba(59,130,246,0.1);
-  color: var(--blue3);
-  border-left: 2px solid var(--blue2);
-}
+.ss-section { padding: 8px 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #334155; }
+.ss-item { padding: 8px 16px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748B; cursor: pointer; }
+.ss-item.active { background: rgba(59,130,246,0.1); color: var(--blue3); border-left: 2px solid var(--blue2); }
 .ss-item-icon { font-size: 14px; width: 18px; }
-.screenshot-main {
-  background: #080F1C;
-  padding: 20px;
-  overflow: hidden;
-}
-.ss-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
+.screenshot-main { background: #080F1C; padding: 20px; overflow: hidden; }
+.ss-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .ss-title { font-family: 'Instrument Serif', serif; font-size: 20px; color: var(--white); }
-.ss-btn {
-  background: var(--blue);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ss-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.ss-kpi {
-  background: #0D1829;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
-  padding: 12px;
-  position: relative;
-  overflow: hidden;
-}
+.ss-btn { background: var(--blue); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 11px; font-weight: 600; cursor: pointer; }
+.ss-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.ss-kpi { background: #0D1829; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; position: relative; overflow: hidden; }
 .ss-kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-.ss-kpi.b::before { background: var(--blue2); }
-.ss-kpi.g::before { background: var(--green); }
-.ss-kpi.a::before { background: #f59e0b; }
-.ss-kpi.p::before { background: #8b5cf6; }
+.ss-kpi.b::before { background: var(--blue2); } .ss-kpi.g::before { background: var(--green); } .ss-kpi.a::before { background: #f59e0b; }
 .ss-kpi-label { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #475569; margin-bottom: 6px; }
 .ss-kpi-val { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--white); }
-.ss-table {
-  background: #0D1829;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.ss-table-header {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1.5fr 1fr 1fr;
-  padding: 8px 12px;
-  background: rgba(255,255,255,0.03);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
+.ss-table { background: #0D1829; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; overflow: hidden; }
+.ss-table-header { display: grid; grid-template-columns: 1fr 2fr 1.5fr 1fr 1fr; padding: 8px 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.06); }
 .ss-th { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #334155; }
-.ss-row {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1.5fr 1fr 1fr;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  align-items: center;
-}
+.ss-row { display: grid; grid-template-columns: 1fr 2fr 1.5fr 1fr 1fr; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; }
 .ss-row:last-child { border-bottom: none; }
-.ss-row:hover { background: rgba(255,255,255,0.02); }
 .ss-cell { font-size: 11px; color: #64748B; }
 .ss-cell.strong { color: var(--white); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-.ss-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 9px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-}
+.ss-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 .ss-badge.green { background: rgba(16,185,129,0.12); color: #10b981; }
 .ss-badge.amber { background: rgba(245,158,11,0.12); color: #f59e0b; }
 .ss-badge.blue { background: rgba(59,130,246,0.12); color: #60a5fa; }
+.screenshot-glow { position: absolute; bottom: -60px; left: 50%; transform: translateX(-50%); width: 80%; height: 100px; background: radial-gradient(ellipse, rgba(26,86,219,0.2) 0%, transparent 70%); pointer-events: none; }
 
-/* Floating glow behind screenshot */
-.screenshot-glow {
-  position: absolute;
-  bottom: -60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 100px;
-  background: radial-gradient(ellipse, rgba(26,86,219,0.2) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-/* ── STATS BAR ─────────────────────────────────────────── */
-.stats-bar {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 40px 60px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-.stat-item {}
-.stat-num {
-  font-family: 'Instrument Serif', serif;
-  font-size: 48px;
-  color: var(--white);
-  line-height: 1;
-  margin-bottom: 8px;
-}
+/* STATS */
+.stats-bar { background: var(--navy2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 40px 60px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; text-align: center; position: relative; z-index: 1; }
+.stat-num { font-family: 'Instrument Serif', serif; font-size: 48px; color: var(--white); line-height: 1; margin-bottom: 8px; }
 .stat-num span { color: var(--blue3); }
 .stat-label { font-size: 14px; color: var(--gray); }
 
-/* ── SECTION BASE ──────────────────────────────────────── */
-section {
-  padding: 100px 60px;
-  position: relative;
-  z-index: 1;
-}
-.section-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--blue3);
-  margin-bottom: 16px;
-}
+/* SECTIONS */
+section { padding: 100px 60px; position: relative; z-index: 1; }
+.section-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--blue3); margin-bottom: 16px; }
 .section-tag::before { content: '—'; opacity: 0.5; }
-.section-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: clamp(36px, 4vw, 56px);
-  font-weight: 400;
-  line-height: 1.1;
-  color: var(--white);
-  margin-bottom: 20px;
-  letter-spacing: -0.5px;
-}
+.section-title { font-family: 'Instrument Serif', serif; font-size: clamp(36px, 4vw, 56px); font-weight: 400; line-height: 1.1; color: var(--white); margin-bottom: 20px; letter-spacing: -0.5px; }
 .section-title em { font-style: italic; color: var(--blue3); }
-.section-sub {
-  font-size: 17px;
-  color: var(--gray);
-  max-width: 560px;
-  line-height: 1.7;
-}
+.section-sub { font-size: 17px; color: var(--gray); max-width: 560px; line-height: 1.7; }
 
-/* ── FEATURES ──────────────────────────────────────────── */
-#features {
-  background: var(--navy);
-}
+/* FEATURES */
+#features { background: var(--navy); }
 .features-header { text-align: center; margin-bottom: 72px; }
 .features-header .section-sub { margin: 0 auto; }
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-.feature-card {
-  background: var(--navy);
-  padding: 40px 36px;
-  transition: background 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-.feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--blue2), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 1100px; margin: 0 auto; }
+.feature-card { background: var(--navy); padding: 40px 36px; transition: background 0.2s; position: relative; overflow: hidden; }
+.feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--blue2), transparent); opacity: 0; transition: opacity 0.3s; }
 .feature-card:hover { background: var(--navy2); }
 .feature-card:hover::before { opacity: 1; }
+.feature-icon { width: 48px; height: 48px; background: rgba(26,86,219,0.12); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
+.feature-title { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--white); margin-bottom: 10px; }
+.feature-desc { font-size: 14px; color: var(--gray); line-height: 1.7; }
+.feature-tag { display: inline-block; margin-top: 16px; padding: 3px 10px; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); border-radius: 10px; font-size: 11px; font-weight: 600; color: var(--green); font-family: 'JetBrains Mono', monospace; }
+.feature-tag.blue { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); color: var(--blue3); }
+.feature-tag.gold { background: rgba(240,165,0,0.1); border-color: rgba(240,165,0,0.2); color: var(--gold); }
 
-.feature-icon {
-  width: 48px; height: 48px;
-  background: rgba(26,86,219,0.12);
-  border: 1px solid rgba(59,130,246,0.2);
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
-  margin-bottom: 20px;
-}
-.feature-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px;
-  color: var(--white);
-  margin-bottom: 10px;
-}
-.feature-desc {
-  font-size: 14px;
-  color: var(--gray);
-  line-height: 1.7;
-}
-.feature-tag {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 3px 10px;
-  background: rgba(16,185,129,0.1);
-  border: 1px solid rgba(16,185,129,0.2);
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--green);
-  font-family: 'JetBrains Mono', monospace;
-}
-.feature-tag.blue {
-  background: rgba(59,130,246,0.1);
-  border-color: rgba(59,130,246,0.2);
-  color: var(--blue3);
-}
-.feature-tag.gold {
-  background: rgba(240,165,0,0.1);
-  border-color: rgba(240,165,0,0.2);
-  color: var(--gold);
-}
-
-/* ── WHO IT'S FOR ──────────────────────────────────────── */
-#who {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.who-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  max-width: 1100px;
-  margin: 0 auto;
-  align-items: center;
-}
-.who-card {
-  background: var(--navy);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 48px;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.3s, border-color 0.3s;
-}
+/* WHO */
+#who { background: var(--navy2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.who-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; max-width: 1100px; margin: 0 auto; align-items: center; }
+.who-card { background: var(--navy); border: 1px solid var(--border); border-radius: 20px; padding: 48px; position: relative; overflow: hidden; transition: transform 0.3s, border-color 0.3s; }
 .who-card:hover { transform: translateY(-4px); border-color: rgba(59,130,246,0.3); }
-.who-card::before {
-  content: '';
-  position: absolute;
-  top: -60px; right: -60px;
-  width: 200px; height: 200px;
-  border-radius: 50%;
-  opacity: 0.06;
-}
+.who-card::before { content: ''; position: absolute; top: -60px; right: -60px; width: 200px; height: 200px; border-radius: 50%; opacity: 0.06; }
 .who-card.broker::before { background: var(--blue2); }
 .who-card.carrier::before { background: var(--green); }
-
 .who-icon { font-size: 48px; margin-bottom: 20px; }
-.who-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 28px;
-  color: var(--white);
-  margin-bottom: 12px;
-}
-.who-sub {
-  font-size: 14px;
-  color: var(--gray);
-  line-height: 1.7;
-  margin-bottom: 24px;
-}
+.who-title { font-family: 'Instrument Serif', serif; font-size: 28px; color: var(--white); margin-bottom: 12px; }
+.who-sub { font-size: 14px; color: var(--gray); line-height: 1.7; margin-bottom: 24px; }
 .who-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.who-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  color: var(--gray2);
-}
-.who-list li::before {
-  content: '✓';
-  width: 20px; height: 20px;
-  background: rgba(16,185,129,0.12);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px;
-  color: var(--green);
-  flex-shrink: 0;
-}
+.who-list li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--gray2); }
+.who-list li::before { content: '✓'; width: 20px; height: 20px; background: rgba(16,185,129,0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--green); flex-shrink: 0; }
 
-/* ── SCREENSHOT GALLERY ────────────────────────────────── */
-#demo {
-  background: var(--navy);
-  text-align: center;
-}
+/* DEMO */
+#demo { background: var(--navy); text-align: center; }
 .demo-header { margin-bottom: 60px; }
-.demo-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px;
-  width: fit-content;
-  margin: 0 auto 40px;
-}
-.demo-tab {
-  padding: 9px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--gray);
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  background: transparent;
-  font-family: 'DM Sans', sans-serif;
-}
+.demo-tabs { display: flex; justify-content: center; gap: 4px; background: var(--navy2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; width: fit-content; margin: 0 auto 40px; }
+.demo-tab { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--gray); cursor: pointer; transition: all 0.2s; border: none; background: transparent; font-family: 'DM Sans', sans-serif; }
 .demo-tab.active { background: var(--blue); color: white; }
-.demo-tab:hover:not(.active) { color: var(--white); }
-
 .demo-screens { position: relative; }
 .demo-screen { display: none; }
 .demo-screen.active { display: block; }
-
-.demo-mockup {
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  max-width: 1000px;
-  margin: 0 auto;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 80px rgba(26,86,219,0.08);
-}
-.demo-topbar {
-  background: var(--navy3);
-  border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.demo-mockup { background: var(--navy2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; max-width: 1000px; margin: 0 auto; box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 80px rgba(26,86,219,0.08); }
+.demo-topbar { background: var(--navy3); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
 .demo-dot { width: 10px; height: 10px; border-radius: 50%; }
-.demo-content {
-  padding: 24px;
-  min-height: 400px;
-}
-
-/* CRM Demo */
-.crm-demo-board {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-}
-.crm-col-header {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: #475569;
-  padding: 8px 10px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 6px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-}
-.crm-card {
-  background: var(--navy3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
-}
+.demo-content { padding: 24px; min-height: 400px; }
+.crm-demo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.crm-col-header { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #475569; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.crm-card { background: var(--navy3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
 .crm-card-co { font-size: 12px; font-weight: 600; color: var(--white); margin-bottom: 4px; }
 .crm-card-contact { font-size: 10px; color: #475569; margin-bottom: 6px; }
 .crm-card-footer { display: flex; justify-content: space-between; font-size: 10px; }
-.crm-priority { font-weight: 700; }
-.crm-priority.high { color: #ef4444; }
-.crm-priority.med { color: #f59e0b; }
-.crm-loads { color: #475569; }
-
-/* Dispatch Demo */
-.dispatch-demo {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-.dispatch-col-h {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  border-top: 2px solid;
-  background: rgba(255,255,255,0.03);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.load-mini {
-  background: var(--navy3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
-  border-left: 3px solid;
-}
+.crm-priority.high { color: #ef4444; font-weight: 700; }
+.crm-priority.med { color: #f59e0b; font-weight: 700; }
+.dispatch-demo { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.dispatch-col-h { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; border-top: 2px solid; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; }
+.load-mini { background: var(--navy3); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; border-left: 3px solid; }
 .load-mini-id { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #475569; margin-bottom: 4px; }
 .load-mini-route { font-size: 11px; font-weight: 600; color: var(--white); margin-bottom: 6px; }
 .load-mini-rate { font-size: 11px; color: var(--green); font-weight: 700; }
 
-/* ── FOUNDER ───────────────────────────────────────────── */
-#about {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-}
-.about-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
-  max-width: 1100px;
-  margin: 0 auto;
-  align-items: center;
-}
-.about-content {}
-.about-quote {
-  font-family: 'Instrument Serif', serif;
-  font-size: 26px;
-  font-style: italic;
-  color: var(--white);
-  line-height: 1.5;
-  margin-bottom: 28px;
-  position: relative;
-  padding-left: 24px;
-}
-.about-quote::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 4px; bottom: 4px;
-  width: 3px;
-  background: var(--blue2);
-  border-radius: 2px;
-}
-.about-text {
-  font-size: 15px;
-  color: var(--gray);
-  line-height: 1.8;
-  margin-bottom: 32px;
-}
-.about-founder {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.about-avatar {
-  width: 52px; height: 52px;
-  background: linear-gradient(135deg, var(--blue), #8b5cf6);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Instrument Serif', serif;
-  font-size: 20px;
-  color: white;
-  flex-shrink: 0;
-}
+/* ABOUT */
+#about { background: var(--navy2); border-top: 1px solid var(--border); }
+.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; max-width: 1100px; margin: 0 auto; align-items: center; }
+.about-quote { font-family: 'Instrument Serif', serif; font-size: 26px; font-style: italic; color: var(--white); line-height: 1.5; margin-bottom: 28px; position: relative; padding-left: 24px; }
+.about-quote::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--blue2); border-radius: 2px; }
+.about-text { font-size: 15px; color: var(--gray); line-height: 1.8; margin-bottom: 32px; }
+.about-founder { display: flex; align-items: center; gap: 14px; }
+.about-avatar { width: 52px; height: 52px; background: linear-gradient(135deg, var(--blue), #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Instrument Serif', serif; font-size: 20px; color: white; flex-shrink: 0; }
 .about-name { font-size: 15px; font-weight: 600; color: var(--white); }
 .about-role { font-size: 13px; color: var(--gray); }
-
-.about-visual {
-  position: relative;
-}
-.about-card {
-  background: var(--navy);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 32px;
-  position: relative;
-  overflow: hidden;
-}
-.about-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--blue), var(--green));
-}
-.about-metric {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-}
+.about-card { background: var(--navy); border: 1px solid var(--border); border-radius: 16px; padding: 32px; position: relative; overflow: hidden; }
+.about-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--blue), var(--green)); }
+.about-metric { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
 .about-metric:last-child { border-bottom: none; }
 .about-metric-label { font-size: 13px; color: var(--gray); }
-.about-metric-val {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px;
-  color: var(--white);
-}
+.about-metric-val { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--white); }
 .about-metric-val.green { color: var(--green); }
 .about-metric-val.blue { color: var(--blue3); }
 
-/* ── WAITLIST ──────────────────────────────────────────── */
-#waitlist {
-  background: var(--navy);
-  text-align: center;
-  padding: 120px 60px;
-}
-.waitlist-inner {
-  max-width: 640px;
-  margin: 0 auto;
-  position: relative;
-}
-.waitlist-glow {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 500px; height: 300px;
-  background: radial-gradient(ellipse, rgba(26,86,219,0.12) 0%, transparent 70%);
-  pointer-events: none;
-}
+/* PRICING */
+#pricing { background: var(--navy2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 100px 60px; }
+
+/* WAITLIST */
+#waitlist { background: var(--navy); text-align: center; padding: 120px 60px; }
+.waitlist-inner { max-width: 700px; margin: 0 auto; position: relative; }
+.waitlist-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(26,86,219,0.12) 0%, transparent 70%); pointer-events: none; }
 .waitlist-inner .section-title { margin-bottom: 16px; }
 .waitlist-inner .section-sub { margin: 0 auto 44px; }
-
-.waitlist-form {
-  display: flex;
-  gap: 10px;
-  max-width: 480px;
-  margin: 0 auto 20px;
-}
-.waitlist-input {
-  flex: 1;
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--white);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  padding: 13px 18px;
-  outline: none;
-  transition: border-color 0.2s;
-}
+.waitlist-form { display: flex; gap: 10px; max-width: 480px; margin: 0 auto 20px; }
+.waitlist-input { flex: 1; background: var(--navy2); border: 1px solid var(--border); border-radius: 10px; color: var(--white); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 13px 18px; outline: none; transition: border-color 0.2s; }
 .waitlist-input:focus { border-color: var(--blue2); }
 .waitlist-input::placeholder { color: var(--gray); }
-.waitlist-btn {
-  padding: 13px 24px;
-  background: var(--blue);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.waitlist-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+.waitlist-btn { padding: 13px 24px; background: var(--blue); color: white; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.waitlist-btn:hover { background: #1d4ed8; }
 .waitlist-note { font-size: 12px; color: var(--gray); }
+.waitlist-success { display: none; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); border-radius: 10px; padding: 16px 24px; font-size: 14px; color: var(--green); max-width: 480px; margin: 0 auto; }
 
-.waitlist-success {
-  display: none;
-  background: rgba(16,185,129,0.1);
-  border: 1px solid rgba(16,185,129,0.3);
-  border-radius: 10px;
-  padding: 16px 24px;
-  font-size: 14px;
-  color: var(--green);
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-/* ── FOOTER ────────────────────────────────────────────── */
-footer {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-  padding: 60px;
-  position: relative;
-  z-index: 1;
-}
-.footer-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 60px;
-}
-.footer-brand {}
-.footer-logo {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px;
-  color: var(--white);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
+/* FOOTER */
+footer { background: var(--navy2); border-top: 1px solid var(--border); padding: 60px; position: relative; z-index: 1; }
+.footer-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 60px; }
+.footer-logo { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .footer-logo span { color: var(--blue3); }
 .footer-tagline { font-size: 13px; color: var(--gray); line-height: 1.6; max-width: 260px; }
 .footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--white); margin-bottom: 16px; }
 .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
 .footer-links a { font-size: 13px; color: var(--gray); text-decoration: none; transition: color 0.2s; }
 .footer-links a:hover { color: var(--white); }
-.footer-bottom {
-  max-width: 1100px;
-  margin: 40px auto 0;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--gray);
-}
-.footer-domain {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--blue3);
-}
+.footer-bottom { max-width: 1100px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--gray); }
+.footer-domain { font-family: 'JetBrains Mono', monospace; color: var(--blue3); }
 
-/* ── ANIMATIONS ────────────────────────────────────────── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* ANIMATIONS */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
 
-.reveal {
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── RESPONSIVE ────────────────────────────────────────── */
+/* RESPONSIVE */
 @media (max-width: 1024px) {
-  nav { padding: 16px 30px; }
-  nav.scrolled { padding: 12px 30px; }
+  nav { padding: 16px 30px; } nav.scrolled { padding: 12px 30px; }
   .nav-links { display: none; }
   section { padding: 80px 30px; }
-  .hero { padding: 100px 30px 60px; }
+  .hero { padding: 120px 30px 60px; }
   .stats-bar { padding: 40px 30px; grid-template-columns: repeat(2,1fr); }
   .features-grid { grid-template-columns: repeat(2,1fr); }
-  .who-grid { grid-template-columns: 1fr; gap: 30px; }
-  .about-grid { grid-template-columns: 1fr; gap: 40px; }
+  .who-grid, .about-grid { grid-template-columns: 1fr; gap: 30px; }
   .footer-inner { grid-template-columns: 1fr 1fr; gap: 40px; }
   .crm-demo-board { grid-template-columns: repeat(3,1fr); }
   .dispatch-demo { grid-template-columns: repeat(2,1fr); }
@@ -1020,13 +248,11 @@ footer {
   .footer-inner { grid-template-columns: 1fr; gap: 32px; }
 }
 </style>
-
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231A56DB'/%3E%3Ctext x='20' y='27' text-anchor='middle' font-family='DM Sans,system-ui,sans-serif' font-size='16' font-weight='700' fill='white'%3EHQ%3C/text%3E%3C/svg%3E"/>
 </head>
 <body>
 
 <!-- COMING SOON BANNER -->
-<div style="background:linear-gradient(90deg,#1A56DB,#7C3AED);padding:10px 20px;text-align:center;font-size:13px;font-weight:600;color:white;letter-spacing:0.3px;position:relative;z-index:100;">
+<div style="background:linear-gradient(90deg,#1A56DB,#7C3AED);padding:10px 20px;text-align:center;font-size:13px;font-weight:600;color:white;letter-spacing:0.3px;position:relative;z-index:101;">
   🎉 FreightFlowHQ is launching <strong>Summer 2026</strong> — 
   <a href="#waitlist" style="color:white;text-decoration:underline;margin-left:4px;">Join the waitlist for free beta access →</a>
 </div>
@@ -1034,26 +260,27 @@ footer {
 <!-- NAV -->
 <nav id="navbar">
   <a href="#" class="nav-logo">
-  <svg width="36" height="36" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-    <rect width="40" height="40" rx="10" fill="#0D1829"/>
-    <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="32" cy="13" r="3" fill="#10B981"/>
-    <circle cx="25" cy="20" r="3" fill="#10B981"/>
-  </svg>
-  Freight<span>Flow</span><span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--gray);margin-left:2px;">HQ</span>
-</a>
+    <svg width="36" height="36" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+      <rect width="40" height="40" rx="10" fill="#0D1829"/>
+      <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="32" cy="13" r="3" fill="#10B981"/>
+      <circle cx="25" cy="20" r="3" fill="#10B981"/>
+    </svg>
+    Freight<span>Flow</span><span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--gray);margin-left:2px;">HQ</span>
+  </a>
   <ul class="nav-links">
     <li><a href="#features">Features</a></li>
     <li><a href="#who">Who It's For</a></li>
     <li><a href="#demo">Demo</a></li>
-    <li><a href="#about">About</a></li>
     <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="/app.html" style="color:var(--gray2);font-weight:500;">Sign In</a></li>
   </ul>
   <div class="nav-cta">
     <a href="/app.html" class="btn-nav-ghost">Sign In</a>
-    <a href="#waitlist" class="btn-nav-primary">Get Early Access →</a>
+    <a href="#waitlist" class="btn-nav-primary">Join Waitlist →</a>
   </div>
 </nav>
 
@@ -1067,8 +294,6 @@ footer {
     <a href="#waitlist" class="btn-hero-primary">🚀 Join the Waitlist — It's Free</a>
     <a href="#demo" class="btn-hero-ghost">👀 See it in action</a>
   </div>
-
-  <!-- App Screenshot -->
   <div class="hero-screenshot">
     <div class="screenshot-frame">
       <div class="screenshot-titlebar">
@@ -1077,21 +302,14 @@ footer {
           <div class="titlebar-dot" style="background:#febc2e;"></div>
           <div class="titlebar-dot" style="background:#28c840;"></div>
         </div>
-        <div class="titlebar-url">freightflowhq.com</div>
+        <div class="titlebar-url">freightflowhq.com/app</div>
       </div>
       <div class="screenshot-app">
         <div class="screenshot-sidebar">
           <div class="ss-logo" style="display:flex;align-items:center;gap:8px;">
-          <svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="40" rx="10" fill="#0D1829"/>
-            <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/>
-            <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
-            <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="32" cy="13" r="3.5" fill="#10B981"/>
-            <circle cx="25" cy="20" r="3.5" fill="#10B981"/>
-          </svg>
-          Freight<span>Flow</span>
-        </div>
+            <svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#0D1829"/><line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/><line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/><line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="13" r="3.5" fill="#10B981"/><circle cx="25" cy="20" r="3.5" fill="#10B981"/></svg>
+            Freight<span>Flow</span>
+          </div>
           <div class="ss-section">Operations</div>
           <div class="ss-item active"><span class="ss-item-icon">⬛</span> Dashboard</div>
           <div class="ss-item"><span class="ss-item-icon">📋</span> Dispatch Board</div>
@@ -1117,33 +335,11 @@ footer {
           </div>
           <div class="ss-table">
             <div class="ss-table-header">
-              <div class="ss-th">Load #</div>
-              <div class="ss-th">Route</div>
-              <div class="ss-th">Carrier</div>
-              <div class="ss-th">Status</div>
-              <div class="ss-th">Rate</div>
+              <div class="ss-th">Load #</div><div class="ss-th">Route</div><div class="ss-th">Carrier</div><div class="ss-th">Status</div><div class="ss-th">Rate</div>
             </div>
-            <div class="ss-row">
-              <div class="ss-cell strong">FF-8841</div>
-              <div class="ss-cell">Dallas → Chicago</div>
-              <div class="ss-cell">Swift Trans.</div>
-              <div class="ss-cell"><span class="ss-badge green">In Transit</span></div>
-              <div class="ss-cell strong">$2,840</div>
-            </div>
-            <div class="ss-row">
-              <div class="ss-cell strong">FF-8840</div>
-              <div class="ss-cell">LA → Phoenix</div>
-              <div class="ss-cell">Unassigned</div>
-              <div class="ss-cell"><span class="ss-badge blue">Available</span></div>
-              <div class="ss-cell strong">$1,650</div>
-            </div>
-            <div class="ss-row">
-              <div class="ss-cell strong">FF-8839</div>
-              <div class="ss-cell">Miami → Atlanta</div>
-              <div class="ss-cell">Knight Trans.</div>
-              <div class="ss-cell"><span class="ss-badge amber">Assigned</span></div>
-              <div class="ss-cell strong">$1,920</div>
-            </div>
+            <div class="ss-row"><div class="ss-cell strong">FF-8841</div><div class="ss-cell">Dallas → Chicago</div><div class="ss-cell">Swift Trans.</div><div class="ss-cell"><span class="ss-badge green">In Transit</span></div><div class="ss-cell strong">$2,840</div></div>
+            <div class="ss-row"><div class="ss-cell strong">FF-8840</div><div class="ss-cell">LA → Phoenix</div><div class="ss-cell">Unassigned</div><div class="ss-cell"><span class="ss-badge blue">Available</span></div><div class="ss-cell strong">$1,650</div></div>
+            <div class="ss-row"><div class="ss-cell strong">FF-8839</div><div class="ss-cell">Miami → Atlanta</div><div class="ss-cell">Knight Trans.</div><div class="ss-cell"><span class="ss-badge amber">Assigned</span></div><div class="ss-cell strong">$1,920</div></div>
           </div>
         </div>
       </div>
@@ -1154,22 +350,10 @@ footer {
 
 <!-- STATS -->
 <div class="stats-bar reveal">
-  <div class="stat-item">
-    <div class="stat-num">9<span>+</span></div>
-    <div class="stat-label">Integrated modules</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">1<span>x</span></div>
-    <div class="stat-label">Platform for everything</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">$0</div>
-    <div class="stat-label">To get started</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">∞</div>
-    <div class="stat-label">Loads, carriers & customers</div>
-  </div>
+  <div class="stat-item"><div class="stat-num">9<span>+</span></div><div class="stat-label">Integrated modules</div></div>
+  <div class="stat-item"><div class="stat-num">1<span>x</span></div><div class="stat-label">Platform for everything</div></div>
+  <div class="stat-item"><div class="stat-num">$0</div><div class="stat-label">To get started</div></div>
+  <div class="stat-item"><div class="stat-num">∞</div><div class="stat-label">Loads, carriers & customers</div></div>
 </div>
 
 <!-- FEATURES -->
@@ -1180,60 +364,15 @@ footer {
     <p class="section-sub">Stop switching between spreadsheets, load boards, QuickBooks, and email. FreightFlowHQ brings it all together.</p>
   </div>
   <div class="features-grid reveal">
-    <div class="feature-card">
-      <div class="feature-icon">📦</div>
-      <div class="feature-title">Load Management</div>
-      <div class="feature-desc">Create, assign, track and close loads from a single screen. Full lifecycle management with margin tracking on every load.</div>
-      <span class="feature-tag">Core</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📋</div>
-      <div class="feature-title">Dispatch Board</div>
-      <div class="feature-desc">Live Kanban board showing all loads across Available, Assigned, In Transit, and Delivered — update status in one click.</div>
-      <span class="feature-tag">Core</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🎯</div>
-      <div class="feature-title">Built-in CRM</div>
-      <div class="feature-desc">Track leads, manage your pipeline, log follow-ups and close new shippers — without leaving the platform. No HubSpot needed.</div>
-      <span class="feature-tag gold">Growth</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📄</div>
-      <div class="feature-title">Rate Confirmations</div>
-      <div class="feature-desc">Generate professional rate cons instantly. Email to carrier, let them accept digitally, auto-update the load status.</div>
-      <span class="feature-tag blue">Coming Soon</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🧾</div>
-      <div class="feature-title">Invoicing & Quick Pay</div>
-      <div class="feature-desc">Create customer invoices, track carrier payables, and calculate quick pay fees automatically. Full AR aging visibility.</div>
-      <span class="feature-tag">Finance</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">👥</div>
-      <div class="feature-title">Customer Portal</div>
-      <div class="feature-desc">Give your shippers a login to track their loads in real time, view documents, and pay invoices online. White-labeled as your brand.</div>
-      <span class="feature-tag blue">Pro</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <div class="feature-title">Gross Profit Analytics</div>
-      <div class="feature-desc">See GP$, GP%, revenue, and margin broken down by customer, lane, and equipment type. Know which business is actually profitable.</div>
-      <span class="feature-tag">Insights</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📞</div>
-      <div class="feature-title">Check Call Logging</div>
-      <div class="feature-desc">Log check calls directly inside each load. Capture location, ETA, status, and notes — all timestamped and saved forever.</div>
-      <span class="feature-tag">Operations</span>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔐</div>
-      <div class="feature-title">Role-Based Permissions</div>
-      <div class="feature-desc">Customize exactly what each team member can see and do. Dispatcher, Accounting, Sales, and Read-Only roles with full control.</div>
-      <span class="feature-tag">Teams</span>
-    </div>
+    <div class="feature-card"><div class="feature-icon">📦</div><div class="feature-title">Load Management</div><div class="feature-desc">Create, assign, track and close loads from a single screen. Full lifecycle management with margin tracking on every load.</div><span class="feature-tag">Core</span></div>
+    <div class="feature-card"><div class="feature-icon">📋</div><div class="feature-title">Dispatch Board</div><div class="feature-desc">Live Kanban board showing all loads across Available, Assigned, In Transit, and Delivered — update status in one click.</div><span class="feature-tag">Core</span></div>
+    <div class="feature-card"><div class="feature-icon">🎯</div><div class="feature-title">Built-in CRM</div><div class="feature-desc">Track leads, manage your pipeline, log follow-ups and close new shippers — without leaving the platform. No HubSpot needed.</div><span class="feature-tag gold">Growth</span></div>
+    <div class="feature-card"><div class="feature-icon">📄</div><div class="feature-title">Rate Confirmations</div><div class="feature-desc">Generate professional rate cons instantly. Email to carrier, let them accept digitally, auto-update the load status.</div><span class="feature-tag blue">Coming Soon</span></div>
+    <div class="feature-card"><div class="feature-icon">🧾</div><div class="feature-title">Invoicing & Quick Pay</div><div class="feature-desc">Create customer invoices, track carrier payables, and calculate quick pay fees automatically. Full AR aging visibility.</div><span class="feature-tag">Finance</span></div>
+    <div class="feature-card"><div class="feature-icon">👥</div><div class="feature-title">Customer Portal</div><div class="feature-desc">Give your shippers a login to track their loads in real time, view documents, and pay invoices online. White-labeled as your brand.</div><span class="feature-tag blue">Pro</span></div>
+    <div class="feature-card"><div class="feature-icon">📊</div><div class="feature-title">Gross Profit Analytics</div><div class="feature-desc">See GP$, GP%, revenue, and margin broken down by customer, lane, and equipment type. Know which business is actually profitable.</div><span class="feature-tag">Insights</span></div>
+    <div class="feature-card"><div class="feature-icon">📞</div><div class="feature-title">Check Call Logging</div><div class="feature-desc">Log check calls directly inside each load. Capture location, ETA, status, and notes — all timestamped and saved forever.</div><span class="feature-tag">Operations</span></div>
+    <div class="feature-card"><div class="feature-icon">🔐</div><div class="feature-title">Role-Based Permissions</div><div class="feature-desc">Customize exactly what each team member can see and do. Dispatcher, Accounting, Sales, and Read-Only roles with full control.</div><span class="feature-tag">Teams</span></div>
   </div>
 </section>
 
@@ -1265,32 +404,27 @@ footer {
           <li>Dispatch your own drivers from a live board</li>
           <li>Track loads from pickup to delivery</li>
           <li>Manage driver check calls and ETAs</li>
-          <li>Build and manage your shipper relationships with built-in CRM</li>
-          <li>Track leads, follow-ups, and new customer quotes in your pipeline</li>
           <li>Invoice customers and track receivables</li>
-          <li>Monitor fleet compliance and insurance expiration</li>
+          <li>Monitor carrier insurance and compliance</li>
         </ul>
       </div>
     </div>
   </div>
 </section>
 
-<!-- DEMO GALLERY -->
+<!-- DEMO -->
 <section id="demo">
   <div class="demo-header reveal">
     <div class="section-tag">See it in action</div>
     <h2 class="section-title">Every module, <em>built to ship</em></h2>
     <p class="section-sub" style="margin:0 auto;">Explore the key workflows that make FreightFlowHQ different from anything else in the market.</p>
   </div>
-
   <div class="demo-tabs reveal">
     <button class="demo-tab active" onclick="switchDemo('dashboard')">Dashboard</button>
     <button class="demo-tab" onclick="switchDemo('dispatch')">Dispatch</button>
     <button class="demo-tab" onclick="switchDemo('crm')">CRM</button>
   </div>
-
   <div class="demo-screens reveal">
-
     <!-- Dashboard Demo -->
     <div class="demo-screen active" id="demo-dashboard">
       <div class="demo-mockup">
@@ -1302,1452 +436,78 @@ footer {
         </div>
         <div class="demo-content">
           <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px;">
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #3b82f6;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Active Loads</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">47</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #10b981;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Revenue</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">$183K</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #10b981;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Gross Profit</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#10b981;">$34K</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #8b5cf6;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">GP %</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#8b5cf6;">18.4%</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #f59e0b;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Carriers</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">214</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #3b82f6;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Customers</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">28</div>
-            </div>
+            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #3b82f6;border-radius:8px;padding:12px;"><div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Active Loads</div><div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">47</div></div>
+            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #10b981;border-radius:8px;padding:12px;"><div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Revenue</div><div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">$183K</div></div>
+            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #10b981;border-radius:8px;padding:12px;"><div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Gross Profit</div><div style="font-family:'Instrument Serif',serif;font-size:24px;color:#10b981;">$34K</div></div>
+            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #8b5cf6;border-radius:8px;padding:12px;"><div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">GP %</div><div style="font-family:'Instrument Serif',serif;font-size:24px;color:#8b5cf6;">18.4%</div></div>
+            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #f59e0b;border-radius:8px;padding:12px;"><div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Carriers</div><div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">214</div></div>
+            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #3b82f6;border-radius:8px;padding:12px;"><div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Customers</div><div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">28</div></div>
           </div>
-          <!-- Customer GP Table -->
           <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-radius:8px;overflow:hidden;">
-            <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;">
-              <span style="font-family:'Instrument Serif',serif;font-size:14px;color:#fff;">Customer Profitability</span>
-              <span style="font-size:11px;color:#475569;">This month</span>
-            </div>
+            <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;"><span style="font-family:'Instrument Serif',serif;font-size:14px;color:#fff;">Customer Profitability</span><span style="font-size:11px;color:#475569;">This month</span></div>
             <div style="padding:0;">
               <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:8px 16px;background:rgba(255,255,255,0.02);">
                 <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">Customer</span>
                 <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">Revenue</span>
                 <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">GP $</span>
                 <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">GP %</span>
-                <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">Margin Bar</span>
+                <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">Margin</span>
               </div>
-              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;">
-                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">AcmeCorp Logistics</span>
-                <span style="font-size:12px;color:#94a3b8;">$42,100</span>
-                <span style="font-size:12px;font-weight:600;color:#10b981;">$8,460</span>
-                <span style="font-size:12px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace;">20.1%</span>
-                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:80%;height:100%;background:#10b981;border-radius:4px;"></div></div>
-              </div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;">
-                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">Global Shippers</span>
-                <span style="font-size:12px;color:#94a3b8;">$31,800</span>
-                <span style="font-size:12px;font-weight:600;color:#10b981;">$5,882</span>
-                <span style="font-size:12px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace;">18.5%</span>
-                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:60%;height:100%;background:#10b981;border-radius:4px;"></div></div>
-              </div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;">
-                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">TexOil Industries</span>
-                <span style="font-size:12px;color:#94a3b8;">$28,400</span>
-                <span style="font-size:12px;font-weight:600;color:#10b981;">$6,412</span>
-                <span style="font-size:12px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace;">22.6%</span>
-                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:55%;height:100%;background:#10b981;border-radius:4px;"></div></div>
-              </div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;">
-                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">FastFreight LLC</span>
-                <span style="font-size:12px;color:#94a3b8;">$24,200</span>
-                <span style="font-size:12px;font-weight:600;color:#f59e0b;">$4,097</span>
-                <span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">16.9%</span>
-                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:45%;height:100%;background:#f59e0b;border-radius:4px;"></div></div>
-              </div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;">
-                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">MidWest Foods</span>
-                <span style="font-size:12px;color:#94a3b8;">$8,900</span>
-                <span style="font-size:12px;font-weight:600;color:#ef4444;">$997</span>
-                <span style="font-size:12px;font-weight:700;color:#ef4444;font-family:'JetBrains Mono',monospace;">11.2%</span>
-                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:20%;height:100%;background:#ef4444;border-radius:4px;"></div></div>
-              </div>html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>FreightFlowHQ</title>
-<meta name="description" content="FreightFlowHQ is the all-in-one logistics platform for freight brokers and asset carriers. Dispatch, CRM, invoicing, and real-time tracking in one place."/>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<style>
-:root {
-  --navy: #080F1C;
-  --navy2: #0D1829;
-  --navy3: #142035;
-  --blue: #1A56DB;
-  --blue2: #3B82F6;
-  --blue3: #60A5FA;
-  --gold: #F0A500;
-  --green: #10B981;
-  --white: #FFFFFF;
-  --off: #F8FAFC;
-  --gray: #94A3B8;
-  --gray2: #CBD5E1;
-  --border: rgba(255,255,255,0.08);
-  --border-light: rgba(0,0,0,0.08);
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--navy);
-  color: var(--white);
-  overflow-x: hidden;
-}
-
-/* ── NOISE TEXTURE OVERLAY ─────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.4;
-}
-
-/* ── NAV ──────────────────────────────────────────────── */
-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 100;
-  padding: 20px 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: all 0.3s ease;
-}
-nav.scrolled {
-  background: rgba(8,15,28,0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 60px;
-}
-.nav-logo {
-  font-family: 'Instrument Serif', serif;
-  font-size: 24px;
-  color: var(--white);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.nav-logo span { color: var(--blue3); }
-.nav-logo-icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--blue), var(--blue2));
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-}
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-  list-style: none;
-}
-.nav-links a {
-  color: var(--gray);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-.nav-links a:hover { color: var(--white); }
-.nav-cta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.btn-nav-ghost {
-  padding: 9px 20px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--gray2);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  background: transparent;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-.btn-nav-ghost:hover { border-color: var(--blue2); color: var(--white); }
-.btn-nav-primary {
-  padding: 9px 20px;
-  background: var(--blue);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-.btn-nav-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
-
-/* ── HERO ─────────────────────────────────────────────── */
-.hero {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 120px 60px 80px;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Animated gradient mesh background */
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(26,86,219,0.15) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 60% at 10% 60%, rgba(96,165,250,0.08) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-/* Animated grid */
-.hero-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
-  pointer-events: none;
-}
-
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: rgba(26,86,219,0.12);
-  border: 1px solid rgba(59,130,246,0.25);
-  border-radius: 20px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--blue3);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin-bottom: 28px;
-  animation: fadeUp 0.8s ease both;
-}
-.hero-badge::before {
-  content: '';
-  width: 6px; height: 6px;
-  background: var(--green);
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--green);
-  animation: blink 2s infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-.hero h1 {
-  font-family: 'Instrument Serif', serif;
-  font-size: clamp(48px, 6vw, 88px);
-  font-weight: 400;
-  line-height: 1.05;
-  letter-spacing: -1px;
-  color: var(--white);
-  max-width: 900px;
-  margin-bottom: 24px;
-  animation: fadeUp 0.8s 0.1s ease both;
-}
-.hero h1 em {
-  font-style: italic;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255,255,255,0.4);
-}
-.hero h1 .accent { color: var(--blue3); font-style: italic; }
-
-.hero-sub {
-  font-size: 18px;
-  color: var(--gray);
-  max-width: 560px;
-  line-height: 1.7;
-  margin-bottom: 44px;
-  font-weight: 400;
-  animation: fadeUp 0.8s 0.2s ease both;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 80px;
-  animation: fadeUp 0.8s 0.3s ease both;
-}
-.btn-hero-primary {
-  padding: 14px 32px;
-  background: var(--blue);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 8px 32px rgba(26,86,219,0.35);
-}
-.btn-hero-primary:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 40px rgba(26,86,219,0.45); }
-.btn-hero-ghost {
-  padding: 14px 28px;
-  background: transparent;
-  color: var(--gray2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.btn-hero-ghost:hover { border-color: rgba(255,255,255,0.2); color: var(--white); }
-
-/* App screenshot mockup */
-.hero-screenshot {
-  position: relative;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  animation: fadeUp 0.8s 0.4s ease both;
-}
-.screenshot-frame {
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.05),
-    0 40px 80px rgba(0,0,0,0.6),
-    0 0 120px rgba(26,86,219,0.12);
-}
-.screenshot-titlebar {
-  background: var(--navy3);
-  border-bottom: 1px solid var(--border);
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.titlebar-dots { display: flex; gap: 6px; }
-.titlebar-dot {
-  width: 12px; height: 12px;
-  border-radius: 50%;
-}
-.titlebar-url {
-  flex: 1;
-  background: rgba(0,0,0,0.3);
-  border-radius: 6px;
-  padding: 5px 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--gray);
-  text-align: center;
-}
-.screenshot-app {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  height: 480px;
-}
-.screenshot-sidebar {
-  background: #0D1829;
-  border-right: 1px solid var(--border);
-  padding: 16px 0;
-}
-.ss-logo {
-  padding: 8px 16px 20px;
-  font-family: 'Instrument Serif', serif;
-  font-size: 18px;
-  color: var(--white);
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 12px;
-}
-.ss-logo span { color: var(--blue3); }
-.ss-section {
-  padding: 8px 16px 4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: #334155;
-}
-.ss-item {
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #64748B;
-  cursor: pointer;
-}
-.ss-item.active {
-  background: rgba(59,130,246,0.1);
-  color: var(--blue3);
-  border-left: 2px solid var(--blue2);
-}
-.ss-item-icon { font-size: 14px; width: 18px; }
-.screenshot-main {
-  background: #080F1C;
-  padding: 20px;
-  overflow: hidden;
-}
-.ss-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-.ss-title { font-family: 'Instrument Serif', serif; font-size: 20px; color: var(--white); }
-.ss-btn {
-  background: var(--blue);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ss-kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.ss-kpi {
-  background: #0D1829;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
-  padding: 12px;
-  position: relative;
-  overflow: hidden;
-}
-.ss-kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
-.ss-kpi.b::before { background: var(--blue2); }
-.ss-kpi.g::before { background: var(--green); }
-.ss-kpi.a::before { background: #f59e0b; }
-.ss-kpi.p::before { background: #8b5cf6; }
-.ss-kpi-label { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #475569; margin-bottom: 6px; }
-.ss-kpi-val { font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--white); }
-.ss-table {
-  background: #0D1829;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.ss-table-header {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1.5fr 1fr 1fr;
-  padding: 8px 12px;
-  background: rgba(255,255,255,0.03);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.ss-th { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #334155; }
-.ss-row {
-  display: grid;
-  grid-template-columns: 1fr 2fr 1.5fr 1fr 1fr;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  align-items: center;
-}
-.ss-row:last-child { border-bottom: none; }
-.ss-row:hover { background: rgba(255,255,255,0.02); }
-.ss-cell { font-size: 11px; color: #64748B; }
-.ss-cell.strong { color: var(--white); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
-.ss-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 9px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-}
-.ss-badge.green { background: rgba(16,185,129,0.12); color: #10b981; }
-.ss-badge.amber { background: rgba(245,158,11,0.12); color: #f59e0b; }
-.ss-badge.blue { background: rgba(59,130,246,0.12); color: #60a5fa; }
-
-/* Floating glow behind screenshot */
-.screenshot-glow {
-  position: absolute;
-  bottom: -60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 100px;
-  background: radial-gradient(ellipse, rgba(26,86,219,0.2) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-/* ── STATS BAR ─────────────────────────────────────────── */
-.stats-bar {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 40px 60px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 40px;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-.stat-item {}
-.stat-num {
-  font-family: 'Instrument Serif', serif;
-  font-size: 48px;
-  color: var(--white);
-  line-height: 1;
-  margin-bottom: 8px;
-}
-.stat-num span { color: var(--blue3); }
-.stat-label { font-size: 14px; color: var(--gray); }
-
-/* ── SECTION BASE ──────────────────────────────────────── */
-section {
-  padding: 100px 60px;
-  position: relative;
-  z-index: 1;
-}
-.section-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--blue3);
-  margin-bottom: 16px;
-}
-.section-tag::before { content: '—'; opacity: 0.5; }
-.section-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: clamp(36px, 4vw, 56px);
-  font-weight: 400;
-  line-height: 1.1;
-  color: var(--white);
-  margin-bottom: 20px;
-  letter-spacing: -0.5px;
-}
-.section-title em { font-style: italic; color: var(--blue3); }
-.section-sub {
-  font-size: 17px;
-  color: var(--gray);
-  max-width: 560px;
-  line-height: 1.7;
-}
-
-/* ── FEATURES ──────────────────────────────────────────── */
-#features {
-  background: var(--navy);
-}
-.features-header { text-align: center; margin-bottom: 72px; }
-.features-header .section-sub { margin: 0 auto; }
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-.feature-card {
-  background: var(--navy);
-  padding: 40px 36px;
-  transition: background 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-.feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--blue2), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.feature-card:hover { background: var(--navy2); }
-.feature-card:hover::before { opacity: 1; }
-
-.feature-icon {
-  width: 48px; height: 48px;
-  background: rgba(26,86,219,0.12);
-  border: 1px solid rgba(59,130,246,0.2);
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
-  margin-bottom: 20px;
-}
-.feature-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px;
-  color: var(--white);
-  margin-bottom: 10px;
-}
-.feature-desc {
-  font-size: 14px;
-  color: var(--gray);
-  line-height: 1.7;
-}
-.feature-tag {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 3px 10px;
-  background: rgba(16,185,129,0.1);
-  border: 1px solid rgba(16,185,129,0.2);
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--green);
-  font-family: 'JetBrains Mono', monospace;
-}
-.feature-tag.blue {
-  background: rgba(59,130,246,0.1);
-  border-color: rgba(59,130,246,0.2);
-  color: var(--blue3);
-}
-.feature-tag.gold {
-  background: rgba(240,165,0,0.1);
-  border-color: rgba(240,165,0,0.2);
-  color: var(--gold);
-}
-
-/* ── WHO IT'S FOR ──────────────────────────────────────── */
-#who {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.who-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 60px;
-  max-width: 1100px;
-  margin: 0 auto;
-  align-items: center;
-}
-.who-card {
-  background: var(--navy);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 48px;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.3s, border-color 0.3s;
-}
-.who-card:hover { transform: translateY(-4px); border-color: rgba(59,130,246,0.3); }
-.who-card::before {
-  content: '';
-  position: absolute;
-  top: -60px; right: -60px;
-  width: 200px; height: 200px;
-  border-radius: 50%;
-  opacity: 0.06;
-}
-.who-card.broker::before { background: var(--blue2); }
-.who-card.carrier::before { background: var(--green); }
-
-.who-icon { font-size: 48px; margin-bottom: 20px; }
-.who-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 28px;
-  color: var(--white);
-  margin-bottom: 12px;
-}
-.who-sub {
-  font-size: 14px;
-  color: var(--gray);
-  line-height: 1.7;
-  margin-bottom: 24px;
-}
-.who-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.who-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  color: var(--gray2);
-}
-.who-list li::before {
-  content: '✓';
-  width: 20px; height: 20px;
-  background: rgba(16,185,129,0.12);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px;
-  color: var(--green);
-  flex-shrink: 0;
-}
-
-/* ── SCREENSHOT GALLERY ────────────────────────────────── */
-#demo {
-  background: var(--navy);
-  text-align: center;
-}
-.demo-header { margin-bottom: 60px; }
-.demo-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px;
-  width: fit-content;
-  margin: 0 auto 40px;
-}
-.demo-tab {
-  padding: 9px 20px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--gray);
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  background: transparent;
-  font-family: 'DM Sans', sans-serif;
-}
-.demo-tab.active { background: var(--blue); color: white; }
-.demo-tab:hover:not(.active) { color: var(--white); }
-
-.demo-screens { position: relative; }
-.demo-screen { display: none; }
-.demo-screen.active { display: block; }
-
-.demo-mockup {
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
-  max-width: 1000px;
-  margin: 0 auto;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 80px rgba(26,86,219,0.08);
-}
-.demo-topbar {
-  background: var(--navy3);
-  border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.demo-dot { width: 10px; height: 10px; border-radius: 50%; }
-.demo-content {
-  padding: 24px;
-  min-height: 400px;
-}
-
-/* CRM Demo */
-.crm-demo-board {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-}
-.crm-col-header {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: #475569;
-  padding: 8px 10px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 6px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-}
-.crm-card {
-  background: var(--navy3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
-}
-.crm-card-co { font-size: 12px; font-weight: 600; color: var(--white); margin-bottom: 4px; }
-.crm-card-contact { font-size: 10px; color: #475569; margin-bottom: 6px; }
-.crm-card-footer { display: flex; justify-content: space-between; font-size: 10px; }
-.crm-priority { font-weight: 700; }
-.crm-priority.high { color: #ef4444; }
-.crm-priority.med { color: #f59e0b; }
-.crm-loads { color: #475569; }
-
-/* Dispatch Demo */
-.dispatch-demo {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-.dispatch-col-h {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  border-top: 2px solid;
-  background: rgba(255,255,255,0.03);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.load-mini {
-  background: var(--navy3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
-  border-left: 3px solid;
-}
-.load-mini-id { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: #475569; margin-bottom: 4px; }
-.load-mini-route { font-size: 11px; font-weight: 600; color: var(--white); margin-bottom: 6px; }
-.load-mini-rate { font-size: 11px; color: var(--green); font-weight: 700; }
-
-/* ── FOUNDER ───────────────────────────────────────────── */
-#about {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-}
-.about-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
-  max-width: 1100px;
-  margin: 0 auto;
-  align-items: center;
-}
-.about-content {}
-.about-quote {
-  font-family: 'Instrument Serif', serif;
-  font-size: 26px;
-  font-style: italic;
-  color: var(--white);
-  line-height: 1.5;
-  margin-bottom: 28px;
-  position: relative;
-  padding-left: 24px;
-}
-.about-quote::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 4px; bottom: 4px;
-  width: 3px;
-  background: var(--blue2);
-  border-radius: 2px;
-}
-.about-text {
-  font-size: 15px;
-  color: var(--gray);
-  line-height: 1.8;
-  margin-bottom: 32px;
-}
-.about-founder {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.about-avatar {
-  width: 52px; height: 52px;
-  background: linear-gradient(135deg, var(--blue), #8b5cf6);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Instrument Serif', serif;
-  font-size: 20px;
-  color: white;
-  flex-shrink: 0;
-}
-.about-name { font-size: 15px; font-weight: 600; color: var(--white); }
-.about-role { font-size: 13px; color: var(--gray); }
-
-.about-visual {
-  position: relative;
-}
-.about-card {
-  background: var(--navy);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 32px;
-  position: relative;
-  overflow: hidden;
-}
-.about-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--blue), var(--green));
-}
-.about-metric {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-}
-.about-metric:last-child { border-bottom: none; }
-.about-metric-label { font-size: 13px; color: var(--gray); }
-.about-metric-val {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px;
-  color: var(--white);
-}
-.about-metric-val.green { color: var(--green); }
-.about-metric-val.blue { color: var(--blue3); }
-
-/* ── WAITLIST ──────────────────────────────────────────── */
-#waitlist {
-  background: var(--navy);
-  text-align: center;
-  padding: 120px 60px;
-}
-.waitlist-inner {
-  max-width: 640px;
-  margin: 0 auto;
-  position: relative;
-}
-.waitlist-glow {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 500px; height: 300px;
-  background: radial-gradient(ellipse, rgba(26,86,219,0.12) 0%, transparent 70%);
-  pointer-events: none;
-}
-.waitlist-inner .section-title { margin-bottom: 16px; }
-.waitlist-inner .section-sub { margin: 0 auto 44px; }
-
-.waitlist-form {
-  display: flex;
-  gap: 10px;
-  max-width: 480px;
-  margin: 0 auto 20px;
-}
-.waitlist-input {
-  flex: 1;
-  background: var(--navy2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--white);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  padding: 13px 18px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.waitlist-input:focus { border-color: var(--blue2); }
-.waitlist-input::placeholder { color: var(--gray); }
-.waitlist-btn {
-  padding: 13px 24px;
-  background: var(--blue);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.waitlist-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
-.waitlist-note { font-size: 12px; color: var(--gray); }
-
-.waitlist-success {
-  display: none;
-  background: rgba(16,185,129,0.1);
-  border: 1px solid rgba(16,185,129,0.3);
-  border-radius: 10px;
-  padding: 16px 24px;
-  font-size: 14px;
-  color: var(--green);
-  max-width: 480px;
-  margin: 0 auto;
-}
-
-/* ── FOOTER ────────────────────────────────────────────── */
-footer {
-  background: var(--navy2);
-  border-top: 1px solid var(--border);
-  padding: 60px;
-  position: relative;
-  z-index: 1;
-}
-.footer-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: 60px;
-}
-.footer-brand {}
-.footer-logo {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px;
-  color: var(--white);
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.footer-logo span { color: var(--blue3); }
-.footer-tagline { font-size: 13px; color: var(--gray); line-height: 1.6; max-width: 260px; }
-.footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--white); margin-bottom: 16px; }
-.footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.footer-links a { font-size: 13px; color: var(--gray); text-decoration: none; transition: color 0.2s; }
-.footer-links a:hover { color: var(--white); }
-.footer-bottom {
-  max-width: 1100px;
-  margin: 40px auto 0;
-  padding-top: 24px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--gray);
-}
-.footer-domain {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--blue3);
-}
-
-/* ── ANIMATIONS ────────────────────────────────────────── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.reveal {
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── RESPONSIVE ────────────────────────────────────────── */
-@media (max-width: 1024px) {
-  nav { padding: 16px 30px; }
-  nav.scrolled { padding: 12px 30px; }
-  .nav-links { display: none; }
-  section { padding: 80px 30px; }
-  .hero { padding: 100px 30px 60px; }
-  .stats-bar { padding: 40px 30px; grid-template-columns: repeat(2,1fr); }
-  .features-grid { grid-template-columns: repeat(2,1fr); }
-  .who-grid { grid-template-columns: 1fr; gap: 30px; }
-  .about-grid { grid-template-columns: 1fr; gap: 40px; }
-  .footer-inner { grid-template-columns: 1fr 1fr; gap: 40px; }
-  .crm-demo-board { grid-template-columns: repeat(3,1fr); }
-  .dispatch-demo { grid-template-columns: repeat(2,1fr); }
-  .screenshot-app { grid-template-columns: 160px 1fr; height: 380px; }
-  .ss-kpis { grid-template-columns: repeat(2,1fr); }
-  .waitlist-form { flex-direction: column; }
-}
-@media (max-width: 640px) {
-  .hero h1 { font-size: 40px; }
-  .features-grid { grid-template-columns: 1fr; }
-  .stats-bar { grid-template-columns: repeat(2,1fr); gap: 24px; }
-  footer { padding: 40px 24px; }
-  .footer-inner { grid-template-columns: 1fr; gap: 32px; }
-}
-</style>
-
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231A56DB'/%3E%3Ctext x='20' y='27' text-anchor='middle' font-family='DM Sans,system-ui,sans-serif' font-size='16' font-weight='700' fill='white'%3EHQ%3C/text%3E%3C/svg%3E"/>
-</head>
-
-
-<!-- COMING SOON BANNER -->
-<div style="background:linear-gradient(90deg,#1A56DB,#7C3AED);padding:10px 20px;text-align:center;font-size:13px;font-weight:600;color:white;letter-spacing:0.3px;position:relative;z-index:100;">
-  🎉 FreightFlowHQ is launching <strong>Summer 2026</strong> — 
-  <a href="#waitlist" style="color:white;text-decoration:underline;margin-left:4px;">Join the waitlist for free beta access →</a>
-</div>
-
-<!-- NAV -->
-<nav id="navbar">
-  <a href="#" class="nav-logo">
-  <svg width="36" height="36" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-    <rect width="40" height="40" rx="10" fill="#0D1829"/>
-    <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="32" cy="13" r="3" fill="#10B981"/>
-    <circle cx="25" cy="20" r="3" fill="#10B981"/>
-  </svg>
-  Freight<span>Flow</span><span style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;color:var(--gray);margin-left:2px;">HQ</span>
-</a>
-  <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#who">Who It's For</a></li>
-    <li><a href="#demo">Demo</a></li>
-    <li><a href="#about">About</a></li>
-    <li><a href="#pricing">Pricing</a></li>
-  </ul>
-  <div class="nav-cta">
-    <a href="/app.html" class="btn-nav-ghost">Sign In</a>
-    <a href="#waitlist" class="btn-nav-primary">Get Early Access →</a>
-  </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-grid"></div>
-  <div class="hero-badge">🚀 Launching Summer 2026 — Limited Beta Now Open</div>
-  <h1>The TMS built for<br><span class="accent">modern freight brokers</span></h1>
-  <p class="hero-sub">FreightFlowHQ is launching Summer 2026. Join the waitlist now for free early access, locked-in beta pricing, and a direct line to the team building it.</p>
-  <div class="hero-actions">
-    <a href="#waitlist" class="btn-hero-primary">🚀 Join the Waitlist — It's Free</a>
-    <a href="#demo" class="btn-hero-ghost">👀 See it in action</a>
-  </div>
-
-  <!-- App Screenshot -->
-  <div class="hero-screenshot">
-    <div class="screenshot-frame">
-      <div class="screenshot-titlebar">
-        <div class="titlebar-dots">
-          <div class="titlebar-dot" style="background:#ff5f57;"></div>
-          <div class="titlebar-dot" style="background:#febc2e;"></div>
-          <div class="titlebar-dot" style="background:#28c840;"></div>
-        </div>
-        <div class="titlebar-url">freightflowhq.com</div>
-      </div>
-      <div class="screenshot-app">
-        <div class="screenshot-sidebar">
-          <div class="ss-logo" style="display:flex;align-items:center;gap:8px;">
-          <svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-            <rect width="40" height="40" rx="10" fill="#0D1829"/>
-            <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="3" stroke-linecap="round"/>
-            <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
-            <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="32" cy="13" r="3.5" fill="#10B981"/>
-            <circle cx="25" cy="20" r="3.5" fill="#10B981"/>
-          </svg>
-          Freight<span>Flow</span>
-        </div>
-          <div class="ss-section">Operations</div>
-          <div class="ss-item active"><span class="ss-item-icon">⬛</span> Dashboard</div>
-          <div class="ss-item"><span class="ss-item-icon">📋</span> Dispatch Board</div>
-          <div class="ss-item"><span class="ss-item-icon">📦</span> Load Management</div>
-          <div class="ss-section">Growth</div>
-          <div class="ss-item"><span class="ss-item-icon">🎯</span> CRM</div>
-          <div class="ss-section">Network</div>
-          <div class="ss-item"><span class="ss-item-icon">🚚</span> Carriers</div>
-          <div class="ss-item"><span class="ss-item-icon">🏢</span> Customers</div>
-          <div class="ss-section">Finance</div>
-          <div class="ss-item"><span class="ss-item-icon">🧾</span> Invoicing</div>
-        </div>
-        <div class="screenshot-main">
-          <div class="ss-header">
-            <div class="ss-title">Dashboard</div>
-            <button class="ss-btn">+ New Load</button>
-          </div>
-          <div class="ss-kpis">
-            <div class="ss-kpi b"><div class="ss-kpi-label">Active Loads</div><div class="ss-kpi-val">47</div></div>
-            <div class="ss-kpi g"><div class="ss-kpi-label">Revenue MTD</div><div class="ss-kpi-val">$183K</div></div>
-            <div class="ss-kpi g"><div class="ss-kpi-label">Gross Profit</div><div class="ss-kpi-val">$34K</div></div>
-            <div class="ss-kpi a"><div class="ss-kpi-label">GP %</div><div class="ss-kpi-val">18.4%</div></div>
-          </div>
-          <div class="ss-table">
-            <div class="ss-table-header">
-              <div class="ss-th">Load #</div>
-              <div class="ss-th">Route</div>
-              <div class="ss-th">Carrier</div>
-              <div class="ss-th">Status</div>
-              <div class="ss-th">Rate</div>
-            </div>
-            <div class="ss-row">
-              <div class="ss-cell strong">FF-8841</div>
-              <div class="ss-cell">Dallas → Chicago</div>
-              <div class="ss-cell">Swift Trans.</div>
-              <div class="ss-cell"><span class="ss-badge green">In Transit</span></div>
-              <div class="ss-cell strong">$2,840</div>
-            </div>
-            <div class="ss-row">
-              <div class="ss-cell strong">FF-8840</div>
-              <div class="ss-cell">LA → Phoenix</div>
-              <div class="ss-cell">Unassigned</div>
-              <div class="ss-cell"><span class="ss-badge blue">Available</span></div>
-              <div class="ss-cell strong">$1,650</div>
-            </div>
-            <div class="ss-row">
-              <div class="ss-cell strong">FF-8839</div>
-              <div class="ss-cell">Miami → Atlanta</div>
-              <div class="ss-cell">Knight Trans.</div>
-              <div class="ss-cell"><span class="ss-badge amber">Assigned</span></div>
-              <div class="ss-cell strong">$1,920</div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">AcmeCorp Logistics</span><span style="font-size:12px;color:#94a3b8;">$42,100</span><span style="font-size:12px;font-weight:600;color:#10b981;">$8,460</span><span style="font-size:12px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace;">20.1%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:80%;height:100%;background:#10b981;border-radius:4px;"></div></div></div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">Global Shippers</span><span style="font-size:12px;color:#94a3b8;">$31,800</span><span style="font-size:12px;font-weight:600;color:#10b981;">$5,882</span><span style="font-size:12px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace;">18.5%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:60%;height:100%;background:#10b981;border-radius:4px;"></div></div></div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">TexOil Industries</span><span style="font-size:12px;color:#94a3b8;">$28,400</span><span style="font-size:12px;font-weight:600;color:#10b981;">$6,412</span><span style="font-size:12px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace;">22.6%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:55%;height:100%;background:#10b981;border-radius:4px;"></div></div></div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">FastFreight LLC</span><span style="font-size:12px;color:#94a3b8;">$24,200</span><span style="font-size:12px;font-weight:600;color:#f59e0b;">$4,097</span><span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:'JetBrains Mono',monospace;">16.9%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:45%;height:100%;background:#f59e0b;border-radius:4px;"></div></div></div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">MidWest Foods</span><span style="font-size:12px;color:#94a3b8;">$8,900</span><span style="font-size:12px;font-weight:600;color:#ef4444;">$997</span><span style="font-size:12px;font-weight:700;color:#ef4444;font-family:'JetBrains Mono',monospace;">11.2%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:20%;height:100%;background:#ef4444;border-radius:4px;"></div></div></div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="screenshot-glow"></div>
-  </div>
-</section>
-
-<!-- STATS -->
-<div class="stats-bar reveal">
-  <div class="stat-item">
-    <div class="stat-num">9<span>+</span></div>
-    <div class="stat-label">Integrated modules</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">1<span>x</span></div>
-    <div class="stat-label">Platform for everything</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">$0</div>
-    <div class="stat-label">To get started</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">∞</div>
-    <div class="stat-label">Loads, carriers & customers</div>
-  </div>
-</div>
-
-<!-- FEATURES -->
-
-
-<!-- WHO IT'S FOR -->
-<section id="who">
-  <div style="max-width:1100px;margin:0 auto;">
-    <div class="reveal" style="text-align:center;margin-bottom:60px;">
-      <div class="section-tag">Who it's built for</div>
-      <h2 class="section-title">One platform.<br><em>Two types of operations.</em></h2>
-    </div>
-    <div class="who-grid reveal">
-      <div class="who-card broker">
-        <div class="who-icon">🤝</div>
-        <div class="who-title">Freight Brokers</div>
-        <div class="who-sub">For independent brokers and small brokerages doing $500K–$20M in freight annually who are tired of managing their business across 6 different tools.</div>
-        <ul class="who-list">
-          <li>Manage loads, carriers, and customers in one place</li>
-          <li>Track gross profit per load and per customer</li>
-          <li>Send rate cons and get digital carrier acceptance</li>
-          <li>Give shippers a portal to track their freight</li>
-          <li>Build your pipeline with the built-in CRM</li>
-        </ul>
-      </div>
-      <div class="who-card carrier">
-        <div class="who-icon">🚛</div>
-        <div class="who-title">Asset Carriers</div>
-        <div class="who-sub">For small to mid-size carriers with their own trucks and drivers who need a dispatch system without the enterprise price tag.</div>
-        <ul class="who-list">
-          <li>Dispatch your own drivers from a live board</li>
-          <li>Track loads from pickup to delivery</li>
-          <li>Manage driver check calls and ETAs</li>
-          <li>Build and manage your shipper relationships with built-in CRM</li>
-          <li>Track leads, follow-ups, and new customer quotes in your pipeline</li>
-          <li>Invoice customers and track receivables</li>
-          <li>Monitor fleet compliance and insurance expiration</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- DEMO GALLERY -->
-<section id="demo">
-  <div class="demo-header reveal">
-    <div class="section-tag">See it in action</div>
-    <h2 class="section-title">Every module, <em>built to ship</em></h2>
-    <p class="section-sub" style="margin:0 auto;">Explore the key workflows that make FreightFlowHQ different from anything else in the market.</p>
-  </div>
-
-  <div class="demo-tabs reveal">
-    <button class="demo-tab active" onclick="switchDemo('dashboard')">Dashboard</button>
-    <button class="demo-tab" onclick="switchDemo('dispatch')">Dispatch</button>
-    <button class="demo-tab" onclick="switchDemo('crm')">CRM</button>
-  </div>
-
-  <div class="demo-screens reveal">
-
-    <!-- Dashboard Demo -->
-    <div class="demo-screen active" id="demo-dashboard">
-      <div class="demo-mockup">
-        <div class="demo-topbar">
-          <div class="demo-dot" style="background:#ff5f57;"></div>
-          <div class="demo-dot" style="background:#febc2e;"></div>
-          <div class="demo-dot" style="background:#28c840;"></div>
-          <span style="font-size:11px;color:#475569;margin-left:8px;font-family:'JetBrains Mono',monospace;">FreightFlowHQ — Dashboard</span>
-        </div>
-        <div class="demo-content">
-          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:20px;">
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #3b82f6;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Active Loads</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">47</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #10b981;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Revenue</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">$183K</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #10b981;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Gross Profit</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#10b981;">$34K</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #8b5cf6;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">GP %</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#8b5cf6;">18.4%</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #f59e0b;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Carriers</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">214</div>
-            </div>
-            <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-top:2px solid #3b82f6;border-radius:8px;padding:12px;">
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#475569;margin-bottom:6px;">Customers</div>
-              <div style="font-family:'Instrument Serif',serif;font-size:24px;color:#fff;">28</div>
-            </div>
-          </div>
-          <!-- Customer GP Table -->
-          <div style="background:#0D1829;border:1px solid rgba(255,255,255,0.06);border-radius:8px;overflow:hidden;">
-            <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;">
-              <span style="font-family:'Instrument Serif',serif;font-size:14px;color:#fff;">Customer Profitability</span>
-              <span style="font-size:11px;color:#475569;">This month</span>
-            </div>
-            <div style="padding:0;">
-              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:8px 16px;background:rgba(255,255,255,0.02);">
-                <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">Customer</span>
-                <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">Revenue</span>
-                <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">GP $</span>
-                <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">GP %</span>
-                <span style="font-size:9px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#334155;">Margin Bar</span>
-              </div>
-              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">AcmeCorp Logistics</span><span style="font-size:12px;color:#94a3b8;">$42,100</span><span style="font-size:12px;font-weight:600;color:#10b981;">$8,460</span><span style="font-size:12px;font-weight:700;color:#10b981;font-family:JetBrains Mono,monospace;">20.1%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:80%;height:100%;background:#10b981;border-radius:4px;"></div></div></div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">Global Shippers</span><span style="font-size:12px;color:#94a3b8;">$31,800</span><span style="font-size:12px;font-weight:600;color:#10b981;">$5,882</span><span style="font-size:12px;font-weight:700;color:#10b981;font-family:JetBrains Mono,monospace;">18.5%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:60%;height:100%;background:#10b981;border-radius:4px;"></div></div></div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">TexOil Industries</span><span style="font-size:12px;color:#94a3b8;">$28,400</span><span style="font-size:12px;font-weight:600;color:#10b981;">$6,412</span><span style="font-size:12px;font-weight:700;color:#10b981;font-family:JetBrains Mono,monospace;">22.6%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:55%;height:100%;background:#10b981;border-radius:4px;"></div></div></div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">FastFreight LLC</span><span style="font-size:12px;color:#94a3b8;">$24,200</span><span style="font-size:12px;font-weight:600;color:#f59e0b;">$4,097</span><span style="font-size:12px;font-weight:700;color:#f59e0b;font-family:JetBrains Mono,monospace;">16.9%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:45%;height:100%;background:#f59e0b;border-radius:4px;"></div></div></div><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1.5fr;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;"><span style="font-size:12px;font-weight:600;color:#e2e8f0;">MidWest Foods</span><span style="font-size:12px;color:#94a3b8;">$8,900</span><span style="font-size:12px;font-weight:600;color:#ef4444;">$997</span><span style="font-size:12px;font-weight:700;color:#ef4444;font-family:JetBrains Mono,monospace;">11.2%</span><div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;"><div style="width:20%;height:100%;background:#ef4444;border-radius:4px;"></div></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Dispatch Demo -->
     <div class="demo-screen" id="demo-dispatch">
       <div class="demo-mockup">
         <div class="demo-topbar">
-          <div class="demo-dot" style="background:#ff5f57;"></div>
-          <div class="demo-dot" style="background:#febc2e;"></div>
-          <div class="demo-dot" style="background:#28c840;"></div>
+          <div class="demo-dot" style="background:#ff5f57;"></div><div class="demo-dot" style="background:#febc2e;"></div><div class="demo-dot" style="background:#28c840;"></div>
           <span style="font-size:11px;color:#475569;margin-left:8px;font-family:'JetBrains Mono',monospace;">FreightFlowHQ — Dispatch Board</span>
         </div>
         <div class="demo-content">
           <div class="dispatch-demo">
-            <div>
-              <div class="dispatch-col-h" style="border-color:#3b82f6;color:#60a5fa;">Available <span style="background:rgba(59,130,246,0.15);padding:1px 6px;border-radius:8px;font-size:9px;">3</span></div>
-              <div class="load-mini" style="border-left-color:#3b82f6;"><div class="load-mini-id">FF-8840 · Dry Van</div><div class="load-mini-route">LA → Phoenix</div><div class="load-mini-rate">$1,650</div></div>
-              <div class="load-mini" style="border-left-color:#3b82f6;"><div class="load-mini-id">FF-8843 · Reefer</div><div class="load-mini-route">Denver → Salt Lake</div><div class="load-mini-rate">$1,100</div></div>
-            </div>
-            <div>
-              <div class="dispatch-col-h" style="border-color:#f59e0b;color:#f59e0b;">Assigned <span style="background:rgba(245,158,11,0.15);padding:1px 6px;border-radius:8px;font-size:9px;">2</span></div>
-              <div class="load-mini" style="border-left-color:#f59e0b;"><div class="load-mini-id">FF-8839 · Dry Van</div><div class="load-mini-route">Miami → Atlanta</div><div class="load-mini-rate">$1,920</div></div>
-              <div class="load-mini" style="border-left-color:#f59e0b;"><div class="load-mini-id">FF-8842 · Reefer</div><div class="load-mini-route">Chicago → Detroit</div><div class="load-mini-rate">$980</div></div>
-            </div>
-            <div>
-              <div class="dispatch-col-h" style="border-color:#10b981;color:#10b981;">In Transit <span style="background:rgba(16,185,129,0.15);padding:1px 6px;border-radius:8px;font-size:9px;">4</span></div>
-              <div class="load-mini" style="border-left-color:#10b981;"><div class="load-mini-id">FF-8841 · Dry Van</div><div class="load-mini-route">Dallas → Chicago</div><div class="load-mini-rate">$2,840</div></div>
-              <div class="load-mini" style="border-left-color:#10b981;"><div class="load-mini-id">FF-8836 · Flatbed</div><div class="load-mini-route">Seattle → Portland</div><div class="load-mini-rate">$890</div></div>
-            </div>
-            <div>
-              <div class="dispatch-col-h" style="border-color:#475569;color:#64748b;">Delivered <span style="background:rgba(71,85,105,0.2);padding:1px 6px;border-radius:8px;font-size:9px;">1</span></div>
-              <div class="load-mini" style="border-left-color:#475569;"><div class="load-mini-id">FF-8837 · Dry Van</div><div class="load-mini-route">Houston → Denver</div><div class="load-mini-rate" style="color:#10b981;">$3,100 ✓</div></div>
-            </div>
+            <div><div class="dispatch-col-h" style="border-color:#3b82f6;color:#60a5fa;">Available <span style="background:rgba(59,130,246,0.15);padding:1px 6px;border-radius:8px;font-size:9px;">3</span></div><div class="load-mini" style="border-left-color:#3b82f6;"><div class="load-mini-id">FF-8840 · Dry Van</div><div class="load-mini-route">LA → Phoenix</div><div class="load-mini-rate">$1,650</div></div><div class="load-mini" style="border-left-color:#3b82f6;"><div class="load-mini-id">FF-8843 · Reefer</div><div class="load-mini-route">Denver → Salt Lake</div><div class="load-mini-rate">$1,100</div></div></div>
+            <div><div class="dispatch-col-h" style="border-color:#f59e0b;color:#f59e0b;">Assigned <span style="background:rgba(245,158,11,0.15);padding:1px 6px;border-radius:8px;font-size:9px;">2</span></div><div class="load-mini" style="border-left-color:#f59e0b;"><div class="load-mini-id">FF-8839 · Dry Van</div><div class="load-mini-route">Miami → Atlanta</div><div class="load-mini-rate">$1,920</div></div></div>
+            <div><div class="dispatch-col-h" style="border-color:#10b981;color:#10b981;">In Transit <span style="background:rgba(16,185,129,0.15);padding:1px 6px;border-radius:8px;font-size:9px;">4</span></div><div class="load-mini" style="border-left-color:#10b981;"><div class="load-mini-id">FF-8841 · Dry Van</div><div class="load-mini-route">Dallas → Chicago</div><div class="load-mini-rate">$2,840</div></div></div>
+            <div><div class="dispatch-col-h" style="border-color:#475569;color:#64748b;">Delivered <span style="background:rgba(71,85,105,0.2);padding:1px 6px;border-radius:8px;font-size:9px;">1</span></div><div class="load-mini" style="border-left-color:#475569;"><div class="load-mini-id">FF-8837 · Dry Van</div><div class="load-mini-route">Houston → Denver</div><div class="load-mini-rate" style="color:#10b981;">$3,100 ✓</div></div></div>
           </div>
         </div>
       </div>
     </div>
-
     <!-- CRM Demo -->
     <div class="demo-screen" id="demo-crm">
       <div class="demo-mockup">
         <div class="demo-topbar">
-          <div class="demo-dot" style="background:#ff5f57;"></div>
-          <div class="demo-dot" style="background:#febc2e;"></div>
-          <div class="demo-dot" style="background:#28c840;"></div>
+          <div class="demo-dot" style="background:#ff5f57;"></div><div class="demo-dot" style="background:#febc2e;"></div><div class="demo-dot" style="background:#28c840;"></div>
           <span style="font-size:11px;color:#475569;margin-left:8px;font-family:'JetBrains Mono',monospace;">FreightFlowHQ — CRM Pipeline</span>
         </div>
         <div class="demo-content">
           <div class="crm-demo-board">
-            <div>
-              <div class="crm-col-header">New Lead <span style="background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:4px;">3</span></div>
-              <div class="crm-card"><div class="crm-card-co">Apex Logistics</div><div class="crm-card-contact">Tom Bradley · (214) 555-0192</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span class="crm-loads">40 loads/mo</span></div></div>
-              <div class="crm-card"><div class="crm-card-co">SunBelt Freight</div><div class="crm-card-contact">Maria Chen · (713) 555-0841</div><div class="crm-card-footer"><span class="crm-priority med">● Medium</span><span class="crm-loads">15 loads/mo</span></div></div>
-            </div>
-            <div>
-              <div class="crm-col-header">Contacted <span style="background:rgba(59,130,246,0.1);padding:1px 5px;border-radius:4px;color:#60a5fa;">2</span></div>
-              <div class="crm-card"><div class="crm-card-co">Gulf Coast Shippers</div><div class="crm-card-contact">James Webb · (504) 555-0217</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span class="crm-loads">60 loads/mo</span></div></div>
-            </div>
-            <div>
-              <div class="crm-col-header">Qualified <span style="background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:4px;color:#f59e0b;">2</span></div>
-              <div class="crm-card"><div class="crm-card-co">MidAmerica Produce</div><div class="crm-card-contact">Sarah Kim · (816) 555-0394</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span class="crm-loads">30 loads/mo</span></div></div>
-              <div class="crm-card"><div class="crm-card-co">Pacific Rim Trading</div><div class="crm-card-contact">David Park · (310) 555-0128</div><div class="crm-card-footer"><span class="crm-priority med">● Medium</span><span class="crm-loads">25 loads/mo</span></div></div>
-            </div>
-            <div>
-              <div class="crm-col-header">Proposal <span style="background:rgba(139,92,246,0.1);padding:1px 5px;border-radius:4px;color:#8b5cf6;">1</span></div>
-              <div class="crm-card"><div class="crm-card-co">TexOil Industries</div><div class="crm-card-contact">Carlos Ruiz · (713) 555-0492</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span class="crm-loads">50 loads/mo</span></div></div>
-            </div>
-            <div>
-              <div class="crm-col-header">Converted <span style="background:rgba(16,185,129,0.1);padding:1px 5px;border-radius:4px;color:#10b981;">4</span></div>
-              <div class="crm-card" style="border-color:rgba(16,185,129,0.2);"><div class="crm-card-co" style="color:#10b981;">AcmeCorp Logistics ✓</div><div class="crm-card-contact">Sarah Kim</div><div class="crm-card-footer"><span style="color:#10b981;font-weight:700;font-size:10px;">$42K/mo</span></div></div>
-            </div>
+            <div><div class="crm-col-header">New Lead <span style="background:rgba(255,255,255,0.05);padding:1px 5px;border-radius:4px;">3</span></div><div class="crm-card"><div class="crm-card-co">Apex Logistics</div><div class="crm-card-contact">Tom Bradley · (214) 555-0192</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span style="color:#475569;">40 loads/mo</span></div></div></div>
+            <div><div class="crm-col-header">Contacted <span style="background:rgba(59,130,246,0.1);padding:1px 5px;border-radius:4px;color:#60a5fa;">2</span></div><div class="crm-card"><div class="crm-card-co">Gulf Coast Shippers</div><div class="crm-card-contact">James Webb · (504) 555-0217</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span style="color:#475569;">60 loads/mo</span></div></div></div>
+            <div><div class="crm-col-header">Qualified <span style="background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:4px;color:#f59e0b;">2</span></div><div class="crm-card"><div class="crm-card-co">MidAmerica Produce</div><div class="crm-card-contact">Sarah Kim · (816) 555-0394</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span style="color:#475569;">30 loads/mo</span></div></div></div>
+            <div><div class="crm-col-header">Proposal <span style="background:rgba(139,92,246,0.1);padding:1px 5px;border-radius:4px;color:#8b5cf6;">1</span></div><div class="crm-card"><div class="crm-card-co">TexOil Industries</div><div class="crm-card-contact">Carlos Ruiz · (713) 555-0492</div><div class="crm-card-footer"><span class="crm-priority high">● High</span><span style="color:#475569;">50 loads/mo</span></div></div></div>
+            <div><div class="crm-col-header">Converted <span style="background:rgba(16,185,129,0.1);padding:1px 5px;border-radius:4px;color:#10b981;">4</span></div><div class="crm-card" style="border-color:rgba(16,185,129,0.2);"><div class="crm-card-co" style="color:#10b981;">AcmeCorp Logistics ✓</div><div class="crm-card-contact">Sarah Kim</div><div class="crm-card-footer"><span style="color:#10b981;font-weight:700;font-size:10px;">$42K/mo</span></div></div></div>
           </div>
         </div>
       </div>
     </div>
-
   </div>
+</section>
 
-      </div>
-      </div>
-      </div>
-      </div>
-      </div>
-      </div></section>
-
-<!-- ABOUT / FOUNDER -->
+<!-- ABOUT -->
 <section id="about">
   <div class="about-grid">
     <div class="about-content reveal">
       <div class="section-tag">The story</div>
       <div class="about-quote">"Freight brokers and carriers deserve software built for the way they actually work — not the way enterprise vendors think they work."</div>
-      <p class="about-text">FreightFlowHQ was built out of a simple frustration: the logistics software market is either enterprise tools that cost tens of thousands of dollars, or dated platforms with terrible interfaces that haven't been updated since 2008. Small and mid-size brokers and carriers — the backbone of American freight — are left stitching together spreadsheets, load boards, and QuickBooks just to run their business.</p>
+      <p class="about-text">FreightFlowHQ was built out of a simple frustration: the logistics software market is either enterprise tools that cost tens of thousands of dollars, or dated platforms with terrible interfaces that haven't been updated since 2008.</p>
       <p class="about-text" style="margin-bottom:32px;">We built FreightFlowHQ from the ground up for the way modern logistics businesses actually operate — combining TMS, CRM, dispatch, and financial tools into one platform that's fast, intuitive, and priced for the companies that need it most.</p>
       <div class="about-founder">
         <div class="about-avatar">FF</div>
@@ -2759,46 +519,23 @@ footer {
     </div>
     <div class="about-visual reveal">
       <div class="about-card">
-        <div class="about-metric">
-          <span class="about-metric-label">Target market size</span>
-          <span class="about-metric-val blue">17,000+ brokers</span>
-        </div>
-        <div class="about-metric">
-          <span class="about-metric-label">Industry revenue</span>
-          <span class="about-metric-val blue">$97B annually</span>
-        </div>
-        <div class="about-metric">
-          <span class="about-metric-label">Avg savings vs. enterprise TMS</span>
-          <span class="about-metric-val green">$40,000/yr</span>
-        </div>
-        <div class="about-metric">
-          <span class="about-metric-label">Setup time</span>
-          <span class="about-metric-val green">Under 30 minutes</span>
-        </div>
-        <div class="about-metric">
-          <span class="about-metric-label">Contract required</span>
-          <span class="about-metric-val green">None — cancel anytime</span>
-        </div>
-        <div class="about-metric">
-          <span class="about-metric-label">Current status</span>
-          <span class="about-metric-val" style="color:#f59e0b;">Beta — Limited access</span>
-        </div>
+        <div class="about-metric"><span class="about-metric-label">Target market size</span><span class="about-metric-val blue">17,000+ brokers</span></div>
+        <div class="about-metric"><span class="about-metric-label">Industry revenue</span><span class="about-metric-val blue">$97B annually</span></div>
+        <div class="about-metric"><span class="about-metric-label">Avg savings vs. enterprise TMS</span><span class="about-metric-val green">$40,000/yr</span></div>
+        <div class="about-metric"><span class="about-metric-label">Setup time</span><span class="about-metric-val green">Same day</span></div>
+        <div class="about-metric"><span class="about-metric-label">Contract required</span><span class="about-metric-val green">None — cancel anytime</span></div>
+        <div class="about-metric"><span class="about-metric-label">Launch date</span><span class="about-metric-val" style="color:#f59e0b;">Summer 2026</span></div>
       </div>
     </div>
   </div>
 </section>
 
-
 <!-- PRICING -->
 <section id="pricing" style="background:var(--navy2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:100px 60px;">
   <div style="max-width:1100px;margin:0 auto;">
-    <div class="reveal" style="text-align:center;margin-bottom:16px;">
-      <div class="section-tag" style="justify-content:center;">Simple pricing</div>
-    </div>
+    <div class="reveal" style="text-align:center;margin-bottom:16px;"><div class="section-tag" style="justify-content:center;">Simple pricing</div></div>
     <h2 class="section-title reveal" style="text-align:center;">Straightforward plans.<br><em>No surprises.</em></h2>
     <p class="section-sub reveal" style="text-align:center;margin:0 auto 20px;">Launching Summer 2026. Beta users get locked-in pricing — join the waitlist to secure your rate before public launch.</p>
-
-    <!-- Annual toggle -->
     <div class="reveal" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:52px;">
       <span style="font-size:13px;color:var(--gray);">Monthly</span>
       <div id="billing-toggle" onclick="toggleBilling()" style="width:44px;height:24px;background:var(--blue);border-radius:12px;cursor:pointer;position:relative;transition:background 0.2s;">
@@ -2806,143 +543,94 @@ footer {
       </div>
       <span style="font-size:13px;color:var(--gray);">Annual <span style="background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:4px;">2 months free</span></span>
     </div>
-
-    <!-- Pricing cards -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start;">
-
       <!-- Starter -->
-      <div class="reveal" style="background:var(--navy);border:1px solid var(--border);border-radius:16px;padding:32px 28px;transition:transform 0.2s,border-color 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.borderColor='rgba(255,255,255,0.15)'" onmouseout="this.style.transform='translateY(0)';this.style.borderColor='rgba(255,255,255,0.07)'">
+      <div class="reveal" style="background:var(--navy);border:1px solid var(--border);border-radius:16px;padding:32px 28px;transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-bottom:12px;">Starter</div>
-        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
-          <span style="font-family:'Instrument Serif',serif;font-size:48px;color:var(--white);" id="starter-price">$79</span>
-          <span style="font-size:13px;color:var(--gray);">/month flat</span>
-        </div>
+        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;"><span style="font-family:'Instrument Serif',serif;font-size:48px;color:var(--white);" id="starter-price">$79</span><span style="font-size:13px;color:var(--gray);">/month flat</span></div>
         <div style="font-size:12px;color:var(--gray);margin-bottom:24px;" id="starter-note">1–2 users included</div>
-        <a href="#waitlist" style="display:block;text-align:center;padding:11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;margin-bottom:28px;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--blue2)';this.style.color='var(--white)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='var(--text)'">Get Started →</a>
+        <a href="#waitlist" style="display:block;text-align:center;padding:11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-weight:600;color:var(--white);text-decoration:none;margin-bottom:28px;">Join Waitlist →</a>
         <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--gray);margin-bottom:14px;">What's included</div>
         <ul style="list-style:none;padding:0;margin:0;">
-          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>All core TMS modules</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Load & dispatch management</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Carrier & customer management</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Invoicing & quick pay</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Up to 100 loads/month</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>FreightFlow branded rate cons</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Email support</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>All core TMS modules</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Load & dispatch management</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Carrier & customer management</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Invoicing & quick pay</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Up to 100 loads/month</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>FreightFlow branded rate cons</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Email support</li>
         </ul>
       </div>
-
-      <!-- Growth - FEATURED -->
+      <!-- Growth -->
       <div class="reveal" style="background:var(--navy);border:2px solid var(--blue);border-radius:16px;padding:32px 28px;position:relative;transform:translateY(-8px);box-shadow:0 0 40px rgba(26,86,219,0.2);">
-        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;font-size:11px;font-weight:700;padding:4px 16px;border-radius:20px;letter-spacing:0.8px;white-space:nowrap;">MOST POPULAR</div>
+        <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;font-size:11px;font-weight:700;padding:4px 16px;border-radius:20px;white-space:nowrap;">MOST POPULAR</div>
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue3);margin-bottom:12px;">Growth</div>
-        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
-          <span style="font-family:'Instrument Serif',serif;font-size:48px;color:var(--white);" id="growth-price">$129</span>
-          <span style="font-size:13px;color:var(--gray);">/user/month</span>
-        </div>
+        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;"><span style="font-family:'Instrument Serif',serif;font-size:48px;color:var(--white);" id="growth-price">$129</span><span style="font-size:13px;color:var(--gray);">/user/month</span></div>
         <div style="font-size:12px;color:var(--gray);margin-bottom:24px;">3–10 users · Unlimited loads</div>
-        <a href="#waitlist" style="display:block;text-align:center;padding:11px;background:var(--blue);border-radius:8px;font-size:13px;font-weight:600;color:white;text-decoration:none;margin-bottom:28px;transition:all 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='var(--blue)'">Get Started →</a>
+        <a href="#waitlist" style="display:block;text-align:center;padding:11px;background:var(--blue);border-radius:8px;font-size:13px;font-weight:600;color:white;text-decoration:none;margin-bottom:28px;">Join Waitlist →</a>
         <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--gray);margin-bottom:14px;">Everything in Starter, plus</div>
         <ul style="list-style:none;padding:0;margin:0;">
-          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Unlimited loads</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>CRM — lead pipeline & contacts</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Company logo on rate cons</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Customer portal (branded)</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>GP% analytics & reporting</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Customer profitability dashboard</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Phone + email support</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Unlimited loads</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>CRM — lead pipeline & contacts</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Company logo on rate cons</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Customer portal (branded)</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>GP% analytics & reporting</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Customer profitability dashboard</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Phone + email support</li>
         </ul>
       </div>
-
       <!-- Professional -->
-      <div class="reveal" style="background:var(--navy);border:1px solid var(--border);border-radius:16px;padding:32px 28px;transition:transform 0.2s,border-color 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.borderColor='rgba(255,255,255,0.15)'" onmouseout="this.style.transform='translateY(0)';this.style.borderColor='rgba(255,255,255,0.07)'">
+      <div class="reveal" style="background:var(--navy);border:1px solid var(--border);border-radius:16px;padding:32px 28px;transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-bottom:12px;">Professional</div>
-        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
-          <span style="font-family:'Instrument Serif',serif;font-size:48px;color:var(--white);" id="pro-price">$149</span>
-          <span style="font-size:13px;color:var(--gray);">/user/month</span>
-        </div>
+        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;"><span style="font-family:'Instrument Serif',serif;font-size:48px;color:var(--white);" id="pro-price">$149</span><span style="font-size:13px;color:var(--gray);">/user/month</span></div>
         <div style="font-size:12px;color:var(--gray);margin-bottom:24px;">11–25 users · Full white-label</div>
-        <a href="#waitlist" style="display:block;text-align:center;padding:11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none;margin-bottom:28px;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--blue2)';this.style.color='var(--white)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.12)';this.style.color='var(--text)'">Get Started →</a>
+        <a href="#waitlist" style="display:block;text-align:center;padding:11px;border:1px solid var(--border2);border-radius:8px;font-size:13px;font-weight:600;color:var(--white);text-decoration:none;margin-bottom:28px;">Join Waitlist →</a>
         <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--gray);margin-bottom:14px;">Everything in Growth, plus</div>
         <ul style="list-style:none;padding:0;margin:0;">
-          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Full white-label rate cons</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Custom colors & logo on portal</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Custom terms & conditions</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Document storage (BOL, POD)</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Custom role permissions matrix</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Priority support + onboarding call</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;margin-top:1px;">✓</span>Advanced reporting</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Full white-label rate cons</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Custom colors & logo on portal</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Custom terms & conditions</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Document storage (BOL, POD)</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Custom role permissions matrix</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Priority support + onboarding</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--green);flex-shrink:0;">✓</span>Advanced reporting</li>
         </ul>
       </div>
-
       <!-- Enterprise -->
-      <div class="reveal" style="background:var(--navy3);border:1px solid var(--border);border-radius:16px;padding:32px 28px;transition:transform 0.2s,border-color 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.borderColor='rgba(255,255,255,0.15)'" onmouseout="this.style.transform='translateY(0)';this.style.borderColor='rgba(255,255,255,0.07)'">
+      <div class="reveal" style="background:var(--navy3);border:1px solid var(--border);border-radius:16px;padding:32px 28px;transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
         <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Enterprise</div>
-        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
-          <span style="font-family:'Instrument Serif',serif;font-size:40px;color:var(--white);">Custom</span>
-        </div>
+        <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;"><span style="font-family:'Instrument Serif',serif;font-size:40px;color:var(--white);">Custom</span></div>
         <div style="font-size:12px;color:var(--gray);margin-bottom:24px;">25+ users · Let's talk</div>
-        <a href="#waitlist" style="display:block;text-align:center;padding:11px;border:1px solid rgba(240,165,0,0.3);border-radius:8px;font-size:13px;font-weight:600;color:var(--gold);text-decoration:none;margin-bottom:28px;transition:all 0.2s;" onmouseover="this.style.background='rgba(240,165,0,0.08)'" onmouseout="this.style.background='transparent'">Contact Us →</a>
+        <a href="#waitlist" style="display:block;text-align:center;padding:11px;border:1px solid rgba(240,165,0,0.3);border-radius:8px;font-size:13px;font-weight:600;color:var(--gold);text-decoration:none;margin-bottom:28px;">Contact Us →</a>
         <div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--gray);margin-bottom:14px;">Everything in Professional, plus</div>
         <ul style="list-style:none;padding:0;margin:0;">
-          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">✓</span>Custom rate con template upload</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">✓</span>Dedicated account manager</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">✓</span>Custom API integrations</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">✓</span>DAT/Truckstop integration</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">✓</span>SLA guarantee</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">✓</span>Custom onboarding & training</li>
-<li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;margin-top:1px;">✓</span>Volume discounts</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;">✓</span>Custom rate con template upload</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;">✓</span>Dedicated account manager</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;">✓</span>Custom API integrations</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;">✓</span>DAT/Truckstop integration</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;">✓</span>SLA guarantee</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;">✓</span>Custom onboarding & training</li>
+          <li style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--gray2);line-height:1.5;margin-bottom:10px;"><span style="color:var(--gold);flex-shrink:0;">✓</span>Volume discounts</li>
         </ul>
       </div>
-
     </div>
-
     <!-- Add-ons -->
     <div class="reveal" style="margin-top:48px;background:var(--navy);border:1px solid var(--border);border-radius:14px;padding:28px 32px;">
       <div style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-bottom:20px;">Optional Add-ons</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
-        <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="font-size:20px;flex-shrink:0;">💳</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;">Stripe Payments</div>
-            <div style="font-size:12px;color:var(--blue3);font-weight:600;margin-bottom:2px;">0.5% per transaction</div>
-            <div style="font-size:12px;color:var(--gray);">Customer portal pay-now button</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="font-size:20px;flex-shrink:0;">📱</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;">SMS Check Calls</div>
-            <div style="font-size:12px;color:var(--blue3);font-weight:600;margin-bottom:2px;">$29/month</div>
-            <div style="font-size:12px;color:var(--gray);">Twilio driver text updates</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="font-size:20px;flex-shrink:0;">🔗</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;">Load Board Integration</div>
-            <div style="font-size:12px;color:var(--blue3);font-weight:600;margin-bottom:2px;">$49/month</div>
-            <div style="font-size:12px;color:var(--gray);">DAT & Truckstop posting</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="font-size:20px;flex-shrink:0;">💾</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;">Extra Storage</div>
-            <div style="font-size:12px;color:var(--blue3);font-weight:600;margin-bottom:2px;">$19/month per 100GB</div>
-            <div style="font-size:12px;color:var(--gray);">BOL, POD, document archive</div>
-          </div>
-        </div>
+        <div style="display:flex;gap:12px;"><div style="font-size:20px;">💳</div><div><div style="font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px;">Stripe Payments</div><div style="font-size:12px;color:var(--blue3);font-weight:600;">0.5% per transaction</div><div style="font-size:12px;color:var(--gray);">Customer portal pay-now</div></div></div>
+        <div style="display:flex;gap:12px;"><div style="font-size:20px;">📱</div><div><div style="font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px;">SMS Check Calls</div><div style="font-size:12px;color:var(--blue3);font-weight:600;">$29/month</div><div style="font-size:12px;color:var(--gray);">Twilio driver text updates</div></div></div>
+        <div style="display:flex;gap:12px;"><div style="font-size:20px;">🔗</div><div><div style="font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px;">Load Board Integration</div><div style="font-size:12px;color:var(--blue3);font-weight:600;">$49/month</div><div style="font-size:12px;color:var(--gray);">DAT & Truckstop posting</div></div></div>
+        <div style="display:flex;gap:12px;"><div style="font-size:20px;">💾</div><div><div style="font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px;">Extra Storage</div><div style="font-size:12px;color:var(--blue3);font-weight:600;">$19/month per 100GB</div><div style="font-size:12px;color:var(--gray);">BOL, POD, document archive</div></div></div>
       </div>
     </div>
-
-    <!-- Trust notes -->
+    <!-- Trust bar -->
     <div class="reveal" style="text-align:center;margin-top:36px;display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
       <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray);"><span style="color:var(--green);">✓</span>No contracts — cancel anytime</div>
       <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray);"><span style="color:var(--green);">✓</span>Free beta access · Summer 2026 launch</div>
       <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray);"><span style="color:var(--green);">✓</span>Up and running same day</div>
       <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--gray);"><span style="color:var(--green);">✓</span>Your data is always yours</div>
     </div>
-
   </div>
 </section>
 
@@ -2951,38 +639,20 @@ footer {
   <div class="waitlist-inner">
     <div class="waitlist-glow"></div>
     <!-- Launch timeline -->
-    <div class="reveal" style="display:flex;gap:0;justify-content:center;margin-bottom:40px;flex-wrap:wrap;">
-      <div style="text-align:center;padding:20px 32px;border-right:1px solid rgba(255,255,255,0.1);">
-        <div style="font-family:'Instrument Serif',serif;font-size:36px;color:white;margin-bottom:4px;">✅</div>
-        <div style="font-size:12px;font-weight:700;color:#60A5FA;margin-bottom:2px;">NOW</div>
-        <div style="font-size:11px;color:var(--gray);">Beta Testing</div>
-      </div>
-      <div style="text-align:center;padding:20px 32px;border-right:1px solid rgba(255,255,255,0.1);">
-        <div style="font-family:'Instrument Serif',serif;font-size:36px;color:white;margin-bottom:4px;">🔜</div>
-        <div style="font-size:12px;font-weight:700;color:#60A5FA;margin-bottom:2px;">SPRING 2026</div>
-        <div style="font-size:11px;color:var(--gray);">Waitlist Onboarding</div>
-      </div>
-      <div style="text-align:center;padding:20px 32px;border-right:1px solid rgba(255,255,255,0.1);">
-        <div style="font-family:'Instrument Serif',serif;font-size:36px;color:#10B981;margin-bottom:4px;">🚀</div>
-        <div style="font-size:12px;font-weight:700;color:#10B981;margin-bottom:2px;">SUMMER 2026</div>
-        <div style="font-size:11px;color:var(--gray);">Public Launch</div>
-      </div>
-      <div style="text-align:center;padding:20px 32px;">
-        <div style="font-family:'Instrument Serif',serif;font-size:36px;color:white;margin-bottom:4px;">📈</div>
-        <div style="font-size:12px;font-weight:700;color:#60A5FA;margin-bottom:2px;">FALL 2026</div>
-        <div style="font-size:11px;color:var(--gray);">Full Feature Release</div>
-      </div>
+    <div class="reveal" style="display:flex;gap:0;justify-content:center;margin-bottom:48px;flex-wrap:wrap;background:var(--navy2);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+      <div style="text-align:center;padding:20px 32px;border-right:1px solid var(--border);flex:1;min-width:120px;"><div style="font-size:28px;margin-bottom:6px;">✅</div><div style="font-size:11px;font-weight:700;color:var(--blue3);margin-bottom:2px;letter-spacing:1px;">NOW</div><div style="font-size:12px;color:var(--gray);">Beta Testing</div></div>
+      <div style="text-align:center;padding:20px 32px;border-right:1px solid var(--border);flex:1;min-width:120px;"><div style="font-size:28px;margin-bottom:6px;">🔜</div><div style="font-size:11px;font-weight:700;color:var(--blue3);margin-bottom:2px;letter-spacing:1px;">SPRING 2026</div><div style="font-size:12px;color:var(--gray);">Waitlist Onboarding</div></div>
+      <div style="text-align:center;padding:20px 32px;border-right:1px solid var(--border);flex:1;min-width:120px;"><div style="font-size:28px;margin-bottom:6px;">🚀</div><div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:2px;letter-spacing:1px;">SUMMER 2026</div><div style="font-size:12px;color:var(--gray);">Public Launch</div></div>
+      <div style="text-align:center;padding:20px 32px;flex:1;min-width:120px;"><div style="font-size:28px;margin-bottom:6px;">📈</div><div style="font-size:11px;font-weight:700;color:var(--blue3);margin-bottom:2px;letter-spacing:1px;">FALL 2026</div><div style="font-size:12px;color:var(--gray);">Full Feature Release</div></div>
     </div>
-    <div class="section-tag reveal" style="justify-content:center;">Early Access</div>
+    <div class="section-tag reveal" style="justify-content:center;">🗓️ Launching Summer 2026</div>
     <h2 class="section-title reveal">Launching Summer 2026.<br>Be the first in line for <em>FreightFlowHQ</em></h2>
     <p class="section-sub reveal">We're opening beta access to a limited group of freight brokers this summer. Get in early — lock in beta pricing, shape the product with direct feedback, and be running before everyone else.</p>
     <div class="waitlist-form reveal">
       <input type="email" class="waitlist-input" id="waitlist-email" placeholder="your@email.com"/>
       <button class="waitlist-btn" onclick="submitWaitlist()">Get Early Access →</button>
     </div>
-    <div class="waitlist-success" id="waitlist-success">
-      🎉 You're on the list! We'll be in touch shortly with your access details.
-    </div>
+    <div class="waitlist-success" id="waitlist-success">🎉 You're on the list! We'll be in touch shortly with your access details.</div>
     <p class="waitlist-note reveal">No credit card required · Free during beta · Cancel anytime</p>
   </div>
 </section>
@@ -2990,16 +660,9 @@ footer {
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-brand">
+    <div>
       <a href="#" class="footer-logo">
-        <svg width="28" height="28" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
-          <rect width="40" height="40" rx="10" fill="#0D1829"/>
-          <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="32" cy="13" r="3" fill="#10B981"/>
-          <circle cx="25" cy="20" r="3" fill="#10B981"/>
-        </svg>
+        <svg width="28" height="28" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#0D1829"/><line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="2.5" stroke-linecap="round"/><circle cx="32" cy="13" r="3" fill="#10B981"/><circle cx="25" cy="20" r="3" fill="#10B981"/></svg>
         Freight<span>Flow</span><span style="font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gray);margin-left:2px;">HQ</span>
       </a>
       <p class="footer-tagline">The all-in-one logistics platform for freight brokers and asset carriers. TMS + CRM + Dispatch + Invoicing in one place.</p>
@@ -3009,7 +672,7 @@ footer {
       <ul class="footer-links">
         <li><a href="#features">Features</a></li>
         <li><a href="#demo">Demo</a></li>
-        <li><a href="#waitlist">Pricing</a></li>
+        <li><a href="#pricing">Pricing</a></li>
         <li><a href="#waitlist">Early Access</a></li>
       </ul>
     </div>
@@ -3017,9 +680,7 @@ footer {
       <div class="footer-col-title">Company</div>
       <ul class="footer-links">
         <li><a href="#about">About</a></li>
-    <li><a href="#pricing">Pricing</a></li>
         <li><a href="#waitlist">Contact</a></li>
-        <li><a href="#">Blog</a></li>
       </ul>
     </div>
     <div>
@@ -3038,51 +699,12 @@ footer {
 </footer>
 
 <script>
-// Nav scroll effect
-window.addEventListener('scroll', () => {
-  const nav = document.getElementById('navbar');
-  if (window.scrollY > 40) nav.classList.add('scrolled');
-  else nav.classList.remove('scrolled');
-});
-
-// Scroll reveal
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-    }
-  });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-// Demo tabs
-function switchDemo(tab) {
-  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.demo-screen').forEach(s => s.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('demo-' + tab).classList.add('active');
-}
-
-// Waitlist form
-function submitWaitlist() {
-  const email = document.getElementById('waitlist-email').value;
-  if (!email || !email.includes('@')) {
-    alert('Please enter a valid email address.');
-    return;
-  }
-  document.querySelector('.waitlist-form').style.display = 'none';
-  document.querySelector('.waitlist-note').style.display = 'none';
-  document.getElementById('waitlist-success').style.display = 'block';
-}
-
-
 // Billing toggle
 let isAnnual = false;
 function toggleBilling() {
   isAnnual = !isAnnual;
   const dot = document.getElementById('billing-dot');
-  if (isAnnual) {
+  if(isAnnual) {
     dot.style.transform = 'translateX(20px)';
     document.getElementById('starter-price').textContent = '$66';
     document.getElementById('starter-note').textContent = '1–2 users · 2 months free';
@@ -3097,12 +719,42 @@ function toggleBilling() {
   }
 }
 
-// Smooth scroll for anchor links
+// Nav scroll
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('navbar');
+  if(window.scrollY > 50) nav.classList.add('scrolled');
+  else nav.classList.remove('scrolled');
+});
+
+// Reveal on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => { if(entry.isIntersecting) entry.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Demo tabs
+function switchDemo(tab) {
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-screen').forEach(s => s.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('demo-' + tab).classList.add('active');
+}
+
+// Waitlist
+function submitWaitlist() {
+  const email = document.getElementById('waitlist-email').value;
+  if(!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
+  document.querySelector('.waitlist-form').style.display = 'none';
+  document.querySelector('.waitlist-note').style.display = 'none';
+  document.getElementById('waitlist-success').style.display = 'block';
+}
+
+// Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', function(e) {
     e.preventDefault();
     const target = document.querySelector(this.getAttribute('href'));
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
 </script>
