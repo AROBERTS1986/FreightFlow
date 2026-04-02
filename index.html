@@ -785,7 +785,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="nav-item" onclick="switchPage('carriers')"><span class="nav-icon">🚚</span> Carriers</div>
   <div class="nav-item" onclick="switchPage('customers')"><span class="nav-icon">🏢</span> Customers</div>
   <div class="sidebar-section">Finance</div>
-  <div class="nav-item" onclick="switchPage('invoices')"><span class="nav-icon">🧾</span> Invoicing</div>
+  <div class="nav-item" onclick="switchPage('invoices')" style="position:relative;"><span class="nav-icon">🧾</span> Invoicing<span id="inv-sidebar-badge" style="display:none;position:absolute;top:6px;right:8px;background:var(--red);color:white;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 4px;"></span></div>
   <div class="sidebar-section">Insights</div>
   <div class="nav-item" onclick="switchPage('reports')"><span class="nav-icon">📊</span> Reports</div>
   <div class="sidebar-section">Settings</div>
@@ -1102,7 +1102,7 @@ textarea{resize:vertical;min-height:80px;}
           <div class="form-group"><label>Industry</label>
             <select id="cc-industry"><option>Freight Broker</option><option>Asset Carrier</option><option>Shipper</option><option>3PL</option><option>Manufacturer</option><option>Retailer</option><option>Food & Beverage</option><option>Chemical</option><option>Auto Parts</option><option>Other</option></select>
           </div>
-          <div class="form-group"><label>Phone</label><input type="tel" id="cc-phone" placeholder="(555) 000-0000"/></div>
+          <div class="form-group"><label>Phone</label><input type="tel" id="cc-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
           <div class="form-group"><label>Email</label><input type="email" id="cc-email" placeholder="contact@company.com"/></div>
           <div class="form-group"><label>Website</label><input type="text" id="cc-website" placeholder="www.company.com"/></div>
           <div class="form-group"><label>City</label><input type="text" id="cc-city" placeholder="Dallas"/></div>
@@ -1143,8 +1143,8 @@ textarea{resize:vertical;min-height:80px;}
           <div class="form-group"><label>Last Name *</label><input type="text" id="ccontact-last" placeholder="Smith"/></div>
           <div class="form-group"><label>Title / Role</label><input type="text" id="ccontact-title" placeholder="VP of Logistics"/></div>
           <div class="form-group"><label>Email</label><input type="email" id="ccontact-email" placeholder="john@company.com"/></div>
-          <div class="form-group"><label>Phone</label><input type="tel" id="ccontact-phone" placeholder="(555) 000-0000"/></div>
-          <div class="form-group"><label>Mobile</label><input type="tel" id="ccontact-mobile" placeholder="(555) 000-0001"/></div>
+          <div class="form-group"><label>Phone</label><input type="tel" id="ccontact-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
+          <div class="form-group"><label>Mobile</label><input type="tel" id="ccontact-mobile" placeholder="(555) 000-0001"/ oninput="fmtPhone(this)"></div>
           <div class="form-group full" style="display:flex;align-items:center;gap:8px;">
             <input type="checkbox" id="ccontact-primary" style="width:auto;"/>
             <label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;">Primary contact for this company</label>
@@ -1268,7 +1268,7 @@ textarea{resize:vertical;min-height:80px;}
           <div class="form-group"><label>MC Number</label><input type="text" id="s-mc" placeholder="123456"/></div>
           <div class="form-group"><label>DOT Number</label><input type="text" id="s-dot" placeholder="789012"/></div>
           <div class="form-group"><label>Dispatch Email</label><input type="email" id="s-email" placeholder="dispatch@yourbrokerage.com"/></div>
-          <div class="form-group"><label>Main Phone</label><input type="tel" id="s-phone" placeholder="(555) 000-0000"/></div>
+          <div class="form-group"><label>Main Phone</label><input type="tel" id="s-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
           <div class="form-group"><label>City</label><input type="text" id="s-city" placeholder="Dallas"/></div>
           <div class="form-group"><label>State</label><input type="text" id="s-state" placeholder="TX" maxlength="2"/></div>
           <div class="form-group"><label>Zip</label><input type="text" id="s-zip" placeholder="75201"/></div>
@@ -1657,7 +1657,7 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>DOT Number</label><input type="text" id="carrier-dot" placeholder="281728"/></div>
         <div class="form-group"><label>Contact Name</label><input type="text" id="carrier-contact" placeholder="John Smith"/></div>
         <div class="form-group"><label>Email</label><input type="email" id="carrier-email" placeholder="dispatch@carrier.com"/></div>
-        <div class="form-group"><label>Phone</label><input type="tel" id="carrier-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="carrier-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
         <div class="form-group"><label>Insurance Expiry</label><input type="date" id="carrier-insurance"/></div>
         <div class="form-group"><label>Safety Score</label><input type="number" id="carrier-safety" placeholder="95.0" min="0" max="100" step="0.1"/></div>
         <div class="form-group full"><label>Equipment Types (comma separated)</label><input type="text" id="carrier-equipment" placeholder="Dry Van, Reefer, Flatbed"/></div>
@@ -1681,11 +1681,45 @@ textarea{resize:vertical;min-height:80px;}
     <div class="modal-body">
       <input type="hidden" id="customer-id"/>
       <div class="form-grid">
-        <div class="form-group full"><label>Company Name</label><input type="text" id="customer-name" placeholder="AcmeCorp Logistics"/></div>
+        <div class="form-group full"><label>Company Name *</label><input type="text" id="customer-name" placeholder="AcmeCorp Logistics"/></div>
+        <div class="form-group"><label>Industry</label>
+          <select id="customer-industry">
+            <option value="">Select industry…</option>
+            <option>Freight Broker</option>
+            <option>Asset Carrier</option>
+            <option>3PL / Logistics Provider</option>
+            <option>Food & Beverage</option>
+            <option>Refrigerated / Cold Chain</option>
+            <option>Agriculture / Produce</option>
+            <option>Building Materials / Construction</option>
+            <option>Steel & Metals</option>
+            <option>Paper & Packaging</option>
+            <option>Chemicals & Hazmat</option>
+            <option>Automotive Parts</option>
+            <option>E-Commerce / Retail</option>
+            <option>Medical & Pharmaceutical</option>
+            <option>Energy / Oil & Gas</option>
+            <option>Furniture & Home Goods</option>
+            <option>Textiles & Apparel</option>
+            <option>Electronics</option>
+            <option>Government / Military</option>
+            <option>Manufacturing</option>
+            <option>Other</option>
+          </select>
+        </div>
         <div class="form-group"><label>Contact Name</label><input type="text" id="customer-contact" placeholder="Sarah Kim"/></div>
         <div class="form-group"><label>Email</label><input type="email" id="customer-email" placeholder="contact@company.com"/></div>
-        <div class="form-group"><label>Phone</label><input type="tel" id="customer-phone" placeholder="(555) 000-0000"/></div>
-        <div class="form-group"><label>City</label><input type="text" id="customer-city" placeholder="Dallas"/></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="customer-phone" placeholder="(555) 000-0000" oninput="fmtPhone(this)"/></div>
+        <div class="form-group"><label>Credit Terms</label>
+          <select id="customer-terms">
+            <option>Net 30</option><option>Net 45</option><option>Net 60</option>
+            <option>Quick Pay</option><option>Prepaid</option>
+          </select>
+        </div>
+        <div class="form-group" style="position:relative;">
+          <label>City</label>
+          <input type="text" id="customer-city" placeholder="Dallas" oninput="setupCityAutocomplete('customer-city','customer-state')"/>
+        </div>
         <div class="form-group"><label>State</label><input type="text" id="customer-state" placeholder="TX" maxlength="2"/></div>
         <div class="form-group full"><label>Notes</label><textarea id="customer-notes" placeholder="Any additional notes…"></textarea></div>
       </div>
@@ -1736,6 +1770,7 @@ textarea{resize:vertical;min-height:80px;}
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
+        <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">📋 Duplicate</button>
         <button class="modal-close" onclick="closeModal('detail')">✕</button>
       </div>
     </div>
@@ -2016,7 +2051,7 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group full"><label>Company Name</label><input type="text" id="lead-company" placeholder="ABC Logistics Inc."/></div>
         <div class="form-group"><label>Contact Name</label><input type="text" id="lead-contact" placeholder="John Smith"/></div>
         <div class="form-group"><label>Email</label><input type="email" id="lead-email" placeholder="john@company.com"/></div>
-        <div class="form-group"><label>Phone</label><input type="tel" id="lead-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>Phone</label><input type="tel" id="lead-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
         <div class="form-group"><label>City</label><input type="text" id="lead-city" placeholder="Dallas"/></div>
         <div class="form-group"><label>State</label><input type="text" id="lead-state" placeholder="TX" maxlength="2"/></div>
         <div class="form-group"><label>Pipeline Stage</label><select id="lead-stage"><option>New Lead</option><option>Contacted</option><option>Qualified</option><option>Proposal Sent</option><option>Converted</option></select></div>
@@ -2242,6 +2277,7 @@ async function loadData() {
     populateSelects();
     populateQuoteCustomers();
     loadLoadTemplates();
+    updateInvoiceBadge();
   } catch(e) {
     setDbStatus('error');
     toast('Database error: ' + e.message, 'error');
@@ -2618,10 +2654,33 @@ async function saveCustomer() {
     city: document.getElementById('customer-city')?.value,
     state: document.getElementById('customer-state')?.value?.toUpperCase(),
     notes: document.getElementById('customer-notes')?.value,
+    industry: document.getElementById('customer-industry')?.value || null,
+    payment_terms: document.getElementById('customer-terms')?.value || 'Net 30',
   };
-  const { error } = id ? await db.from('customers').update(payload).eq('id',id) : await db.from('customers').insert(payload);
-  if (error) { toast('Error: '+error.message,'error'); return; }
-  toast(id?'Customer updated!':'Customer added!','success'); closeModal('customer'); await loadData();
+  if(!payload.name) { toast('Company name is required','error'); return; }
+  const { data: savedData, error } = id
+    ? await db.from('customers').update(payload).eq('id',id).select().single()
+    : await db.from('customers').insert(payload).select().single();
+  if(error) { toast('Error: '+error.message,'error'); return; }
+  toast(id?'Customer updated!':'Customer added!','success');
+  closeModal('customer');
+  await loadData();
+  // Auto-silently create CRM company record for new customers
+  if(!id && savedData) {
+    await db.from('crm_companies').insert({
+      name: payload.name,
+      industry: payload.industry,
+      phone: payload.phone,
+      email: payload.email,
+      city: payload.city,
+      state: payload.state,
+      pipeline_stage: 'Active Customer',
+      probability: 100,
+      lead_source: 'TMS Customer',
+      status: 'active',
+      notes: 'Auto-created from TMS customer record',
+    });
+  }
 }
 
 async function editCustomer(id) {
@@ -3859,6 +3918,72 @@ function openLoadDetailAndUpload(loadId) {
     openDocUpload();
     document.getElementById('doc-type').value = 'POD (Proof of Delivery)';
   }, 400);
+}
+
+
+// ── PHONE FORMATTING ─────────────────────────────────────────
+function fmtPhone(input) {
+  let val = input.value.replace(/\D/g,'');
+  if(val.length === 0) { input.value = ''; return; }
+  if(val.length <= 3) { input.value = '(' + val; }
+  else if(val.length <= 6) { input.value = '(' + val.slice(0,3) + ') ' + val.slice(3); }
+  else { input.value = '(' + val.slice(0,3) + ') ' + val.slice(3,6) + '-' + val.slice(6,10); }
+}
+
+// ── DUPLICATE LOAD ────────────────────────────────────────────
+function duplicateLoad() {
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+  // Pre-fill load modal with same details, clear carrier/dates/status
+  const setVal = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  document.getElementById('load-id').value = '';
+  document.getElementById('load-modal-title').textContent = 'Duplicate Load';
+  setVal('load-origin-city', load.origin_city);
+  setVal('load-origin-state', load.origin_state);
+  setVal('load-dest-city', load.destination_city);
+  setVal('load-dest-state', load.destination_state);
+  setVal('load-equipment', load.equipment_type);
+  setVal('load-commodity', load.commodity);
+  setVal('load-weight', load.weight);
+  setVal('load-customer', load.customer_id);
+  setVal('load-rate', load.customer_rate);
+  setVal('load-carrier-pay', load.carrier_pay);
+  setVal('load-ref', load.reference_number);
+  setVal('load-notes', load.notes);
+  // Clear carrier, dates, status
+  setVal('load-carrier', '');
+  setVal('load-pickup', '');
+  setVal('load-delivery', '');
+  setVal('load-status', 'Available');
+  closeModal('detail');
+  openModal('load');
+  toast('Load duplicated — review and save', 'info');
+}
+
+// ── SIDEBAR INVOICE BADGE ─────────────────────────────────────
+function updateInvoiceBadge() {
+  const badge = document.getElementById('inv-sidebar-badge');
+  if(!badge) return;
+  const invoicedIds = new Set(allInvoices.map(i => i.load_id).filter(Boolean));
+  const pending = allLoads.filter(l => l.status === 'Delivered' && !invoicedIds.has(l.id)).length;
+  if(pending > 0) {
+    badge.textContent = pending;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── CARRIER RATE CON WORKFLOW ─────────────────────────────────
+function openAssignCarrier() {
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+  // Open load edit modal pre-focused on carrier field
+  openEditFromDetail();
+  setTimeout(() => {
+    const carrierField = document.getElementById('load-carrier');
+    if(carrierField) carrierField.focus();
+  }, 300);
 }
 
 applyTheme();
