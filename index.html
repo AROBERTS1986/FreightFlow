@@ -771,9 +771,16 @@ textarea{resize:vertical;min-height:80px;}
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
-  <div class="logo">
-    <div class="logo-icon">🚛</div>
-    <div class="logo-text">Freight<span>Flow</span></div>
+  <div class="logo" onclick="switchPage('dashboard')" style="cursor:pointer;">
+    <svg width="32" height="32" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+      <rect width="40" height="40" rx="10" fill="#0D1829"/>
+      <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="32" cy="13" r="3" fill="#10B981"/>
+      <circle cx="25" cy="20" r="3" fill="#10B981"/>
+    </svg>
+    <div class="logo-text">Freight<span>Flow</span><span style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#475569;margin-left:1px;">HQ</span></div>
   </div>
   <div class="sidebar-section">Operations</div>
   <div class="nav-item active" onclick="switchPage('dashboard')"><span class="nav-icon">⬛</span> Dashboard</div>
@@ -2468,8 +2475,8 @@ function createInvoiceFromLoad(loadId) {
   openModal('invoice');
 }
 
-function renderInvoices() {
-  renderInvoiceQueue();
+async function renderInvoices() {
+  await renderInvoiceQueue();
   renderInvoiceAging();
   const paidInvs = allInvoices.filter(i=>i.status==='Paid');
   const pendingInvs = allInvoices.filter(i=>i.status==='Pending');
@@ -2534,6 +2541,7 @@ function openModal(type) {
   const el=document.getElementById('modal-'+type);
   if(el) el.classList.add('open');
   if(type==='load') setTimeout(initCityAutocomplete, 100);
+  if(type==='customer') setTimeout(() => setupCityAutocomplete('customer-city','customer-state'), 100);
 }
 function closeModal(type) {
   const el=document.getElementById('modal-'+type); if(el) el.classList.remove('open');
@@ -2685,16 +2693,20 @@ async function saveCustomer() {
 
 async function editCustomer(id) {
   const c = allCustomers.find(x=>x.id===id); if(!c) return;
-  document.getElementById('customer-id').value = c.id;
-  document.getElementById('customer-modal-title').textContent = `Edit ${c.name}`;
-  document.getElementById('customer-name').value = c.name||'';
-  document.getElementById('customer-contact').value = c.contact_name||'';
-  document.getElementById('customer-email').value = c.email||'';
-  document.getElementById('customer-phone').value = c.phone||'';
-  document.getElementById('customer-city').value = c.city||'';
-  document.getElementById('customer-state').value = c.state||'';
-  document.getElementById('customer-notes').value = c.notes||'';
+  const sv = (elId, val) => { const el=document.getElementById(elId); if(el) el.value=val||''; };
+  sv('customer-id', c.id);
+  document.getElementById('customer-modal-title').textContent = 'Edit ' + c.name;
+  sv('customer-name', c.name);
+  sv('customer-contact', c.contact_name);
+  sv('customer-email', c.email);
+  sv('customer-phone', c.phone);
+  sv('customer-city', c.city);
+  sv('customer-state', c.state);
+  sv('customer-notes', c.notes);
+  sv('customer-industry', c.industry);
+  sv('customer-terms', c.payment_terms || 'Net 30');
   openModal('customer');
+  setTimeout(() => setupCityAutocomplete('customer-city','customer-state'), 100);
 }
 
 async function deleteCustomer(id) {
