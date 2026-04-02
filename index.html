@@ -2777,6 +2777,16 @@ function printRateCon() {
 
 // ── CRM FULL MODULE ───────────────────────────────────────────
 
+async function renderCRM() {
+  await loadCRMData();
+  updateCRMKPIs();
+  if(activeCrmTab === 'pipeline') renderCRMPipeline();
+  else if(activeCrmTab === 'companies') renderCompanyList();
+  else if(activeCrmTab === 'tasks') renderTasks();
+  else if(activeCrmTab === 'templates') renderTemplates();
+  else if(activeCrmTab === 'reports') renderCRMReports();
+}
+
 async function loadCRMData() {
   const [companies, contacts, activities, tasks, templates] = await Promise.all([
     db.from('crm_companies').select('*').order('created_at',{ascending:false}),
