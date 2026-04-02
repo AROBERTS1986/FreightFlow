@@ -2016,6 +2016,17 @@ textarea{resize:vertical;min-height:80px;}
         <div style="font-size:11px;color:var(--text3);margin-top:4px;" id="detention-start-label">Free time: 2 hours from arrival</div>
       </div>
 
+      <!-- Load Event Timeline -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📋 Load History</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadEventHistory()" style="font-size:10px;">Refresh</button>
+        </div>
+        <div id="load-event-timeline" style="max-height:200px;overflow-y:auto;">
+          <div style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">Loading history...</div>
+        </div>
+      </div>
+
       <!-- Check Calls Section -->
       <div style="background:var(--surface2);border-radius:10px;padding:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -3012,13 +3023,50 @@ function openLoadDetail(loadId) {
 
 async function updateLoadStatus(newStatus) {
   if(!currentDetailLoadId) return;
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+
+  // REPOWER WARNING — if moving back to Available with a carrier assigned
+  if(newStatus === 'Available' && load.carrier_id) {
+    const carrier = allCarriers.find(c => c.id === load.carrier_id);
+    const carrierName = carrier?.name || 'the assigned carrier';
+    const confirmed = confirm('⚠️ Repower Load?\n\nThis will:\n• Remove ' + carrierName + ' from this load\n• Send them a cancellation email\n• Reset the load to Available\n\nContinue?');
+    if(!confirmed) return;
+
+    // Send cancellation email
+    await sendCarrierCancellationEmail(load, carrier);
+
+    // Remove carrier from load
+    await db.from('loads').update({carrier_id: null, status: 'Available'}).eq('id', load.id);
+
+    // Log repower event
+    await logLoadEvent(load.id, 'repower', '⚠️ Load repowered — ' + carrierName + ' removed and sent cancellation email');
+
+    toast('Load repowered — ' + carrierName + ' notified', 'success');
+    await loadData();
+    openLoadDetail(currentDetailLoadId);
+    return;
+  }
+
+  const oldStatus = load.status;
   const {error} = await db.from('loads').update({status:newStatus}).eq('id',currentDetailLoadId);
   if(error){toast('Error: '+error.message,'error');return;}
+
+  // Log status change event
+  const eventIcons = {'Available':'📋','Assigned':'✅','In Transit':'🚛','Delivered':'📦'};
+  await logLoadEvent(load.id, 'status_change', (eventIcons[newStatus]||'📋') + ' Status changed: ' + oldStatus + ' → ' + newStatus);
+
+  // If delivered, log delivery
+  if(newStatus === 'Delivered') {
+    await logLoadEvent(load.id, 'delivered', '📦 Load delivered successfully');
+  }
+
   document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
   const map={'Available':'s-available','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
   document.querySelector('.status-btn.'+map[newStatus])?.classList.add('active-status');
   toast('Status updated to '+newStatus,'success');
   await loadData();
+  loadEventHistory();
 }
 
 function openEditFromDetail() { closeModal('detail'); setTimeout(()=>editLoad(currentDetailLoadId),200); }
@@ -4573,6 +4621,13 @@ function buildRateConEmailHTML(load, carrier, customer, customMessage) {
       <div class="rate-value">$${Number(load.carrier_pay||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
     </div>
 
+    ${window._currentAcceptUrl ? `
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${window._currentAcceptUrl}" style="display:inline-block;background:#10B981;color:white;padding:14px 36px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;">
+        ✅ Accept Rate Confirmation
+      </a>
+      <div style="font-size:11px;color:#94A3B8;margin-top:8px;">Click to digitally accept this rate confirmation</div>
+    </div>` : ''}
     <div class="terms">
       <strong>Terms & Conditions:</strong> Carrier agrees to transport the above-described shipment in accordance with all applicable federal, state, and local regulations. Carrier must maintain valid operating authority and insurance throughout the duration of this load. Payment will be issued within the agreed terms upon receipt of signed BOL and POD. Any detention, accessorial, or additional charges must be pre-approved in writing. By accepting this load, carrier agrees to all terms stated herein.
     </div>
@@ -5785,6 +5840,212 @@ openLoadDetail = function(id) {
       }
     }
   }, 200);
+};
+
+
+// ── LOAD EVENT LOGGING ────────────────────────────────────────
+async function logLoadEvent(loadId, eventType, description, metadata = {}) {
+  if(!loadId) return;
+  const profile = allUserProfiles?.find(p => p.user_id === currentUser?.id);
+  const performedByName = profile?.display_name || currentUser?.email || 'System';
+  await db.from('load_events').insert({
+    load_id: loadId,
+    event_type: eventType,
+    event_description: description,
+    performed_by: currentUser?.id || null,
+    performed_by_name: performedByName,
+    metadata: metadata,
+  });
+}
+
+// ── LOAD EVENT TIMELINE RENDERER ─────────────────────────────
+async function loadEventHistory() {
+  const el = document.getElementById('load-event-timeline');
+  if(!el || !currentDetailLoadId) return;
+
+  const { data: events } = await db.from('load_events')
+    .select('*')
+    .eq('load_id', currentDetailLoadId)
+    .order('created_at', {ascending: false});
+
+  if(!events || events.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px;">No history yet</div>';
+    return;
+  }
+
+  const eventColors = {
+    created: 'var(--green)',
+    status_change: 'var(--accent2)',
+    carrier_assigned: 'var(--accent)',
+    repower: 'var(--amber)',
+    ratecon_sent: 'var(--accent2)',
+    ratecon_accepted: 'var(--green)',
+    check_call: 'var(--text3)',
+    email_sent: 'var(--accent2)',
+    invoice_created: 'var(--green)',
+    payment_received: 'var(--green)',
+    delivered: 'var(--green)',
+    document_uploaded: 'var(--text3)',
+    note_added: 'var(--text3)',
+    cancellation_sent: 'var(--red)',
+  };
+
+  el.innerHTML = events.map(e => {
+    const color = eventColors[e.event_type] || 'var(--text3)';
+    const time = new Date(e.created_at).toLocaleString('en-US',{
+      month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
+    });
+    return `
+      <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div style="width:3px;background:${color};border-radius:2px;flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;color:var(--text);line-height:1.4;">${e.event_description}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;">${time} · ${e.performed_by_name||'System'}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── CARRIER CANCELLATION EMAIL ────────────────────────────────
+async function sendCarrierCancellationEmail(load, carrier) {
+  if(!RESEND_API_KEY || !carrier?.email) return;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>
+    body{font-family:Arial,sans-serif;margin:0;padding:0;background:#f8fafc;}
+    .wrapper{max-width:580px;margin:0 auto;background:white;}
+    .header{background:#0D1829;padding:22px 28px;}
+    .logo{font-family:Georgia,serif;font-size:20px;color:white;font-weight:700;}
+    .logo span{color:#60A5FA;}
+    .banner{background:#EF4444;padding:14px 28px;}
+    .banner-title{font-size:16px;font-weight:700;color:white;}
+    .body{padding:24px 28px;}
+    .detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:14px;}
+    .label{color:#64748b;} .value{font-weight:600;}
+    .footer{background:#f8fafc;padding:14px 28px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94A3B8;}
+  </style></head><body>
+  <div class="wrapper">
+    <div class="header"><div class="logo">Freight<span>FlowHQ</span></div></div>
+    <div class="banner"><div class="banner-title">❌ Load Cancellation Notice</div></div>
+    <div class="body">
+      <p style="font-size:14px;color:#374151;margin-bottom:20px;line-height:1.6;">
+        We regret to inform you that Load #${load.load_number} has been cancelled and is no longer available for your company. We apologize for any inconvenience.
+      </p>
+      <div class="detail-row"><span class="label">Load Number</span><span class="value">${load.load_number}</span></div>
+      <div class="detail-row"><span class="label">Origin</span><span class="value">${load.origin_city||'—'}, ${load.origin_state||''}</span></div>
+      <div class="detail-row"><span class="label">Destination</span><span class="value">${load.destination_city||'—'}, ${load.destination_state||''}</span></div>
+      <div class="detail-row"><span class="label">Equipment</span><span class="value">${load.equipment_type||'—'}</span></div>
+      ${load.pickup_date ? `<div class="detail-row"><span class="label">Pickup Date</span><span class="value">${new Date(load.pickup_date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span></div>` : ''}
+      <p style="font-size:13px;color:#64748b;margin-top:20px;line-height:1.6;">
+        If you have any questions please reply to this email. We hope to work with you again soon.
+      </p>
+    </div>
+    <div class="footer">FreightFlowHQ · freightflowhq.com</div>
+  </div></body></html>`;
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {'Authorization':'Bearer '+RESEND_API_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        from: 'FreightFlowHQ <'+FROM_EMAIL+'>',
+        to: [carrier.email],
+        subject: 'Load Cancellation — #' + load.load_number + ' | ' + (load.origin_city||'') + ' → ' + (load.destination_city||''),
+        html,
+      }),
+    });
+    await logLoadEvent(load.id, 'cancellation_sent', '📧 Cancellation email sent to ' + carrier.name + ' (' + carrier.email + ')');
+  } catch(e) {
+    console.error('Cancellation email failed:', e);
+  }
+}
+
+// ── RATE CON ACCEPTANCE TOKEN SYSTEM ─────────────────────────
+async function generateRateConToken(loadId) {
+  // Generate a secure random token
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  const token = Array.from(array).map(b => b.toString(16).padStart(2,'0')).join('');
+
+  // Store in Supabase
+  const { data, error } = await db.from('ratecon_tokens').insert({
+    load_id: loadId,
+    token: token,
+    expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  }).select().single();
+
+  if(error) { console.error('Token generation failed:', error); return null; }
+  return token;
+}
+
+// Update sendRateConEmail to include acceptance link and log event
+const _origSendRateConEmail = sendRateConEmail;
+sendRateConEmail = async function() {
+  // Get the load before sending
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+
+  // Generate acceptance token
+  const token = await generateRateConToken(currentDetailLoadId);
+  const acceptUrl = 'https://freightflowhq.com/accept.html?token=' + token;
+
+  // Store token for use in buildRateConEmailHTML
+  window._currentRateConToken = token;
+  window._currentAcceptUrl = acceptUrl;
+
+  await _origSendRateConEmail();
+
+  // Log event
+  if(load) {
+    await logLoadEvent(load.id, 'ratecon_sent', '📧 Rate confirmation sent to carrier');
+  }
+};
+
+// ── HOOK INTO EXISTING FUNCTIONS TO LOG EVENTS ───────────────
+
+// Log on load create/update
+const _origSaveLoad = saveLoad;
+saveLoad = async function() {
+  const id = document.getElementById('load-id')?.value;
+  await _origSaveLoad();
+  // Find newly created load
+  if(!id) {
+    await loadData();
+    const newest = allLoads[0];
+    if(newest) {
+      await logLoadEvent(newest.id, 'created', '🟢 Load created — ' + (newest.origin_city||'') + ', ' + (newest.origin_state||'') + ' → ' + (newest.destination_city||'') + ', ' + (newest.destination_state||''));
+    }
+  } else {
+    await logLoadEvent(id, 'updated', '✏️ Load details updated');
+  }
+};
+
+// Log on check call saved
+const _origSaveCheckCall = saveCheckCall;
+saveCheckCall = async function() {
+  await _origSaveCheckCall();
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(load) {
+    const status = document.getElementById('cc-status')?.value || 'On Time';
+    const city = document.getElementById('cc-city')?.value || '';
+    const state = document.getElementById('cc-state')?.value || '';
+    await logLoadEvent(load.id, 'check_call', '📞 Check call logged — ' + status + (city ? ' · ' + city + ', ' + state : ''));
+  }
+};
+
+// Log on invoice created
+const _origSaveInvoice = saveInvoice;
+saveInvoice = async function() {
+  await _origSaveInvoice();
+  // Find the load from the invoice form
+  const loadId = document.getElementById('inv-load')?.value;
+  if(loadId) {
+    await logLoadEvent(loadId, 'invoice_created', '🧾 Invoice created');
+  }
+};
+
+// Hook into openLoadDetail to load timeline
+const _origOpenLoadDetailEvents = openLoadDetail;
+openLoadDetail = function(id) {
+  _origOpenLoadDetailEvents(id);
+  setTimeout(() => loadEventHistory(), 300);
 };
 
 applyTheme();
