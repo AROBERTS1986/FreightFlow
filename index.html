@@ -2769,7 +2769,7 @@ function printRateCon() {
   const printWin = window.open('', '_blank', 'width=800,height=900');
   if (!printWin) { toast('Please allow popups to print', 'error'); return; }
   const rcStyles = 'body{font-family:Arial,sans-serif;margin:0;padding:20px;}.rate-con-header{display:flex;justify-content:space-between;border-bottom:3px solid #1B2A4A;padding-bottom:16px;margin-bottom:20px;}.rate-con-logo{font-size:22px;font-weight:900;color:#1B2A4A;}.rate-con-logo span{color:#2563EB;}.rate-con-title{font-size:18px;font-weight:800;color:#1B2A4A;text-align:right;}.rate-con-num{font-size:11px;color:#666;text-align:right;}.rate-con-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}.rate-con-section{border:1px solid #e2e8f0;border-radius:8px;padding:12px;}.rate-con-section-title{font-size:10px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:8px;}.rate-con-field{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f1f5f9;}.rate-con-field:last-child{border-bottom:none;}.rate-con-field-label{color:#666;}.rate-con-field-val{font-weight:600;}.rate-con-total{background:#1B2A4A;color:white;border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}.rate-con-total-label{font-size:13px;font-weight:600;}.rate-con-total-val{font-size:22px;font-weight:900;color:#60A5FA;}.rate-con-terms{font-size:11px;color:#666;line-height:1.6;border-top:1px solid #e2e8f0;padding-top:12px;}.rate-con-sig{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;}.rate-con-sig-box{border-top:1px solid #1a1a1a;padding-top:6px;font-size:10px;color:#666;}@media print{body{margin:0;}}';
-  printWin.document.write('<!DOCTYPE html><html><head><title>Rate Confirmation</title><style>' + rcStyles + '</style></head><body>' + rcContent + '>');
+  printWin.document.write('<!DOCTYPE html><html><head><title>Rate Confirmation</title><style>' + rcStyles + '</style></head>' + rcContent + '>');
   printWin.document.close();
   setTimeout(() => { printWin.focus(); printWin.print(); }, 500);
 }
@@ -3342,16 +3342,7 @@ async function createUser(){
 
 
 // ── REMEMBER ME & FORGOT PASSWORD ────────────────────────────
-function showForgotPassword() {
-  document.getElementById('screen-login').style.display = 'none';
-  document.getElementById('screen-forgot').style.display = 'block';
-  setTimeout(() => document.getElementById('forgot-email')?.focus(), 100);
-}
 
-function showLogin() {
-  document.getElementById('screen-forgot').style.display = 'none';
-  document.getElementById('screen-login').style.display = 'block';
-}
 
 async function sendReset() {
   const email = document.getElementById('forgot-email')?.value?.trim();
@@ -3387,60 +3378,13 @@ function loadRememberedEmail() {
   }
 }
 
-}
+
 
 // ── CITY/STATE AUTOCOMPLETE ───────────────────────────────────
 // Top 200 US cities with state
 
 let acActiveDropdown = null;
 
-function setupCityAutocomplete(cityInputId, stateInputId) {
-  const cityEl = document.getElementById(cityInputId);
-  const stateEl = document.getElementById(stateInputId);
-  if(!cityEl) return;
-
-  // Wrap in relative div if not already
-  const parent = cityEl.parentElement;
-  if(!parent.classList.contains('autocomplete-wrap')) {
-    parent.classList.add('autocomplete-wrap');
-  }
-
-  cityEl.addEventListener('input', function() {
-    const q = this.value.toLowerCase().trim();
-    closeAllDropdowns();
-    if(q.length < 2) return;
-
-    const matches = US_CITIES.filter(([city]) =>
-      city.toLowerCase().startsWith(q)
-    ).slice(0, 8);
-
-    if(matches.length === 0) return;
-
-    const dropdown = document.createElement('div');
-    dropdown.className = 'autocomplete-dropdown';
-    dropdown.id = 'ac-' + cityInputId;
-
-    matches.forEach(([city, state]) => {
-      const item = document.createElement('div');
-      item.className = 'autocomplete-item';
-      item.innerHTML = `<span>${city}</span><span class="ac-state">${state}</span>`;
-      item.onmousedown = (e) => {
-        e.preventDefault();
-        cityEl.value = city;
-        if(stateEl) stateEl.value = state;
-        closeAllDropdowns();
-      };
-      dropdown.appendChild(item);
-    });
-
-    parent.appendChild(dropdown);
-    acActiveDropdown = dropdown;
-  });
-
-  cityEl.addEventListener('blur', () => {
-    setTimeout(closeAllDropdowns, 150);
-  });
-}
 
 function closeAllDropdowns() {
   document.querySelectorAll('.autocomplete-dropdown').forEach(d => d.remove());
@@ -3687,7 +3631,7 @@ function printQuote() {
     .total-value{font-size:28px;font-weight:900;color:#60A5FA;}
     .footer{margin-top:32px;font-size:11px;color:#888;border-top:1px solid #e2e8f0;padding-top:12px;}
     @media print{body{padding:20px;}}
-  </style></head><body>
+  </style></head>
   <div class="header">
     <div class="logo">Freight<span>FlowHQ</span></div>
     <div class="title">FREIGHT QUOTE<div style="font-size:11px;color:#888;margin-top:4px;">Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div></div>
@@ -3705,4 +3649,155 @@ function printQuote() {
     <div class="total-value">$${parseFloat(rate||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
   </div>
   <div class="footer">This quote is valid for 24 hours from the date generated. Subject to carrier availability and final confirmation. FreightFlowHQ · freightflowhq.com</div>
-  </body></html>
+  `);
+  printWin.document.close();
+  setTimeout(() => { printWin.focus(); printWin.print(); }, 500);
+}
+
+function openDocUpload() {
+  const el = document.getElementById('doc-load-id');
+  if(el) el.value = currentDetailLoadId || '';
+  openModal('doc-upload');
+}
+
+async function uploadDocument() {
+  const loadId = document.getElementById('doc-load-id')?.value;
+  const docType = document.getElementById('doc-type')?.value;
+  const file = document.getElementById('doc-file')?.files?.[0];
+  const notes = document.getElementById('doc-notes')?.value;
+  if(!docType) { toast('Please select a document type', 'error'); return; }
+  const { error } = await db.from('load_docs').insert({ load_id: loadId, doc_type: docType, file_name: file ? file.name : 'Manual entry', file_size: file ? file.size : 0, uploaded_by: currentUser?.user_metadata?.full_name||currentUser?.email, status: 'Received', notes });
+  if(error) { toast('Error: '+error.message, 'error'); return; }
+  toast('Document uploaded! ✓', 'success');
+  closeModal('doc-upload');
+  if(currentDetailLoadId) renderDetailDocs(currentDetailLoadId);
+}
+
+async function renderDetailDocs(loadId) {
+  const { data } = await db.from('load_docs').select('*').eq('load_id', loadId).order('created_at', {ascending:false});
+  const el = document.getElementById('detail-documents'); if(!el) return;
+  if(!data||data.length===0) { el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px;">No documents attached</div>'; return; }
+  const icons = {'BOL (Bill of Lading)':'📋','POD (Proof of Delivery)':'✅','Rate Confirmation':'📄'};
+  el.innerHTML = data.map(d => '<div class="doc-item"><div class="doc-icon bol">'+(icons[d.doc_type]||'📎')+'</div><div style="flex:1;"><div class="doc-name">'+d.doc_type+'</div><div class="doc-meta">'+d.file_name+' · '+fmtDate(d.created_at)+'</div></div><span style="color:var(--green);font-size:11px;font-weight:700;">Received</span></div>').join('');
+}
+
+function openAccessorial() {
+  const el = document.getElementById('acc-load-id');
+  if(el) el.value = currentDetailLoadId || '';
+  openModal('accessorial');
+}
+
+async function saveAccessorial() {
+  const loadId = document.getElementById('acc-load-id')?.value;
+  const type = document.getElementById('acc-type')?.value;
+  const amount = document.getElementById('acc-amount')?.value;
+  const billable = document.getElementById('acc-billable')?.value;
+  const notes = document.getElementById('acc-notes')?.value;
+  if(!amount||isNaN(amount)) { toast('Please enter an amount','error'); return; }
+  const { error } = await db.from('load_accessorials').insert({ load_id: loadId, type, amount: parseFloat(amount), billable_to: billable, notes, status: 'Pending' });
+  if(error) { toast('Error: '+error.message,'error'); return; }
+  toast(type+' — '+fmt$(amount)+' added!','success');
+  closeModal('accessorial');
+  renderDetailAccessorials(loadId);
+}
+
+async function renderDetailAccessorials(loadId) {
+  const { data } = await db.from('load_accessorials').select('*').eq('load_id', loadId).order('created_at',{ascending:false});
+  const el = document.getElementById('detail-accessorials'); if(!el) return;
+  if(!data||data.length===0) { el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px;">No accessorials</div>'; return; }
+  const total = data.reduce((s,a)=>s+(Number(a.amount)||0),0);
+  el.innerHTML = data.map(a=>'<div class="acc-item"><div class="acc-type">'+a.type+'</div><span class="acc-billable '+(a.billable_to||'Customer').toLowerCase()+'">'+a.billable_to+'</span><span class="acc-amount">'+fmt$(a.amount)+'</span><button class="btn btn-danger btn-sm" onclick="deleteAccessorial(''+a.id+'',''+loadId+'')">✕</button></div>').join('')+'<div style="display:flex;justify-content:flex-end;padding:8px 14px;font-size:13px;font-weight:700;color:var(--green);border-top:1px solid var(--border);">Total: '+fmt$(total)+'</div>';
+}
+
+async function deleteAccessorial(id, loadId) {
+  await db.from('load_accessorials').delete().eq('id',id);
+  toast('Accessorial removed','info');
+  renderDetailAccessorials(loadId);
+}
+
+let carrierScores = { pickup:0, delivery:0, communication:0, condition:0 };
+
+function setScore(category, value) {
+  carrierScores[category] = value;
+  document.querySelectorAll('#stars-'+category+' .star').forEach((s,i) => s.classList.toggle('filled', i < value));
+}
+
+function rateCarrier() {
+  const load = allLoads.find(l=>l.id===currentDetailLoadId);
+  if(!load?.carrier_id) { toast('No carrier assigned to this load','error'); return; }
+  carrierScores = { pickup:0, delivery:0, communication:0, condition:0 };
+  document.querySelectorAll('.star').forEach(s=>s.classList.remove('filled'));
+  document.getElementById('cs-load-id').value = currentDetailLoadId;
+  document.getElementById('cs-carrier-id').value = load.carrier_id;
+  document.getElementById('cs-notes').value = '';
+  openModal('carrier-score');
+}
+
+async function saveCarrierScore() {
+  const loadId = document.getElementById('cs-load-id')?.value;
+  const carrierId = document.getElementById('cs-carrier-id')?.value;
+  const notes = document.getElementById('cs-notes')?.value;
+  const { pickup, delivery, communication, condition } = carrierScores;
+  if(!pickup&&!delivery&&!communication&&!condition) { toast('Please rate at least one category','error'); return; }
+  const rated = [pickup,delivery,communication,condition].filter(s=>s>0);
+  const overall = Math.round(rated.reduce((s,v)=>s+v,0)/rated.length);
+  const { error } = await db.from('carrier_scores').insert({ load_id: loadId, carrier_id: carrierId, on_time_pickup: pickup||null, on_time_delivery: delivery||null, communication: communication||null, freight_condition: condition||null, overall, notes, scored_by: currentUser?.user_metadata?.full_name||currentUser?.email });
+  if(error) { toast('Error: '+error.message,'error'); return; }
+  toast('Carrier rated '+overall+'/5 ⭐','success');
+  closeModal('carrier-score');
+}
+
+
+function submitQuoteRequest() {
+  const originCity = document.getElementById('quote-origin-city')?.value?.trim();
+  const originState = document.getElementById('quote-origin-state')?.value?.trim();
+  const destCity = document.getElementById('quote-dest-city')?.value?.trim();
+  const destState = document.getElementById('quote-dest-state')?.value?.trim();
+  if (!originCity || !destCity) { alert('Please enter origin and destination cities.'); return; }
+  const quote = {
+    id: 'Q-' + Date.now(),
+    origin_city: originCity, origin_state: originState?.toUpperCase(),
+    destination_city: destCity, destination_state: destState?.toUpperCase(),
+    equipment_type: document.getElementById('quote-equipment')?.value,
+    pickup_date: document.getElementById('quote-pickup')?.value,
+    commodity: document.getElementById('quote-commodity')?.value,
+    weight: document.getElementById('quote-weight')?.value,
+    notes: document.getElementById('quote-notes')?.value,
+    status: 'Pending', submitted_at: new Date().toISOString(),
+  };
+  if (!window.portalQuotes) window.portalQuotes = [];
+  window.portalQuotes.unshift(quote);
+  renderPortalQuotes();
+  togglePortalQuoteForm();
+  ['quote-origin-city','quote-origin-state','quote-dest-city','quote-dest-state',
+   'quote-commodity','quote-weight','quote-notes'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  toast('Quote request submitted!', 'success');
+}
+
+function togglePortalQuoteForm() {
+  const form = document.getElementById('portal-quote-form');
+  if(form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function renderPortalQuotes() {
+  const el = document.getElementById('portal-quotes-list'); if(!el) return;
+  const quotes = window.portalQuotes || [];
+  if(quotes.length === 0) { el.innerHTML = '<div style="text-align:center;color:#64748b;font-size:13px;padding:12px;">No quote requests yet</div>'; return; }
+  el.innerHTML = quotes.map(q => {
+    const statusColors = {'Pending':'#D97706','Approved':'#059669','Declined':'#DC2626'};
+    const color = statusColors[q.status] || '#D97706';
+    return '<div class="quote-card"><div class="quote-card-header"><div><div class="quote-card-route">'+q.origin_city+', '+q.origin_state+' → '+q.destination_city+', '+q.destination_state+'</div><div class="quote-card-meta">'+(q.equipment_type||'')+(q.pickup_date?' · Pickup: '+fmtDate(q.pickup_date):'')+'</div></div><span style="background:'+color+'20;color:'+color+';border:1px solid '+color+'40;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">'+q.status+'</span></div><div style="font-size:12px;color:#64748b;">Ref: '+q.id+' · Submitted '+fmtDate(q.submitted_at)+'</div></div>';
+  }).join('');
+}
+
+applyTheme();
+initRolePerms();
+checkAuth();
+loadRememberedEmail();
+document.addEventListener('DOMContentLoaded', initCityAutocomplete);
+setTimeout(initCityAutocomplete, 500);
+</script>
+
+</body></html>
