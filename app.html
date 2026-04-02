@@ -809,6 +809,7 @@ textarea{resize:vertical;min-height:80px;}
       <div style="flex:1;min-width:0;">
         <div class="user-name" id="sidebar-username" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Loading…</div>
         <div id="sidebar-role-badge" style="margin-top:2px;"></div>
+        <div id="sidebar-board-code" style="font-size:9px;color:var(--text3);margin-top:1px;font-family:'JetBrains Mono',monospace;"></div>
       </div>
     </div>
   </div>
@@ -880,7 +881,20 @@ textarea{resize:vertical;min-height:80px;}
   <div class="content" id="page-loads">
     <div class="card">
       <div class="card-header">
-        <div class="card-title">All Loads</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="card-title" id="loads-page-title">My Board</div>
+          <div style="display:flex;background:var(--surface3);border-radius:8px;padding:3px;gap:2px;">
+            <button id="board-btn-mine" class="btn btn-primary btn-sm" onclick="switchBoard('mine')" style="font-size:11px;padding:4px 12px;">My Board</button>
+            <button id="board-btn-all" class="btn btn-ghost btn-sm" onclick="switchBoard('all')" style="font-size:11px;padding:4px 12px;">All Loads</button>
+          </div>
+          <div style="position:relative;">
+            <input type="text" id="board-code-input" placeholder="Enter board code..." 
+              style="font-size:11px;padding:5px 10px;width:150px;border-radius:6px;"
+              onkeydown="if(event.key==='Enter')loadBrokerBoard()"/>
+            <button onclick="loadBrokerBoard()" class="btn btn-ghost btn-sm" style="font-size:10px;margin-left:4px;">👁 View</button>
+          </div>
+          <span id="viewing-broker-badge" style="display:none;background:rgba(245,158,11,0.15);color:var(--amber);border:1px solid rgba(245,158,11,0.3);border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;"></span>
+        </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-ghost btn-sm" onclick="openModal('quick-quote')">⚡ Quick Quote</button>
           <button class="btn btn-ghost btn-sm" onclick="showLoadTemplates()">📋 Templates</button>
@@ -1711,6 +1725,11 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Status</label>
           <select id="load-status"><option>Available</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select>
         </div>
+        <div class="form-group"><label>Assigned Broker</label>
+          <select id="load-assigned-broker">
+            <option value="">Auto-assign to me</option>
+          </select>
+        </div>
         <div class="form-group"><label>Reference #</label><input type="text" id="load-ref" placeholder="Customer PO #"/></div>
         <div class="form-group"><label>BOL Number</label><input type="text" id="load-bol" placeholder="BOL-2026-001"/></div>
         <div class="form-group"><label>PRO Number</label><input type="text" id="load-pro" placeholder="Carrier PRO #"/></div>
@@ -1819,6 +1838,11 @@ textarea{resize:vertical;min-height:80px;}
           <input type="text" id="customer-city" placeholder="Dallas" oninput="setupCityAutocomplete('customer-city','customer-state')"/>
         </div>
         <div class="form-group"><label>State</label><input type="text" id="customer-state" placeholder="TX" maxlength="2"/></div>
+        <div class="form-group"><label>Assigned Broker</label>
+          <select id="customer-assigned-broker">
+            <option value="">Auto-assign to me</option>
+          </select>
+        </div>
         <div class="form-group full"><label>Notes</label><textarea id="customer-notes" placeholder="Any additional notes…"></textarea></div>
       </div>
     </div>
@@ -2378,6 +2402,8 @@ async function loadData() {
     loadLoadTemplates();
     updateInvoiceBadge();
     loadResendKey();
+    await loadUserProfiles();
+    initBoardMode();
   } catch(e) {
     setDbStatus('error');
     toast('Database error: ' + e.message, 'error');
@@ -2385,6 +2411,7 @@ async function loadData() {
 }
 
 function populateSelects() {
+  populateBrokerDropdowns();
   const custOpts = allCustomers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
   const sel = document.getElementById('load-customer');
   if(sel) sel.innerHTML = '<option value="">Select customer…</option>' + custOpts;
@@ -2674,6 +2701,7 @@ async function saveLoad() {
     pro_number: document.getElementById('load-pro')?.value||null,
     pay_terms: document.getElementById('load-pay-terms')?.value||'Net 30',
     notes: document.getElementById('load-notes')?.value||null,
+    assigned_to: document.getElementById('load-assigned-broker')?.value || currentUser?.id || null,
     status: carrierId && currentStatus==='Available' ? 'Assigned' : currentStatus||'Available',
   };
 
@@ -2803,6 +2831,7 @@ async function saveCustomer() {
     notes: document.getElementById('customer-notes')?.value,
     industry: document.getElementById('customer-industry')?.value || null,
     payment_terms: document.getElementById('customer-terms')?.value || 'Net 30',
+    assigned_to: document.getElementById('customer-assigned-broker')?.value || currentUser?.id || null,
   };
   if(!payload.name) { toast('Company name is required','error'); return; }
   const { data: savedData, error } = id
@@ -4960,6 +4989,178 @@ function renderCarrierSearchResults(carriers) {
       <div style="font-size:11px;color:var(--text3);">${c.phone||''}</div>
     </div>
   `).join('');
+}
+
+
+// ── BROKER BOARD SYSTEM ───────────────────────────────────────
+let currentBoardMode = 'mine'; // 'mine' | 'all' | 'broker'
+let currentBoardUserId = null; // null = current user
+let currentBoardBrokerName = '';
+let allUserProfiles = [];
+
+// Load all user profiles for broker assignment dropdowns
+async function loadUserProfiles() {
+  const { data } = await db.from('user_profiles').select('*').order('display_name');
+  allUserProfiles = data || [];
+  populateBrokerDropdowns();
+  showBoardCode();
+}
+
+function showBoardCode() {
+  // Show current user's board code in sidebar
+  const profile = allUserProfiles.find(p => p.user_id === currentUser?.id);
+  const el = document.getElementById('sidebar-board-code');
+  if(el && profile?.board_code) {
+    el.textContent = 'Code: ' + profile.board_code;
+  }
+}
+
+function populateBrokerDropdowns() {
+  const dropdowns = ['load-assigned-broker', 'customer-assigned-broker'];
+  dropdowns.forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const current = el.value;
+    el.innerHTML = '<option value="">Auto-assign to me</option>' +
+      allUserProfiles.map(p =>
+        `<option value="${p.user_id}" ${p.user_id === currentUser?.id ? 'data-me="true"' : ''}>${p.display_name || p.email || 'User'} ${p.role ? '('+p.role+')' : ''}</option>`
+      ).join('');
+    if(current) el.value = current;
+  });
+}
+
+// Switch between My Board / All Loads
+function switchBoard(mode) {
+  currentBoardMode = mode;
+  currentBoardUserId = null;
+  currentBoardBrokerName = '';
+
+  // Update button styles
+  const mineBtn = document.getElementById('board-btn-mine');
+  const allBtn = document.getElementById('board-btn-all');
+  const badge = document.getElementById('viewing-broker-badge');
+
+  if(mineBtn) {
+    mineBtn.className = mode === 'mine' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+    mineBtn.style.cssText = 'font-size:11px;padding:4px 12px;';
+  }
+  if(allBtn) {
+    allBtn.className = mode === 'all' ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+    allBtn.style.cssText = 'font-size:11px;padding:4px 12px;';
+  }
+  if(badge) badge.style.display = 'none';
+
+  // Update title
+  const title = document.getElementById('loads-page-title');
+  if(title) title.textContent = mode === 'mine' ? 'My Board' : 'All Loads';
+
+  filterLoads();
+}
+
+// Load another broker's board via board code
+async function loadBrokerBoard() {
+  const code = document.getElementById('board-code-input')?.value?.trim().toUpperCase();
+  if(!code) { toast('Enter a board code', 'error'); return; }
+
+  const profile = allUserProfiles.find(p => p.board_code?.toUpperCase() === code);
+  if(!profile) {
+    // Try fetching from DB in case not loaded
+    const { data } = await db.from('user_profiles').select('*').eq('board_code', code).single();
+    if(!data) { toast('Board code not found', 'error'); return; }
+    allUserProfiles.push(data);
+    currentBoardUserId = data.user_id;
+    currentBoardBrokerName = data.display_name || data.email || 'Broker';
+  } else {
+    currentBoardUserId = profile.user_id;
+    currentBoardBrokerName = profile.display_name || profile.email || 'Broker';
+  }
+
+  currentBoardMode = 'broker';
+
+  // Show badge
+  const badge = document.getElementById('viewing-broker-badge');
+  if(badge) {
+    badge.style.display = 'inline-block';
+    badge.textContent = '👁 Viewing: ' + currentBoardBrokerName;
+  }
+
+  const title = document.getElementById('loads-page-title');
+  if(title) title.textContent = currentBoardBrokerName + "'s Board";
+
+  // Update toggle buttons
+  const mineBtn = document.getElementById('board-btn-mine');
+  const allBtn = document.getElementById('board-btn-all');
+  if(mineBtn) mineBtn.className = 'btn btn-ghost btn-sm';
+  if(allBtn) allBtn.className = 'btn btn-ghost btn-sm';
+
+  document.getElementById('board-code-input').value = '';
+  toast('Viewing ' + currentBoardBrokerName + "'s board", 'info');
+  filterLoads();
+}
+
+// Override filterLoads to apply board filtering
+const _originalFilterLoads = filterLoads;
+filterLoads = function() {
+  const search = document.getElementById('loads-search')?.value?.toLowerCase()||'';
+  const statusFilter = document.getElementById('loads-filter-status')?.value||'';
+  const equipFilter = document.getElementById('loads-filter-equipment')?.value||'';
+  const dateFilter = document.getElementById('loads-filter-date')?.value||'';
+
+  // Determine which user's loads to show
+  let targetUserId = null;
+  if(currentBoardMode === 'mine') {
+    targetUserId = currentUser?.id;
+  } else if(currentBoardMode === 'broker') {
+    targetUserId = currentBoardUserId;
+  }
+  // 'all' mode = no filter by user
+
+  let filtered = allLoads.filter(l => {
+    // Board filter
+    if(targetUserId && l.assigned_to !== targetUserId) return false;
+
+    const customer = allCustomers.find(c => c.id === l.customer_id);
+    const carrier = allCarriers.find(c => c.id === l.carrier_id);
+    const searchStr = [
+      l.load_number, l.origin_city, l.origin_state,
+      l.destination_city, l.destination_state,
+      l.bol_number, l.pro_number, l.reference_number,
+      customer?.name, carrier?.name, l.commodity,
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if(search && !searchStr.includes(search)) return false;
+    if(statusFilter && l.status !== statusFilter) return false;
+    if(equipFilter && l.equipment_type !== equipFilter) return false;
+    if(dateFilter && l.pickup_date?.slice(0,10) !== dateFilter) return false;
+    return true;
+  });
+
+  renderLoadsTable(filtered);
+  const title = document.getElementById('loads-page-title');
+  const baseTitle = currentBoardMode === 'mine' ? 'My Board' :
+                    currentBoardMode === 'broker' ? currentBoardBrokerName + "'s Board" : 'All Loads';
+  if(title) title.textContent = baseTitle + ' (' + filtered.length + (filtered.length !== allLoads.length ? ' of ' + allLoads.length : '') + ')';
+};
+
+// Auto-assign broker when creating/saving loads
+const _originalSaveLoad = saveLoad;
+saveLoad = async function() {
+  // Will be handled in the saveLoad function directly
+  await _originalSaveLoad();
+};
+
+// Manager role detection — default to "all" view
+function initBoardMode() {
+  const role = currentUserRole?.toLowerCase();
+  if(role === 'admin' || role === 'manager') {
+    currentBoardMode = 'all';
+    const mineBtn = document.getElementById('board-btn-mine');
+    const allBtn = document.getElementById('board-btn-all');
+    if(mineBtn) mineBtn.className = 'btn btn-ghost btn-sm';
+    if(allBtn) allBtn.className = 'btn btn-primary btn-sm';
+    const title = document.getElementById('loads-page-title');
+    if(title) title.textContent = 'All Loads';
+  }
 }
 
 applyTheme();
