@@ -945,6 +945,27 @@ textarea{resize:vertical;min-height:80px;}
           <button class="btn btn-primary btn-sm" onclick="openModal('carrier')">+ Add Carrier</button>
         </div>
       </div>
+      <!-- Carrier Search Bar -->
+      <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2);">
+        <input type="text" id="carrier-search-text" placeholder="Search carriers by name, MC#, DOT#..." oninput="searchCarriers()" style="font-size:13px;padding:8px 12px;"/>
+        <select id="carrier-search-equipment" onchange="searchCarriers()" style="font-size:12px;padding:8px 10px;">
+          <option value="">All Equipment</option>
+          <option>Dry Van</option>
+          <option>Reefer</option>
+          <option>Flatbed</option>
+          <option>Step Deck</option>
+          <option>Box Truck</option>
+          <option>Tanker</option>
+          <option>LTL</option>
+        </select>
+        <input type="text" id="carrier-search-state" placeholder="State (TX)" maxlength="2" oninput="searchCarriers()" style="font-size:12px;padding:8px 10px;width:80px;text-transform:uppercase;"/>
+        <select id="carrier-search-status" onchange="searchCarriers()" style="font-size:12px;padding:8px 10px;">
+          <option value="">All Carriers</option>
+          <option value="active">Active Only</option>
+          <option value="dnu">Do Not Use</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="clearCarrierSearch()" style="font-size:11px;">Clear</button>
+      </div>
       <div id="carriers-body"><div class="loading"><div class="spinner"></div> Loading…</div></div>
     </div>
   </div>
@@ -1911,9 +1932,12 @@ textarea{resize:vertical;min-height:80px;}
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button>
-        <button class="btn btn-primary btn-sm" onclick="openSendRateCon()">📧 Send Rate Con</button>
-        <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
-        <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">📋 Duplicate</button>
+        <button class="btn btn-primary btn-sm" onclick="openSendRateCon()">📧 Carrier RC</button>
+        <button class="btn btn-ghost btn-sm" onclick="openShipperRateCon()">📋 Shipper Confirm</button>
+        <button class="btn btn-ghost btn-sm" onclick="openCallSheet()">📞 Call Sheet</button>
+        <button class="btn btn-ghost btn-sm" onclick="openQuickEmail()">✉️ Email</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">⊕ Dupe</button>
         <button class="modal-close" onclick="closeModal('detail')">✕</button>
       </div>
     </div>
@@ -1928,6 +1952,12 @@ textarea{resize:vertical;min-height:80px;}
           <button class="status-btn s-transit" onclick="updateLoadStatus('In Transit')">🚛 In Transit</button>
           <button class="status-btn s-delivered" onclick="updateLoadStatus('Delivered')">📦 Delivered</button>
         </div>
+      </div>
+
+      <!-- Multi-Stop Indicator -->
+      <div id="multi-stop-section" style="display:none;background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">📍 Stops</div>
+        <div id="multi-stop-list"></div>
       </div>
 
       <!-- Load Info Grid -->
@@ -1975,6 +2005,15 @@ textarea{resize:vertical;min-height:80px;}
         <div id="rate-con-collapsed" style="font-size:12px;color:var(--text3);">
           Rate confirmation ready to generate. Preview or print directly to send to carrier.
         </div>
+      </div>
+
+      <!-- Detention Timer -->
+      <div id="detention-section" style="display:none;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--amber);">⏱️ Detention Timer</div>
+          <div id="detention-timer" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--amber);">00:00:00</div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;" id="detention-start-label">Free time: 2 hours from arrival</div>
       </div>
 
       <!-- Check Calls Section -->
@@ -4585,6 +4624,152 @@ function buildRateConEmailHTML(load, carrier, customer, customMessage) {
   </div>
 </div>
 
+
+<!-- SHIPPER RATE CONFIRMATION MODAL -->
+<div class="modal-overlay" id="modal-shipper-ratecon">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📋 Send Booking Confirmation</div>
+      <button class="modal-close" onclick="closeModal('shipper-ratecon')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--accent-dim);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--accent2);">
+        This sends a booking/load confirmation to your <strong>customer (shipper)</strong> — different from the carrier rate con.
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Customer Email *</label>
+          <input type="email" id="shipper-rc-email" placeholder="shipping@customer.com"/>
+        </div>
+        <div class="form-group full">
+          <label>CC (optional)</label>
+          <input type="email" id="shipper-rc-cc" placeholder="yourself@company.com"/>
+        </div>
+        <div class="form-group full">
+          <label>Message (optional)</label>
+          <textarea id="shipper-rc-message" placeholder="Your shipment has been booked and confirmed..." style="min-height:70px;"></textarea>
+        </div>
+      </div>
+      <div id="shipper-rc-status" style="display:none;margin-top:12px;padding:12px;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('shipper-ratecon')">Cancel</button>
+      <button class="btn btn-primary" id="shipper-rc-btn" onclick="sendShipperRateCon()">Send Confirmation →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARRIER CALL SHEET MODAL -->
+<div class="modal-overlay" id="modal-call-sheet">
+  <div class="modal" style="width:680px;max-height:90vh;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="call-sheet-title">📞 Carrier Call Sheet</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="call-sheet-load-info"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('call-sheet')">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;max-height:calc(90vh - 140px);">
+      <!-- Add call entry -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Log a Carrier Call</div>
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Carrier</label>
+            <select id="cs-carrier-select">
+              <option value="">Select carrier...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Contact Name</label>
+            <input type="text" id="cs-contact-name" placeholder="Dispatcher name"/>
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="cs-phone" placeholder="(555) 000-0000" oninput="fmtPhone(this)"/>
+          </div>
+          <div class="form-group">
+            <label>Their Quote ($)</label>
+            <input type="number" id="cs-quote" placeholder="2100"/>
+          </div>
+          <div class="form-group">
+            <label>Response</label>
+            <select id="cs-response">
+              <option>No Answer</option>
+              <option>Left Voicemail</option>
+              <option>Declined — Too Low</option>
+              <option>Declined — No Trucks</option>
+              <option>Declined — Wrong Lane</option>
+              <option>Interested — Following Up</option>
+              <option>✅ Booked</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Callback Time</label>
+            <input type="datetime-local" id="cs-callback"/>
+          </div>
+          <div class="form-group full">
+            <label>Notes</label>
+            <input type="text" id="cs-notes" placeholder="Has a truck in Dallas tomorrow morning..."/>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="logCarrierCall()">Log Call →</button>
+      </div>
+      <!-- Call log -->
+      <div id="call-sheet-log">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">No calls logged yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK EMAIL MODAL -->
+<div class="modal-overlay" id="modal-quick-email">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">✉️ Send Quick Email</div>
+      <button class="modal-close" onclick="closeModal('quick-email')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Template</label>
+          <select id="qe-template" onchange="loadEmailTemplate()">
+            <option value="">Select template...</option>
+            <option value="pickup_confirmed">✅ Pickup Confirmed</option>
+            <option value="running_late">⚠️ Running Late</option>
+            <option value="delivered">📦 Load Delivered</option>
+            <option value="check_call">📞 Check Call Update</option>
+            <option value="detention">⏱️ Detention Notice</option>
+            <option value="pod_request">📄 POD Request</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>To *</label>
+          <input type="email" id="qe-to" placeholder="customer@company.com"/>
+        </div>
+        <div class="form-group full">
+          <label>CC</label>
+          <input type="email" id="qe-cc" placeholder="optional"/>
+        </div>
+        <div class="form-group full">
+          <label>Subject</label>
+          <input type="text" id="qe-subject" placeholder="Subject line"/>
+        </div>
+        <div class="form-group full">
+          <label>Message</label>
+          <textarea id="qe-body" style="min-height:140px;" placeholder="Email body..."></textarea>
+        </div>
+      </div>
+      <div id="qe-status" style="display:none;margin-top:12px;padding:12px;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('quick-email')">Cancel</button>
+      <button class="btn btn-primary" id="qe-send-btn" onclick="sendQuickEmail()">Send Email →</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>`;
 }
@@ -5183,6 +5368,425 @@ function initBoardMode() {
   }
 }
 
+
+// ── CARRIER SEARCH ────────────────────────────────────────────
+function searchCarriers() {
+  const search = document.getElementById('carrier-search-text')?.value?.toLowerCase()||'';
+  const equipment = document.getElementById('carrier-search-equipment')?.value?.toLowerCase()||'';
+  const state = document.getElementById('carrier-search-state')?.value?.toUpperCase()||'';
+  const status = document.getElementById('carrier-search-status')?.value||'';
+
+  let filtered = allCarriers.filter(c => {
+    const searchStr = [c.name, c.mc_number, c.dot_number, c.contact_name, c.city, c.state, c.equipment_types].filter(Boolean).join(' ').toLowerCase();
+    if(search && !searchStr.includes(search)) return false;
+    if(equipment && !c.equipment_types?.toLowerCase().includes(equipment)) return false;
+    if(state && c.state?.toUpperCase() !== state) return false;
+    if(status === 'active' && c.do_not_use) return false;
+    if(status === 'dnu' && !c.do_not_use) return false;
+    return true;
+  });
+
+  renderCarriersFiltered(filtered);
+  const title = document.getElementById('carriers-title');
+  if(title) title.textContent = 'Carriers (' + filtered.length + ' of ' + allCarriers.length + ')';
+}
+
+function clearCarrierSearch() {
+  ['carrier-search-text','carrier-search-equipment','carrier-search-state','carrier-search-status'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  renderCarriers();
+}
+
+function renderCarriersFiltered(carriers) {
+  const body = document.getElementById('carriers-body');
+  if(!body) return;
+  if(carriers.length === 0) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">🚚</div><p>No carriers match your search.</p></div>';
+    return;
+  }
+  const today = new Date();
+  body.innerHTML = `<table class="table"><thead><tr><th>Carrier</th><th>MC #</th><th>Equipment</th><th>Location</th><th>Insurance</th><th>Status</th><th></th></tr></thead><tbody>${carriers.map(c => {
+    let insColor='var(--text2)',insStatus='Active';
+    if(c.insurance_expiry){const d=new Date(c.insurance_expiry);const days=(d-today)/86400000;if(days<0){insColor='var(--red)';insStatus='Expired';}else if(days<30){insColor='var(--amber)';insStatus=Math.floor(days)+'d left';}}
+    const dnuBadge = c.do_not_use ? '<span style="background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3);border-radius:4px;font-size:10px;padding:1px 6px;font-weight:700;margin-left:4px;">🚫 DNU</span>' : '';
+    return `<tr onclick="editCarrier('${c.id}')" style="cursor:pointer;${c.do_not_use?'opacity:0.6;':''}" title="${c.do_not_use?'DO NOT USE: '+(c.dnu_reason||''):''}">
+      <td><strong>${c.name}</strong>${dnuBadge}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${c.mc_number||'—'}</td>
+      <td>${c.equipment_types||'—'}</td>
+      <td>${c.city||''}${c.state?', '+c.state:''}</td>
+      <td style="color:${insColor};">${insStatus}</td>
+      <td>${c.do_not_use ? '<span style="color:var(--red);font-size:11px;">Do Not Use</span>' : '<span style="color:var(--green);font-size:11px;">Active</span>'}</td>
+      <td style="display:flex;gap:4px;"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openCarrierContacts('${c.id}','${c.name||''}')" style="font-size:10px;">👥</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openFMCSAForCarrier('${c.mc_number||''}')" style="font-size:10px;">🔍</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCarrier('${c.id}')">✕</button></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+// ── SHIPPER RATE CON ──────────────────────────────────────────
+function openShipperRateCon() {
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+  const customer = allCustomers.find(c => c.id === load.customer_id);
+  document.getElementById('shipper-rc-email').value = customer?.email || '';
+  document.getElementById('shipper-rc-cc').value = currentUser?.email || '';
+  document.getElementById('shipper-rc-message').value = '';
+  document.getElementById('shipper-rc-status').style.display = 'none';
+  document.getElementById('shipper-rc-btn').disabled = false;
+  document.getElementById('shipper-rc-btn').textContent = 'Send Confirmation →';
+  openModal('shipper-ratecon');
+}
+
+async function sendShipperRateCon() {
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+  const toEmail = document.getElementById('shipper-rc-email')?.value?.trim();
+  const ccEmail = document.getElementById('shipper-rc-cc')?.value?.trim();
+  const message = document.getElementById('shipper-rc-message')?.value?.trim();
+  const statusEl = document.getElementById('shipper-rc-status');
+  const btn = document.getElementById('shipper-rc-btn');
+
+  if(!toEmail) { toast('Please enter customer email', 'error'); return; }
+  if(!RESEND_API_KEY) { toast('Resend API key not configured', 'error'); return; }
+
+  btn.disabled = true; btn.textContent = 'Sending...';
+  const customer = allCustomers.find(c => c.id === load.customer_id);
+  const carrier = allCarriers.find(c => c.id === load.carrier_id);
+  const today = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>
+    body{font-family:Arial,sans-serif;margin:0;padding:0;background:#f8fafc;}
+    .wrapper{max-width:620px;margin:0 auto;background:white;}
+    .header{background:#0D1829;padding:24px 32px;}
+    .logo{font-family:Georgia,serif;font-size:22px;color:white;font-weight:700;}
+    .logo span{color:#60A5FA;}
+    .banner{background:#10B981;padding:14px 32px;}
+    .banner-title{font-size:17px;font-weight:700;color:white;}
+    .banner-sub{font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;}
+    .body{padding:28px 32px;}
+    .section-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#94A3B8;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e2e8f0;}
+    .detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:14px;}
+    .label{color:#64748b;} .value{font-weight:600;color:#1a1a1a;}
+    .rate-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px 20px;margin:20px 0;display:flex;justify-content:space-between;align-items:center;}
+    .footer{background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94A3B8;}
+  </style></head><body>
+  <div class="wrapper">
+    <div class="header"><div class="logo">Freight<span>FlowHQ</span></div></div>
+    <div class="banner">
+      <div class="banner-title">✅ Booking Confirmation</div>
+      <div class="banner-sub">Load #${load.load_number} · ${today}</div>
+    </div>
+    <div class="body">
+      ${message ? `<p style="font-size:14px;color:#475569;margin-bottom:20px;line-height:1.6;">${message}</p>` : `<p style="font-size:14px;color:#475569;margin-bottom:20px;line-height:1.6;">Your shipment has been booked and confirmed. Please review the details below.</p>`}
+      <div class="section-title">Shipment Details</div>
+      <div class="detail-row"><span class="label">Confirmation #</span><span class="value">${load.load_number}</span></div>
+      <div class="detail-row"><span class="label">Origin</span><span class="value">${load.origin_city||'—'}, ${load.origin_state||''}</span></div>
+      <div class="detail-row"><span class="label">Destination</span><span class="value">${load.destination_city||'—'}, ${load.destination_state||''}</span></div>
+      <div class="detail-row"><span class="label">Equipment</span><span class="value">${load.equipment_type||'—'}</span></div>
+      ${load.pickup_date ? `<div class="detail-row"><span class="label">Pickup</span><span class="value">${new Date(load.pickup_date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>` : ''}
+      ${load.delivery_date ? `<div class="detail-row"><span class="label">Delivery</span><span class="value">${new Date(load.delivery_date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</span></div>` : ''}
+      ${load.commodity ? `<div class="detail-row"><span class="label">Commodity</span><span class="value">${load.commodity}</span></div>` : ''}
+      ${load.weight ? `<div class="detail-row"><span class="label">Weight</span><span class="value">${Number(load.weight).toLocaleString()} lbs</span></div>` : ''}
+      ${load.reference_number ? `<div class="detail-row"><span class="label">Reference #</span><span class="value">${load.reference_number}</span></div>` : ''}
+      ${carrier ? `<div class="detail-row"><span class="label">Assigned Carrier</span><span class="value">${carrier.name}${carrier.mc_number?' (MC-'+carrier.mc_number+')':''}</span></div>` : ''}
+      <div class="rate-box">
+        <div><div style="font-size:13px;color:#065f46;">Your Rate</div><div style="font-size:11px;color:#6ee7b7;margin-top:2px;">All-in freight charge</div></div>
+        <div style="font-family:Georgia,serif;font-size:32px;font-weight:900;color:#059669;">$${Number(load.customer_rate||0).toLocaleString('en-US',{minimumFractionDigits:2})}</div>
+      </div>
+      <p style="font-size:12px;color:#94a3b8;line-height:1.6;">Questions? Reply to this email or contact your broker directly. Please save this confirmation for your records.</p>
+    </div>
+    <div class="footer">FreightFlowHQ · freightflowhq.com</div>
+  </div></body></html>`;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+RESEND_API_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        from: 'FreightFlowHQ Bookings <'+FROM_EMAIL+'>',
+        to:[toEmail], cc:ccEmail?[ccEmail]:[],
+        subject:'Booking Confirmation — '+load.load_number+' | '+(load.origin_city||'')+' → '+(load.destination_city||''),
+        html,
+      }),
+    });
+    if(res.ok) {
+      statusEl.style.cssText = 'display:block;background:var(--green-dim);color:var(--green);border:1px solid rgba(16,185,129,0.3);';
+      statusEl.textContent = '✅ Booking confirmation sent to ' + toEmail;
+      btn.textContent = 'Sent ✓';
+      toast('Booking confirmation sent!', 'success');
+      setTimeout(() => closeModal('shipper-ratecon'), 2000);
+    } else { throw new Error('Send failed'); }
+  } catch(e) {
+    statusEl.style.cssText = 'display:block;background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,0.3);';
+    statusEl.textContent = '❌ Failed: ' + e.message;
+    btn.disabled = false; btn.textContent = 'Send Confirmation →';
+  }
+}
+
+// ── CARRIER CALL SHEET ────────────────────────────────────────
+let callSheetLoadId = null;
+let callSheetCalls = [];
+
+async function openCallSheet() {
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+  callSheetLoadId = load.id;
+
+  document.getElementById('call-sheet-title').textContent = '📞 Carrier Call Sheet';
+  document.getElementById('call-sheet-load-info').textContent =
+    load.load_number + ' · ' + (load.origin_city||'') + ', ' + (load.origin_state||'') + ' → ' + (load.destination_city||'') + ', ' + (load.destination_state||'');
+
+  // Populate carrier dropdown
+  const sel = document.getElementById('cs-carrier-select');
+  sel.innerHTML = '<option value="">Select carrier...</option>' +
+    allCarriers.filter(c=>!c.do_not_use).map(c=>
+      `<option value="${c.id}">${c.name} — MC-${c.mc_number||'?'} — ${c.equipment_types||''}</option>`
+    ).join('');
+
+  // Load existing calls from load notes or localStorage
+  const key = 'callsheet_' + load.id;
+  try { callSheetCalls = JSON.parse(localStorage.getItem(key)||'[]'); } catch(e) { callSheetCalls = []; }
+  renderCallSheetLog();
+
+  ['cs-contact-name','cs-phone','cs-notes','cs-quote','cs-callback'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('cs-response').value = 'No Answer';
+  openModal('call-sheet');
+}
+
+function logCarrierCall() {
+  const carrierId = document.getElementById('cs-carrier-select')?.value;
+  const carrier = allCarriers.find(c => c.id === carrierId);
+  const call = {
+    id: Date.now(),
+    carrier_name: carrier?.name || 'Unknown',
+    carrier_id: carrierId,
+    contact: document.getElementById('cs-contact-name')?.value,
+    phone: document.getElementById('cs-phone')?.value,
+    quote: document.getElementById('cs-quote')?.value,
+    response: document.getElementById('cs-response')?.value,
+    callback: document.getElementById('cs-callback')?.value,
+    notes: document.getElementById('cs-notes')?.value,
+    time: new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+    date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),
+  };
+
+  callSheetCalls.unshift(call);
+  try { localStorage.setItem('callsheet_'+callSheetLoadId, JSON.stringify(callSheetCalls)); } catch(e) {}
+
+  renderCallSheetLog();
+  ['cs-contact-name','cs-phone','cs-notes','cs-quote','cs-callback'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('cs-carrier-select').value = '';
+  document.getElementById('cs-response').value = 'No Answer';
+  toast('Call logged!', 'success');
+}
+
+function renderCallSheetLog() {
+  const el = document.getElementById('call-sheet-log');
+  if(!el) return;
+  if(callSheetCalls.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">No calls logged yet</div>';
+    return;
+  }
+  const responseColors = {
+    '✅ Booked':'var(--green)',
+    'Interested — Following Up':'var(--accent2)',
+    'Declined — Too Low':'var(--red)',
+    'Declined — No Trucks':'var(--text3)',
+    'Declined — Wrong Lane':'var(--text3)',
+    'Left Voicemail':'var(--amber)',
+    'No Answer':'var(--text3)',
+  };
+  el.innerHTML = callSheetCalls.map(c => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${responseColors[c.response]||'var(--border)'};border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);">${c.carrier_name}</div>
+        <div style="font-size:11px;color:var(--text3);">${c.date} ${c.time}</div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text2);">
+        ${c.contact ? `<span>👤 ${c.contact}</span>` : ''}
+        ${c.phone ? `<span>📞 ${c.phone}</span>` : ''}
+        ${c.quote ? `<span style="color:var(--green);font-weight:700;">💰 $${Number(c.quote).toLocaleString()}</span>` : ''}
+        <span style="color:${responseColors[c.response]||'var(--text3)'};font-weight:600;">${c.response}</span>
+        ${c.callback ? `<span>🔔 Callback: ${new Date(c.callback).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>` : ''}
+      </div>
+      ${c.notes ? `<div style="font-size:12px;color:var(--text3);margin-top:6px;font-style:italic;">${c.notes}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── EMAIL TEMPLATES ───────────────────────────────────────────
+function openQuickEmail() {
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+  const customer = allCustomers.find(c => c.id === load.customer_id);
+  document.getElementById('qe-to').value = customer?.email || '';
+  document.getElementById('qe-cc').value = currentUser?.email || '';
+  document.getElementById('qe-template').value = '';
+  document.getElementById('qe-subject').value = '';
+  document.getElementById('qe-body').value = '';
+  document.getElementById('qe-status').style.display = 'none';
+  document.getElementById('qe-send-btn').disabled = false;
+  document.getElementById('qe-send-btn').textContent = 'Send Email →';
+  openModal('quick-email');
+}
+
+function loadEmailTemplate() {
+  const load = allLoads.find(l => l.id === currentDetailLoadId);
+  if(!load) return;
+  const customer = allCustomers.find(c => c.id === load.customer_id);
+  const carrier = allCarriers.find(c => c.id === load.carrier_id);
+  const template = document.getElementById('qe-template')?.value;
+  const ln = load.load_number;
+  const route = (load.origin_city||'') + ', ' + (load.origin_state||'') + ' → ' + (load.destination_city||'') + ', ' + (load.destination_state||'');
+
+  const templates = {
+    pickup_confirmed: {
+      subject: 'Load ' + ln + ' — Pickup Confirmed',
+      body: 'Hi ' + (customer?.contact_name||'there') + ',\n\nYour shipment on Load #' + ln + ' (' + route + ') has been picked up and is en route.\n\nCarrier: ' + (carrier?.name||'TBD') + '\nDriver is expected to arrive on schedule.\n\nWe will keep you updated. Please let me know if you have any questions.\n\nThank you!',
+    },
+    running_late: {
+      subject: 'Load ' + ln + ' — Delay Update',
+      body: 'Hi ' + (customer?.contact_name||'there') + ',\n\nI wanted to give you a heads up that Load #' + ln + ' (' + route + ') is running behind schedule.\n\nCarrier: ' + (carrier?.name||'TBD') + '\nReason: [add reason here]\nNew estimated arrival: [add new ETA here]\n\nWe apologize for the inconvenience and will continue to provide updates.\n\nThank you for your patience!',
+    },
+    delivered: {
+      subject: 'Load ' + ln + ' — Delivered',
+      body: 'Hi ' + (customer?.contact_name||'there') + ',\n\nGreat news! Load #' + ln + ' (' + route + ') has been delivered successfully.\n\nCarrier: ' + (carrier?.name||'TBD') + '\nDelivery time: ' + new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) + '\n\nThe POD is being collected and will be forwarded to you shortly. Your invoice will follow.\n\nThank you for your business!',
+    },
+    check_call: {
+      subject: 'Load ' + ln + ' — Status Update',
+      body: 'Hi ' + (customer?.contact_name||'there') + ',\n\nHere is a status update on Load #' + ln + ' (' + route + '):\n\nCurrent location: [city, state]\nStatus: In Transit\nEstimated arrival: [ETA here]\n\nEverything is on track. I will update you if anything changes.\n\nThank you!',
+    },
+    detention: {
+      subject: 'Load ' + ln + ' — Detention Notice',
+      body: 'Hi ' + (customer?.contact_name||'there') + ',\n\nI wanted to notify you that the driver on Load #' + ln + ' has been at the ' + (load.origin_city||'pickup') + ' location for over 2 hours and detention charges are now accruing.\n\nDetention rate: $[rate]/hour\nTime detained: [X hours]\nTotal detention to date: $[amount]\n\nPlease arrange for the driver to be loaded as soon as possible.\n\nPlease let me know if you have any questions.',
+    },
+    pod_request: {
+      subject: 'Load ' + ln + ' — POD Request',
+      body: 'Hi ' + (carrier?.contact_name||'there') + ',\n\nCould you please send over the signed POD for Load #' + ln + ' (' + route + ')?\n\nWe need this to process payment. Please send to this email address at your earliest convenience.\n\nThank you!',
+    },
+  };
+
+  const t = templates[template];
+  if(t) {
+    document.getElementById('qe-subject').value = t.subject;
+    document.getElementById('qe-body').value = t.body;
+    if(template === 'pod_request') {
+      document.getElementById('qe-to').value = carrier?.email || '';
+    }
+  }
+}
+
+async function sendQuickEmail() {
+  const toEmail = document.getElementById('qe-to')?.value?.trim();
+  const ccEmail = document.getElementById('qe-cc')?.value?.trim();
+  const subject = document.getElementById('qe-subject')?.value?.trim();
+  const body = document.getElementById('qe-body')?.value?.trim();
+  const statusEl = document.getElementById('qe-status');
+  const btn = document.getElementById('qe-send-btn');
+
+  if(!toEmail) { toast('Please enter recipient email', 'error'); return; }
+  if(!subject) { toast('Please enter a subject', 'error'); return; }
+  if(!body) { toast('Please enter a message', 'error'); return; }
+  if(!RESEND_API_KEY) { toast('Resend API key not configured', 'error'); return; }
+
+  btn.disabled = true; btn.textContent = 'Sending...';
+
+  const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;padding:20px;color:#1a1a1a;">
+    <div style="background:#0D1829;padding:16px 20px;border-radius:8px 8px 0 0;margin-bottom:0;">
+      <span style="font-family:Georgia,serif;font-size:18px;color:white;font-weight:700;">Freight<span style="color:#60A5FA;">FlowHQ</span></span>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:24px;">
+      <p style="white-space:pre-wrap;line-height:1.7;font-size:14px;color:#374151;">${body.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;margin-top:16px;text-align:center;">Sent via FreightFlowHQ · freightflowhq.com</p>
+  </body></html>`;
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+RESEND_API_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({from:'FreightFlowHQ <'+FROM_EMAIL+'>', to:[toEmail], cc:ccEmail?[ccEmail]:[], subject, html}),
+    });
+    if(res.ok) {
+      statusEl.style.cssText = 'display:block;background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.3);';
+      statusEl.textContent = '✅ Email sent to ' + toEmail;
+      btn.textContent = 'Sent ✓';
+      toast('Email sent!', 'success');
+      setTimeout(() => closeModal('quick-email'), 2000);
+    } else { throw new Error('Send failed'); }
+  } catch(e) {
+    statusEl.style.cssText = 'display:block;background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.3);';
+    statusEl.textContent = '❌ Failed: ' + e.message;
+    btn.disabled = false; btn.textContent = 'Send Email →';
+  }
+}
+
+// ── DETENTION TIMER ───────────────────────────────────────────
+let detentionInterval = null;
+
+function startDetentionTimer(arrivalTime) {
+  if(detentionInterval) clearInterval(detentionInterval);
+  const section = document.getElementById('detention-section');
+  const timerEl = document.getElementById('detention-timer');
+  const labelEl = document.getElementById('detention-start-label');
+  if(!section || !timerEl) return;
+
+  const arrival = new Date(arrivalTime);
+  const freeTime = 2 * 60 * 60 * 1000; // 2 hours free
+
+  function update() {
+    const now = new Date();
+    const elapsed = now - arrival;
+    const detention = elapsed - freeTime;
+    section.style.display = 'block';
+
+    if(detention < 0) {
+      const remaining = freeTime - elapsed;
+      const h = Math.floor(remaining/3600000);
+      const m = Math.floor((remaining%3600000)/60000);
+      const s = Math.floor((remaining%60000)/1000);
+      timerEl.style.color = 'var(--green)';
+      timerEl.textContent = h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0')+':'+s.toString().padStart(2,'0');
+      labelEl.textContent = 'Free time remaining before detention starts';
+    } else {
+      const h = Math.floor(detention/3600000);
+      const m = Math.floor((detention%3600000)/60000);
+      const s = Math.floor((detention%60000)/1000);
+      timerEl.style.color = 'var(--red)';
+      timerEl.textContent = h.toString().padStart(2,'0')+':'+m.toString().padStart(2,'0')+':'+s.toString().padStart(2,'0');
+      labelEl.textContent = '⏱️ Detention accruing — driver has been waiting ' + h + 'h ' + m + 'm';
+      section.style.background = 'rgba(239,68,68,0.08)';
+      section.style.border = '1px solid rgba(239,68,68,0.25)';
+    }
+  }
+  update();
+  detentionInterval = setInterval(update, 1000);
+}
+
+// Hook into openLoadDetail to start timer if in transit at pickup
+const _origOpenLoadDetail = openLoadDetail;
+openLoadDetail = function(id) {
+  _origOpenLoadDetail(id);
+  if(detentionInterval) { clearInterval(detentionInterval); detentionInterval = null; }
+  const section = document.getElementById('detention-section');
+  if(section) section.style.display = 'none';
+
+  setTimeout(() => {
+    const load = allLoads.find(l => l.id === id);
+    if(load && (load.status === 'Assigned' || load.status === 'In Transit') && load.pickup_date) {
+      const pickupTime = new Date(load.pickup_date);
+      const now = new Date();
+      // Only show if pickup time has passed
+      if(now > pickupTime) {
+        startDetentionTimer(pickupTime);
+      }
+    }
+  }, 200);
+};
+
 applyTheme();
 initRolePerms();
 checkAuth();
@@ -5305,6 +5909,152 @@ setTimeout(initCityAutocomplete, 500);
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('carrier-contact')">Cancel</button>
       <button class="btn btn-primary" onclick="saveCarrierContact()">Save Contact →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- SHIPPER RATE CONFIRMATION MODAL -->
+<div class="modal-overlay" id="modal-shipper-ratecon">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📋 Send Booking Confirmation</div>
+      <button class="modal-close" onclick="closeModal('shipper-ratecon')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--accent-dim);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--accent2);">
+        This sends a booking/load confirmation to your <strong>customer (shipper)</strong> — different from the carrier rate con.
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Customer Email *</label>
+          <input type="email" id="shipper-rc-email" placeholder="shipping@customer.com"/>
+        </div>
+        <div class="form-group full">
+          <label>CC (optional)</label>
+          <input type="email" id="shipper-rc-cc" placeholder="yourself@company.com"/>
+        </div>
+        <div class="form-group full">
+          <label>Message (optional)</label>
+          <textarea id="shipper-rc-message" placeholder="Your shipment has been booked and confirmed..." style="min-height:70px;"></textarea>
+        </div>
+      </div>
+      <div id="shipper-rc-status" style="display:none;margin-top:12px;padding:12px;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('shipper-ratecon')">Cancel</button>
+      <button class="btn btn-primary" id="shipper-rc-btn" onclick="sendShipperRateCon()">Send Confirmation →</button>
+    </div>
+  </div>
+</div>
+
+<!-- CARRIER CALL SHEET MODAL -->
+<div class="modal-overlay" id="modal-call-sheet">
+  <div class="modal" style="width:680px;max-height:90vh;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="call-sheet-title">📞 Carrier Call Sheet</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="call-sheet-load-info"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('call-sheet')">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;max-height:calc(90vh - 140px);">
+      <!-- Add call entry -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Log a Carrier Call</div>
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>Carrier</label>
+            <select id="cs-carrier-select">
+              <option value="">Select carrier...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Contact Name</label>
+            <input type="text" id="cs-contact-name" placeholder="Dispatcher name"/>
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" id="cs-phone" placeholder="(555) 000-0000" oninput="fmtPhone(this)"/>
+          </div>
+          <div class="form-group">
+            <label>Their Quote ($)</label>
+            <input type="number" id="cs-quote" placeholder="2100"/>
+          </div>
+          <div class="form-group">
+            <label>Response</label>
+            <select id="cs-response">
+              <option>No Answer</option>
+              <option>Left Voicemail</option>
+              <option>Declined — Too Low</option>
+              <option>Declined — No Trucks</option>
+              <option>Declined — Wrong Lane</option>
+              <option>Interested — Following Up</option>
+              <option>✅ Booked</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Callback Time</label>
+            <input type="datetime-local" id="cs-callback"/>
+          </div>
+          <div class="form-group full">
+            <label>Notes</label>
+            <input type="text" id="cs-notes" placeholder="Has a truck in Dallas tomorrow morning..."/>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="logCarrierCall()">Log Call →</button>
+      </div>
+      <!-- Call log -->
+      <div id="call-sheet-log">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">No calls logged yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK EMAIL MODAL -->
+<div class="modal-overlay" id="modal-quick-email">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">✉️ Send Quick Email</div>
+      <button class="modal-close" onclick="closeModal('quick-email')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Template</label>
+          <select id="qe-template" onchange="loadEmailTemplate()">
+            <option value="">Select template...</option>
+            <option value="pickup_confirmed">✅ Pickup Confirmed</option>
+            <option value="running_late">⚠️ Running Late</option>
+            <option value="delivered">📦 Load Delivered</option>
+            <option value="check_call">📞 Check Call Update</option>
+            <option value="detention">⏱️ Detention Notice</option>
+            <option value="pod_request">📄 POD Request</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>To *</label>
+          <input type="email" id="qe-to" placeholder="customer@company.com"/>
+        </div>
+        <div class="form-group full">
+          <label>CC</label>
+          <input type="email" id="qe-cc" placeholder="optional"/>
+        </div>
+        <div class="form-group full">
+          <label>Subject</label>
+          <input type="text" id="qe-subject" placeholder="Subject line"/>
+        </div>
+        <div class="form-group full">
+          <label>Message</label>
+          <textarea id="qe-body" style="min-height:140px;" placeholder="Email body..."></textarea>
+        </div>
+      </div>
+      <div id="qe-status" style="display:none;margin-top:12px;padding:12px;border-radius:8px;font-size:13px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('quick-email')">Cancel</button>
+      <button class="btn btn-primary" id="qe-send-btn" onclick="sendQuickEmail()">Send Email →</button>
     </div>
   </div>
 </div>
