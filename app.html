@@ -2336,6 +2336,7 @@ async function loadData() {
     populateQuoteCustomers();
     loadLoadTemplates();
     updateInvoiceBadge();
+    loadResendKey();
   } catch(e) {
     setDbStatus('error');
     toast('Database error: ' + e.message, 'error');
@@ -4231,8 +4232,8 @@ function openFMCSALookup() {
 
 
 // ── RESEND EMAIL ──────────────────────────────────────────────
-const RESEND_API_KEY = 're_2NCQd57y_Lm4wuHdqWvAxyWQa8W4wmKLC';
-const FROM_EMAIL = 'ratcon@freightflowhq.com';
+let RESEND_API_KEY = ''; // Loaded from company settings
+const FROM_EMAIL = 'noreply@freightflowhq.com';
 
 function openSendRateCon() {
   const load = allLoads.find(l => l.id === currentDetailLoadId);
@@ -4687,6 +4688,16 @@ async function saveLead() {
 
   // Refresh CRM data
   await renderCRM();
+}
+
+
+// ── LOAD RESEND KEY FROM SETTINGS ────────────────────────────
+async function loadResendKey() {
+  const { data } = await db.from('company_settings')
+    .select('resend_api_key')
+    .limit(1)
+    .single();
+  if(data?.resend_api_key) RESEND_API_KEY = data.resend_api_key;
 }
 
 applyTheme();
