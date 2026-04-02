@@ -887,6 +887,28 @@ textarea{resize:vertical;min-height:80px;}
           <button class="btn btn-primary btn-sm" onclick="openModal('load')">+ New Load</button>
         </div>
       </div>
+      <!-- Search & Filter Bar -->
+      <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface2);">
+        <input type="text" id="loads-search" placeholder="Search loads, customers, carriers, cities..." oninput="filterLoads()" style="font-size:13px;padding:8px 12px;"/>
+        <select id="loads-filter-status" onchange="filterLoads()" style="font-size:12px;padding:8px 10px;">
+          <option value="">All Statuses</option>
+          <option>Available</option>
+          <option>Assigned</option>
+          <option>In Transit</option>
+          <option>Delivered</option>
+        </select>
+        <select id="loads-filter-equipment" onchange="filterLoads()" style="font-size:12px;padding:8px 10px;">
+          <option value="">All Equipment</option>
+          <option>Dry Van 53'</option>
+          <option>Reefer 53'</option>
+          <option>Flatbed 48'</option>
+          <option>Step Deck</option>
+          <option>Box Truck</option>
+        </select>
+        <input type="date" id="loads-filter-date" onchange="filterLoads()" style="font-size:12px;padding:8px 10px;" title="Filter by pickup date"/>
+        <button class="btn btn-ghost btn-sm" onclick="clearLoadFilters()" style="font-size:11px;">Clear</button>
+      </div>
+
       <div id="load-templates-panel" style="display:none;padding:16px;border-bottom:1px solid var(--border);background:var(--surface2);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div style="font-size:13px;font-weight:600;color:var(--text);">Saved Lane Templates</div>
@@ -1683,13 +1705,24 @@ textarea{resize:vertical;min-height:80px;}
       </div>
       <div class="form-section-title">💰 Rate & Carrier</div>
       <div class="form-grid">
-        <div class="form-group"><label>Customer Rate ($)</label><input type="number" id="load-rate" placeholder="2840"/></div>
-        <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="load-carrier-pay" placeholder="2250"/></div>
+        <div class="form-group"><label>Customer Rate ($)</label><input type="number" id="load-rate" placeholder="2840" oninput="calcLoadMargin()"/></div>
+        <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="load-carrier-pay" placeholder="2250" oninput="calcLoadMargin()"/></div>
         <div class="form-group"><label>Assign Carrier</label><select id="load-carrier"><option value="">Unassigned</option></select></div>
         <div class="form-group"><label>Status</label>
           <select id="load-status"><option>Available</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select>
         </div>
-        <div class="form-group full"><label>Reference # / Notes</label><input type="text" id="load-ref" placeholder="Customer PO or reference number"/></div>
+        <div class="form-group"><label>Reference #</label><input type="text" id="load-ref" placeholder="Customer PO #"/></div>
+        <div class="form-group"><label>BOL Number</label><input type="text" id="load-bol" placeholder="BOL-2026-001"/></div>
+        <div class="form-group"><label>PRO Number</label><input type="text" id="load-pro" placeholder="Carrier PRO #"/></div>
+        <div class="form-group"><label>Pay Terms</label>
+          <select id="load-pay-terms">
+            <option>Net 30</option><option>Net 45</option><option>Net 60</option>
+            <option>Quick Pay 2%</option><option>Quick Pay 3%</option><option>Prepaid</option>
+          </select>
+        </div>
+        <!-- Margin indicator -->
+        <div class="form-group full" id="load-margin-indicator" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;"></div>
+        <div class="form-group full"><label>Load Notes / Communication Log</label><textarea id="load-notes" placeholder="Log calls, updates, issues..." style="min-height:80px;"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1718,6 +1751,14 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Insurance Expiry</label><input type="date" id="carrier-insurance"/></div>
         <div class="form-group"><label>Safety Score</label><input type="number" id="carrier-safety" placeholder="95.0" min="0" max="100" step="0.1"/></div>
         <div class="form-group full"><label>Equipment Types (comma separated)</label><input type="text" id="carrier-equipment" placeholder="Dry Van, Reefer, Flatbed"/></div>
+        <div class="form-group full" style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" id="carrier-dnu" style="width:auto;accent-color:var(--red);" onchange="toggleDNUField()"/>
+          <label style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--red);cursor:pointer;">🚫 Do Not Use</label>
+        </div>
+        <div class="form-group full" id="carrier-dnu-reason-group" style="display:none;">
+          <label>Reason (required)</label>
+          <textarea id="carrier-dnu-reason" placeholder="e.g. Double brokered load, cargo claim, no-show at pickup..." style="min-height:60px;"></textarea>
+        </div>
         <div class="form-group full"><label>Notes</label><textarea id="carrier-notes" placeholder="Any additional notes…"></textarea></div>
       </div>
     </div>
@@ -2431,6 +2472,7 @@ function renderDashboard() {
       cgp.innerHTML = `<table class="table"><thead><tr><th>Customer</th><th>Revenue</th><th>Carrier Pay</th><th>Gross Profit</th><th>GP %</th><th style="text-align:center;">Loads</th><th style="text-align:center;">Delivered</th></tr></thead><tbody>${rows}<tr style="background:var(--surface2);font-weight:700;"><td><strong style="color:var(--text);">TOTAL</strong></td><td><strong style="color:var(--text);">${fmt$(totalRev)}</strong></td><td style="color:var(--text3);">${fmt$(sorted.reduce((s,c)=>s+c.carrierPay,0))}</td><td><strong style="color:${tColor};">${fmt$(totalGP)}</strong></td><td><strong style="color:${tColor};font-family:'JetBrains Mono',monospace;font-size:12px;">${totalGPPct.toFixed(1)}%</strong></td><td style="text-align:center;"><strong>${sorted.reduce((s,c)=>s+c.loads,0)}</strong></td><td style="text-align:center;color:var(--green);"><strong>${sorted.reduce((s,c)=>s+c.delivered,0)}</strong></td></tr></tbody></table>`;
     }
   }
+  setTimeout(renderDashboardAlerts, 100);
 }
 
 function renderDispatch() {
@@ -2612,6 +2654,7 @@ async function saveLoad() {
   const id = document.getElementById('load-id')?.value;
   const carrierId = document.getElementById('load-carrier')?.value;
   const currentStatus = document.getElementById('load-status')?.value;
+
   const payload = {
     customer_id: document.getElementById('load-customer')?.value||null,
     carrier_id: carrierId||null,
@@ -2626,16 +2669,59 @@ async function saveLoad() {
     delivery_date: document.getElementById('load-delivery')?.value||null,
     customer_rate: document.getElementById('load-rate')?.value||null,
     carrier_pay: document.getElementById('load-carrier-pay')?.value||null,
-    status: carrierId && currentStatus === 'Available' ? 'Assigned' : currentStatus,
-    reference_number: document.getElementById('load-ref')?.value,
+    reference_number: document.getElementById('load-ref')?.value||null,
+    bol_number: document.getElementById('load-bol')?.value||null,
+    pro_number: document.getElementById('load-pro')?.value||null,
+    pay_terms: document.getElementById('load-pay-terms')?.value||'Net 30',
+    notes: document.getElementById('load-notes')?.value||null,
+    status: carrierId && currentStatus==='Available' ? 'Assigned' : currentStatus||'Available',
   };
-  if (!id) payload.load_number = loadNumber();
-  const { error } = id ? await db.from('loads').update(payload).eq('id',id) : await db.from('loads').insert(payload);
-  if (error) { toast('Error: '+error.message, 'error'); return; }
-  toast(id ? 'Load updated!' : 'Load created!', 'success');
+
+  if(!payload.origin_city || !payload.destination_city) { toast('Origin and destination are required', 'error'); return; }
+  if(!payload.customer_id) { toast('Please select a customer', 'error'); return; }
+
+  // Margin warning
+  const rate = Number(payload.customer_rate)||0;
+  const pay = Number(payload.carrier_pay)||0;
+  if(rate > 0 && pay > 0) {
+    const gp = ((rate - pay) / rate) * 100;
+    if(gp < 10) {
+      const ok = confirm('⚠️ Low margin warning! This load is only ' + gp.toFixed(1) + '% GP ($' + (rate-pay).toFixed(0) + '). Save anyway?');
+      if(!ok) return;
+    }
+  }
+
+  // Duplicate detection
+  if(!id && payload.customer_id && payload.origin_city && payload.destination_city && payload.pickup_date) {
+    const dup = allLoads.find(l =>
+      l.customer_id === payload.customer_id &&
+      l.origin_city?.toLowerCase() === payload.origin_city?.toLowerCase() &&
+      l.destination_city?.toLowerCase() === payload.destination_city?.toLowerCase() &&
+      l.pickup_date?.slice(0,10) === payload.pickup_date?.slice(0,10) &&
+      l.status !== 'Delivered'
+    );
+    if(dup) {
+      const ok = confirm('⚠️ Possible duplicate! Load ' + dup.load_number + ' already exists for this customer, lane, and pickup date. Save anyway?');
+      if(!ok) return;
+    }
+  }
+
+  // Auto load number
+  if(!id) {
+    const { count } = await db.from('loads').select('*', {count:'exact', head:true});
+    payload.load_number = 'FF-' + String((count||0) + 1).padStart(4,'0');
+  }
+
+  const { error } = id
+    ? await db.from('loads').update(payload).eq('id', id)
+    : await db.from('loads').insert(payload);
+
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+  toast(id ? 'Load updated!' : 'Load created — ' + payload.load_number + '!', 'success');
   closeModal('load');
   await loadData();
 }
+
 
 async function editLoad(id) {
   const l = allLoads.find(x=>x.id===id); if(!l) return;
@@ -4698,6 +4784,182 @@ async function loadResendKey() {
     .limit(1)
     .single();
   if(data?.resend_api_key) RESEND_API_KEY = data.resend_api_key;
+}
+
+
+// ── LOAD MARGIN CALCULATOR (real-time) ───────────────────────
+function calcLoadMargin() {
+  const rate = Number(document.getElementById('load-rate')?.value)||0;
+  const pay = Number(document.getElementById('load-carrier-pay')?.value)||0;
+  const indicator = document.getElementById('load-margin-indicator');
+  if(!indicator) return;
+  if(rate > 0 && pay > 0) {
+    const gp = rate - pay;
+    const pct = (gp / rate) * 100;
+    indicator.style.display = 'block';
+    if(pct < 5) {
+      indicator.style.background = 'rgba(239,68,68,0.1)';
+      indicator.style.border = '1px solid rgba(239,68,68,0.3)';
+      indicator.style.color = 'var(--red)';
+      indicator.textContent = '🔴 Margin: $' + gp.toFixed(0) + ' (' + pct.toFixed(1) + '%) — Very low!';
+    } else if(pct < 10) {
+      indicator.style.background = 'rgba(245,158,11,0.1)';
+      indicator.style.border = '1px solid rgba(245,158,11,0.3)';
+      indicator.style.color = 'var(--amber)';
+      indicator.textContent = '⚠️ Margin: $' + gp.toFixed(0) + ' (' + pct.toFixed(1) + '%) — Below target';
+    } else {
+      indicator.style.background = 'rgba(16,185,129,0.1)';
+      indicator.style.border = '1px solid rgba(16,185,129,0.3)';
+      indicator.style.color = 'var(--green)';
+      indicator.textContent = '✅ Margin: $' + gp.toFixed(0) + ' (' + pct.toFixed(1) + '%) — Good';
+    }
+  } else {
+    indicator.style.display = 'none';
+  }
+}
+
+// ── LOAD SEARCH & FILTER ──────────────────────────────────────
+function filterLoads() {
+  const search = document.getElementById('loads-search')?.value?.toLowerCase()||'';
+  const statusFilter = document.getElementById('loads-filter-status')?.value||'';
+  const equipFilter = document.getElementById('loads-filter-equipment')?.value||'';
+  const dateFilter = document.getElementById('loads-filter-date')?.value||'';
+
+  let filtered = allLoads.filter(l => {
+    const customer = allCustomers.find(c => c.id === l.customer_id);
+    const carrier = allCarriers.find(c => c.id === l.carrier_id);
+    const searchStr = [
+      l.load_number, l.origin_city, l.origin_state,
+      l.destination_city, l.destination_state,
+      l.bol_number, l.pro_number, l.reference_number,
+      customer?.name, carrier?.name, l.commodity,
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    if(search && !searchStr.includes(search)) return false;
+    if(statusFilter && l.status !== statusFilter) return false;
+    if(equipFilter && l.equipment_type !== equipFilter) return false;
+    if(dateFilter && l.pickup_date?.slice(0,10) !== dateFilter) return false;
+    return true;
+  });
+
+  renderLoadsTable(filtered);
+  const title = document.getElementById('loads-page-title');
+  if(title) title.textContent = 'Loads (' + filtered.length + ' of ' + allLoads.length + ')';
+}
+
+function clearLoadFilters() {
+  ['loads-search','loads-filter-status','loads-filter-equipment','loads-filter-date'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  filterLoads();
+}
+
+// ── CARRIER DNU TOGGLE ────────────────────────────────────────
+function toggleDNUField() {
+  const dnu = document.getElementById('carrier-dnu')?.checked;
+  const reasonGroup = document.getElementById('carrier-dnu-reason-group');
+  if(reasonGroup) reasonGroup.style.display = dnu ? 'block' : 'none';
+}
+
+// ── DASHBOARD ALERTS ──────────────────────────────────────────
+function renderDashboardAlerts() {
+  const alertsEl = document.getElementById('dashboard-alerts');
+  if(!alertsEl) return;
+
+  const now = new Date();
+  const alerts = [];
+
+  // Loads available with pickup today or tomorrow
+  allLoads.forEach(l => {
+    if(l.status === 'Available' && l.pickup_date) {
+      const pickup = new Date(l.pickup_date);
+      const diff = (pickup - now) / (1000*60*60);
+      if(diff < 24 && diff > -2) {
+        alerts.push({type:'red', msg:'🔴 ' + l.load_number + ' needs a carrier — pickup ' + pickup.toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+      }
+    }
+  });
+
+  // In transit loads with no check call in 4+ hours
+  allLoads.forEach(l => {
+    if(l.status === 'In Transit') {
+      const lastCall = allCheckCalls?.filter(c => c.load_id === l.id)?.sort((a,b) => new Date(b.created_at)-new Date(a.created_at))[0];
+      if(!lastCall) {
+        alerts.push({type:'amber', msg:'⚠️ ' + l.load_number + ' — No check calls logged yet'});
+      } else {
+        const hrs = (now - new Date(lastCall.created_at)) / (1000*60*60);
+        if(hrs > 4) {
+          alerts.push({type:'amber', msg:'⚠️ ' + l.load_number + ' — Last check call ' + Math.floor(hrs) + 'h ago'});
+        }
+      }
+    }
+  });
+
+  // Insurance expiring within 30 days
+  allCarriers.forEach(c => {
+    if(c.insurance_expiry) {
+      const exp = new Date(c.insurance_expiry);
+      const days = (exp - now) / (1000*60*60*24);
+      if(days < 0) {
+        alerts.push({type:'red', msg:'🔴 ' + c.name + ' — Insurance EXPIRED ' + Math.abs(Math.floor(days)) + ' days ago'});
+      } else if(days < 30) {
+        alerts.push({type:'amber', msg:'⚠️ ' + c.name + ' — Insurance expires in ' + Math.floor(days) + ' days'});
+      }
+    }
+  });
+
+  if(alerts.length === 0) {
+    alertsEl.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--green);">✅ All clear — no alerts!</div>';
+    return;
+  }
+
+  alertsEl.innerHTML = alerts.slice(0,8).map(a => `
+    <div style="padding:9px 14px;border-left:3px solid ${a.type==='red'?'var(--red)':'var(--amber)'};background:${a.type==='red'?'rgba(239,68,68,0.06)':'rgba(245,158,11,0.06)'};border-radius:0 6px 6px 0;margin-bottom:6px;font-size:12px;color:var(--text2);">
+      ${a.msg}
+    </div>
+  `).join('');
+}
+
+// ── QUICK STATUS UPDATE FROM LOAD LIST ───────────────────────
+async function quickStatusUpdate(loadId, newStatus, el) {
+  el.disabled = true;
+  const { error } = await db.from('loads').update({status: newStatus}).eq('id', loadId);
+  if(error) { toast('Error: ' + error.message, 'error'); el.disabled = false; return; }
+  toast('Status updated to ' + newStatus, 'success');
+  await loadData();
+  filterLoads();
+}
+
+// ── CARRIER SEARCH BY EQUIPMENT/STATE ────────────────────────
+function searchCarrierNetwork() {
+  const equipment = document.getElementById('carrier-search-equipment')?.value||'';
+  const state = document.getElementById('carrier-search-state')?.value?.toUpperCase()||'';
+  const search = document.getElementById('carrier-search-text')?.value?.toLowerCase()||'';
+
+  let filtered = allCarriers.filter(c => {
+    if(c.do_not_use) return false; // Hide DNU carriers from search
+    if(equipment && !c.equipment_types?.toLowerCase().includes(equipment.toLowerCase())) return false;
+    if(state && c.state?.toUpperCase() !== state) return false;
+    if(search && !c.name?.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  renderCarrierSearchResults(filtered);
+}
+
+function renderCarrierSearchResults(carriers) {
+  const el = document.getElementById('carrier-search-results');
+  if(!el) return;
+  if(carriers.length === 0) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No carriers found</div>'; return; }
+  el.innerHTML = carriers.map(c => `
+    <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;" onclick="prefillCarrierOnLoad('${c.id}')">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${c.name}</div>
+        <div style="font-size:11px;color:var(--text3);">${c.equipment_types||'—'} · ${c.city||''}${c.state?', '+c.state:''} · MC-${c.mc_number||'—'}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);">${c.phone||''}</div>
+    </div>
+  `).join('');
 }
 
 applyTheme();
