@@ -3802,6 +3802,39 @@ function renderPortalQuotes() {
   }).join('');
 }
 
+
+function populateQuoteCustomers() {
+  const sel = document.getElementById('qq-customer');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">Select customer...</option>' +
+    allCustomers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function loadLoadTemplates() {
+  if(typeof db === 'undefined') return;
+  db.from('load_templates').select('*, customers(name)').order('created_at',{ascending:false}).then(({data}) => {
+    allLoadTemplates = data || [];
+    renderTemplatesPanel();
+  });
+}
+
+function renderTemplatesPanel() {
+  const el = document.getElementById('templates-list-panel'); if(!el) return;
+  if(!allLoadTemplates || allLoadTemplates.length === 0) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:12px;">No templates yet — open a load and click Save Template</div>';
+    return;
+  }
+  el.innerHTML = allLoadTemplates.map(t => `
+    <div class="template-load-card" onclick="createLoadFromTemplate('${t.id}')">
+      <div style="font-size:22px;">📋</div>
+      <div style="flex:1;">
+        <div class="template-load-route">${t.name}</div>
+        <div class="template-load-meta">${t.origin_city||'?'}, ${t.origin_state||''} → ${t.destination_city||'?'}, ${t.destination_state||''} · ${t.equipment_type||'Dry Van'} · ${fmt$(t.customer_rate)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteTemplate('${t.id}')">✕</button>
+    </div>`).join('');
+}
+
 applyTheme();
 initRolePerms();
 checkAuth();
