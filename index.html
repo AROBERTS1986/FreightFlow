@@ -2354,7 +2354,10 @@ function renderLoads() {
   const body = document.getElementById('loads-body');
   if(!body) return;
   if (allLoads.length === 0) { body.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No loads yet.</p></div>`; return; }
-  body.innerHTML = `<table class="table"><thead><tr><th>Load #</th><th>Customer</th><th>Origin</th><th>Destination</th><th>Equipment</th><th>Pickup</th><th>Carrier</th><th>Rate</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>${allLoads.map(l => `<tr onclick="openLoadDetail('${l.id}')"><td><strong>${l.load_number}</strong></td><td>${l.customers?.name||'—'}</td><td>${l.origin_city||'—'}, ${l.origin_state||''}</td><td>${l.destination_city||'—'}, ${l.destination_state||''}</td><td>${l.equipment_type||'—'}</td><td>${fmtDate(l.pickup_date)}</td><td>${l.carriers?.name||'<span style="color:var(--text3)">—</span>'}</td><td><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></td><td style="color:${marginColor(l.customer_rate,l.carrier_pay)}">${margin(l.customer_rate,l.carrier_pay)}</td><td>${statusBadge(l.status)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLoad('${l.id}')">✕</button></td></tr>`).join('')}</tbody></table>`;
+  body.innerHTML = `<table class="table"><thead><tr><th>Load #</th><th>Customer</th><th>Origin</th><th>Destination</th><th>Equipment</th><th>Pickup</th><th>Carrier</th><th>Rate</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>${allLoads.map(l => {
+    const isPODNeeded = l.status === 'Delivered' && !allInvoices.find(i => i.load_id === l.id);
+    return `<tr onclick="openLoadDetail('${l.id}')" style="${isPODNeeded ? 'border-left:3px solid var(--red);' : ''}"><td><strong>${l.load_number}</strong></td><td>${l.customers?.name||'—'}</td><td>${l.origin_city||'—'}, ${l.origin_state||''}</td><td>${l.destination_city||'—'}, ${l.destination_state||''}</td><td>${l.equipment_type||'—'}</td><td>${fmtDate(l.pickup_date)}</td><td>${l.carriers?.name||'<span style="color:var(--text3)">—</span>'}</td><td><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></td><td style="color:${marginColor(l.customer_rate,l.carrier_pay)}">${margin(l.customer_rate,l.carrier_pay)}</td><td>${statusBadge(l.status)}${isPODNeeded ? ' <span style="font-size:10px;font-weight:700;color:var(--red);background:var(--red-dim);padding:2px 6px;border-radius:6px;margin-left:4px;">POD</span>' : ''}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLoad('${l.id}')">✕</button></td></tr>`;
+  }).join('')}</tbody></table>`;
 }
 
 function renderCarriers() {
@@ -2376,15 +2379,30 @@ function renderCustomers() {
   body.innerHTML = `<table class="table"><thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>City</th><th>State</th><th>Status</th><th></th></tr></thead><tbody>${allCustomers.map(c => `<tr onclick="editCustomer('${c.id}')"><td><strong>${c.name}</strong></td><td>${c.contact_name||'—'}</td><td style="font-size:12px;">${c.email||'—'}</td><td>${c.phone||'—'}</td><td>${c.city||'—'}</td><td>${c.state||'—'}</td><td>${statusBadge(c.status||'Active')}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCustomer('${c.id}')">✕</button></td></tr>`).join('')}</tbody></table>`;
 }
 
-function renderInvoiceQueue() {
+async function renderInvoiceQueue() {
   // Find delivered loads without invoices
   const invoicedLoadIds = new Set(allInvoices.map(i => i.load_id).filter(Boolean));
-  const readyToInvoice = allLoads.filter(l => l.status === 'Delivered' && !invoicedLoadIds.has(l.id));
+  const deliveredLoads = allLoads.filter(l => l.status === 'Delivered' && !invoicedLoadIds.has(l.id));
+
+  // Check which have POD uploaded
+  let loadsWithPOD = new Set();
+  if(deliveredLoads.length > 0) {
+    const loadIds = deliveredLoads.map(l => l.id);
+    const { data: docs } = await db.from('load_docs')
+      .select('load_id')
+      .in('load_id', loadIds)
+      .ilike('doc_type', '%POD%');
+    if(docs) docs.forEach(d => loadsWithPOD.add(d.load_id));
+  }
+
+  const readyToInvoice = deliveredLoads.filter(l => loadsWithPOD.has(l.id));
+  const awaitingPOD = deliveredLoads.filter(l => !loadsWithPOD.has(l.id));
+
   const countEl = document.getElementById('inv-queue-count');
   const listEl = document.getElementById('inv-queue-list');
-  if (countEl) countEl.textContent = readyToInvoice.length;
-  if (!listEl) return;
-  if (readyToInvoice.length === 0) {
+  if(countEl) countEl.textContent = readyToInvoice.length;
+  if(!listEl) return;
+  if(deliveredLoads.length === 0) {
     listEl.innerHTML = '<div style="padding:14px 16px;text-align:center;color:var(--text3);font-size:13px;">No loads awaiting invoicing ✓</div>';
     return;
   }
@@ -3833,6 +3851,14 @@ function renderTemplatesPanel() {
       </div>
       <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteTemplate('${t.id}')">✕</button>
     </div>`).join('');
+}
+
+function openLoadDetailAndUpload(loadId) {
+  openLoadDetail(loadId);
+  setTimeout(() => {
+    openDocUpload();
+    document.getElementById('doc-type').value = 'POD (Proof of Delivery)';
+  }, 400);
 }
 
 applyTheme();
