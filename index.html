@@ -1107,12 +1107,35 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-grid">
           <div class="form-group full"><label>Company Name *</label><input type="text" id="cc-name" placeholder="Acme Logistics"/></div>
           <div class="form-group"><label>Industry</label>
-            <select id="cc-industry"><option>Freight Broker</option><option>Asset Carrier</option><option>Shipper</option><option>3PL</option><option>Manufacturer</option><option>Retailer</option><option>Food & Beverage</option><option>Chemical</option><option>Auto Parts</option><option>Other</option></select>
+            <select id="cc-industry">
+              <option value="">Select industry…</option>
+              <option>Freight Broker</option>
+              <option>Asset Carrier</option>
+              <option>3PL / Logistics Provider</option>
+              <option>Food & Beverage</option>
+              <option>Refrigerated / Cold Chain</option>
+              <option>Agriculture / Produce</option>
+              <option>Building Materials / Construction</option>
+              <option>Steel & Metals</option>
+              <option>Paper & Packaging</option>
+              <option>Chemicals & Hazmat</option>
+              <option>Automotive Parts</option>
+              <option>E-Commerce / Retail</option>
+              <option>Medical & Pharmaceutical</option>
+              <option>Energy / Oil & Gas</option>
+              <option>Furniture & Home Goods</option>
+              <option>Textiles & Apparel</option>
+              <option>Electronics</option>
+              <option>Government / Military</option>
+              <option>Manufacturing</option>
+              <option>Shipper</option>
+              <option>Other</option>
+            </select>
           </div>
           <div class="form-group"><label>Phone</label><input type="tel" id="cc-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
           <div class="form-group"><label>Email</label><input type="email" id="cc-email" placeholder="contact@company.com"/></div>
           <div class="form-group"><label>Website</label><input type="text" id="cc-website" placeholder="www.company.com"/></div>
-          <div class="form-group"><label>City</label><input type="text" id="cc-city" placeholder="Dallas"/></div>
+          <div class="form-group" style="position:relative;"><label>City</label><input type="text" id="cc-city" placeholder="Dallas" oninput="setupCityAutocomplete('cc-city','cc-state')"/></div>
           <div class="form-group"><label>State</label><input type="text" id="cc-state" placeholder="TX" maxlength="2"/></div>
           <div class="form-group"><label>Pipeline Stage</label>
             <select id="cc-stage"><option>New Lead</option><option>Contacted</option><option>Qualified</option><option>Proposal Sent</option><option>Won</option><option>Lost</option></select>
@@ -2542,6 +2565,7 @@ function openModal(type) {
   if(el) el.classList.add('open');
   if(type==='load') setTimeout(initCityAutocomplete, 100);
   if(type==='customer') setTimeout(() => setupCityAutocomplete('customer-city','customer-state'), 100);
+  if(type==='crm-company') setTimeout(() => setupCityAutocomplete('cc-city','cc-state'), 100);
 }
 function closeModal(type) {
   const el=document.getElementById('modal-'+type); if(el) el.classList.remove('open');
