@@ -413,12 +413,12 @@ textarea{resize:vertical;min-height:80px;}
 .quickpay-total { font-size: 18px; font-weight: 700; color: var(--amber); }
 
 /* ── CUSTOMER PORTAL ──────────────────────────────────────── */
-.portal-overlay { display: none; position: fixed; inset: 0; background: #f0f4f8; z-index: 800; flex-direction: column; }
-.portal-overlay.visible { display: flex; }
+.portal-overlay { display: none; position: fixed; inset: 0; background: #f0f4f8; z-index: 1100; flex-direction: column; }
+.portal-overlay.visible { display: flex; pointer-events: auto; }
 .portal-header { background: #1B2A4A; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
 .portal-logo { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: white; }
 .portal-logo span { color: #60A5FA; }
-.portal-content { flex: 1; overflow-y: auto; padding: 24px; max-width: 1000px; margin: 0 auto; width: 100%; }
+.portal-content { flex: 1; overflow-y: auto; padding: 24px; max-width: 1000px; margin: 0 auto; width: 100%; position: relative; z-index: 1; pointer-events: auto; }
 .portal-load-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
 .portal-load-route { font-size: 15px; font-weight: 700; color: #1B2A4A; }
 .portal-load-meta { font-size: 12px; color: #666; margin-top: 4px; }
@@ -2201,7 +2201,7 @@ textarea{resize:vertical;min-height:80px;}
         <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#1B2A4A;">📋 Request a Quote</div>
         <button id="portal-quote-toggle" onclick="togglePortalQuoteForm()" style="background:#2563EB;color:white;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;">+ New Quote Request</button>
       </div>
-      <div id="portal-quote-form" style="display:none;padding:20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+      <div id="portal-quote-form" style="display:none;padding:20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;" onclick="event.stopPropagation()">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
           <div style="position:relative;">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:5px;">Origin City *</div>
@@ -4188,7 +4188,17 @@ function submitQuoteRequest() {
 
 function togglePortalQuoteForm() {
   const form = document.getElementById('portal-quote-form');
-  if(form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if(!form) return;
+  const isHidden = form.style.display === 'none' || form.style.display === '';
+  form.style.display = isHidden ? 'block' : 'none';
+  if(isHidden) {
+    // Scroll to form and focus first input
+    setTimeout(() => {
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const firstInput = form.querySelector('input[type="text"]');
+      if(firstInput) firstInput.focus();
+    }, 100);
+  }
 }
 
 function renderPortalQuotes() {
