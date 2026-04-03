@@ -1374,7 +1374,7 @@ textarea{resize:vertical;min-height:80px;}
           <div class="form-group"><label>DOT Number</label><input type="text" id="s-dot" placeholder="789012"/></div>
           <div class="form-group"><label>Dispatch Email</label><input type="email" id="s-email" placeholder="dispatch@yourbrokerage.com"/></div>
           <div class="form-group"><label>Main Phone</label><input type="tel" id="s-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
-          <div class="form-group"><label>City</label><input type="text" id="s-city" placeholder="Dallas"/></div>
+          <div class="form-group"><label>City</label><input type="text" id="s-city" placeholder="Dallas" oninput="setupCityAutocomplete('s-city','s-state')"/></div>
           <div class="form-group"><label>State</label><input type="text" id="s-state" placeholder="TX" maxlength="2"/></div>
           <div class="form-group"><label>Zip</label><input type="text" id="s-zip" placeholder="75201"/></div>
         </div>
@@ -1760,9 +1760,9 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Equipment Type</label>
           <select id="load-equipment"><option>Dry Van</option><option>Reefer</option><option>Flatbed</option><option>LTL</option><option>Step Deck</option><option>Tanker</option></select>
         </div>
-        <div class="form-group"><label>Origin City</label><input type="text" id="load-origin-city" placeholder="Dallas"/></div>
+        <div class="form-group"><label>Origin City</label><input type="text" id="load-origin-city" placeholder="Dallas" oninput="setupCityAutocomplete('load-origin-city','load-origin-state')"/></div>
         <div class="form-group"><label>Origin State</label><input type="text" id="load-origin-state" placeholder="TX" maxlength="2"/></div>
-        <div class="form-group"><label>Destination City</label><input type="text" id="load-dest-city" placeholder="Chicago"/></div>
+        <div class="form-group"><label>Destination City</label><input type="text" id="load-dest-city" placeholder="Chicago" oninput="setupCityAutocomplete('load-dest-city','load-dest-state')"/></div>
         <div class="form-group"><label>Destination State</label><input type="text" id="load-dest-state" placeholder="IL" maxlength="2"/></div>
         <div class="form-group"><label>Pickup Date</label><input type="datetime-local" id="load-pickup"/></div>
         <div class="form-group"><label>Delivery Date</label><input type="datetime-local" id="load-delivery"/></div>
@@ -2072,7 +2072,7 @@ textarea{resize:vertical;min-height:80px;}
                 <option value="Issue">🔴 Issue</option>
               </select>
             </div>
-            <div class="form-group"><label>Current City</label><input type="text" id="cc-city" placeholder="Kansas City"/></div>
+            <div class="form-group"><label>Current City</label><input type="text" id="cc-city" placeholder="Kansas City" oninput="setupCityAutocomplete('cc-city','cc-state')"/></div>
             <div class="form-group"><label>Current State</label><input type="text" id="cc-state" placeholder="MO" maxlength="2"/></div>
             <div class="form-group"><label>Updated ETA</label><input type="datetime-local" id="cc-eta"/></div>
             <div class="form-group"><label>Next Check Call</label><input type="datetime-local" id="cc-next"/></div>
@@ -2267,7 +2267,7 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Contact Name</label><input type="text" id="lead-contact" placeholder="John Smith"/></div>
         <div class="form-group"><label>Email</label><input type="email" id="lead-email" placeholder="john@company.com"/></div>
         <div class="form-group"><label>Phone</label><input type="tel" id="lead-phone" placeholder="(555) 000-0000"/ oninput="fmtPhone(this)"></div>
-        <div class="form-group"><label>City</label><input type="text" id="lead-city" placeholder="Dallas"/></div>
+        <div class="form-group"><label>City</label><input type="text" id="lead-city" placeholder="Dallas" oninput="setupCityAutocomplete('lead-city','lead-state')"/></div>
         <div class="form-group"><label>State</label><input type="text" id="lead-state" placeholder="TX" maxlength="2"/></div>
         <div class="form-group"><label>Pipeline Stage</label><select id="lead-stage"><option>New Lead</option><option>Contacted</option><option>Qualified</option><option>Proposal Sent</option><option>Converted</option></select></div>
         <div class="form-group"><label>Priority</label><select id="lead-priority"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
