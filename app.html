@@ -1775,7 +1775,7 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>BOL Number</label><input type="text" id="load-bol" placeholder="BOL-2026-001"/></div>
         <div class="form-group"><label>PRO Number</label><input type="text" id="load-pro" placeholder="Carrier PRO #"/></div>
         <div class="form-group"><label>Pay Terms</label>
-          <select id="load-pay-terms">
+          <select id="load-pay-terms" onchange="calcQuickPayFee()">
             <option>Net 30</option><option>Net 45</option><option>Net 60</option>
             <option>Quick Pay 2%</option><option>Quick Pay 3%</option><option>Prepaid</option>
           </select>
@@ -1785,6 +1785,10 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group full"><label>Load Notes / Communication Log</label><textarea id="load-notes" placeholder="Log calls, updates, issues..." style="min-height:80px;"></textarea></div>
       </div>
     </div>
+      <div class="form-section-title" style="margin-top:4px;">📍 Additional Stops <span style="font-size:11px;color:var(--text3);font-weight:400;">(optional — for multi-stop loads)</span></div>
+      <div id="load-stops-list" style="margin-bottom:8px;"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addStop()" style="font-size:11px;margin-bottom:12px;">+ Add Stop</button>
+      <div id="quickpay-fee-display" style="display:none;font-size:12px;padding:8px 12px;background:rgba(245,158,11,0.08);border-radius:6px;margin-bottom:8px;"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('load')">Cancel</button>
       <button class="btn btn-primary" onclick="saveLoad()">Save Load →</button>
@@ -1988,6 +1992,13 @@ textarea{resize:vertical;min-height:80px;}
             <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-val" id="d-carrier-phone">—</span></div>
           </div>
         </div>
+      </div>
+
+      <!-- Fuel Advance Quick Log -->
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:12px;font-weight:700;color:var(--text3);">⛽ Fuel Advance</span>
+        <input type="number" id="fuel-advance-amount" placeholder="Amount $" style="font-size:12px;padding:5px 10px;width:120px;border-radius:6px;"/>
+        <button class="btn btn-ghost btn-sm" onclick="saveFuelAdvance()" style="font-size:11px;">Log Advance</button>
       </div>
 
       <!-- Rate Confirmation Section -->
@@ -2699,6 +2710,7 @@ async function renderInvoices() {
 }
 
 function renderReports() {
+  setTimeout(renderLoadAgingReport, 200);
   const totalRev = allLoads.reduce((s,l)=>s+(Number(l.customer_rate)||0),0);
   const totalPay = allLoads.reduce((s,l)=>s+(Number(l.carrier_pay)||0),0);
   const gp = totalRev - totalPay;
@@ -2731,7 +2743,7 @@ function renderReports() {
 function openModal(type) {
   const el=document.getElementById('modal-'+type);
   if(el) el.classList.add('open');
-  if(type==='load') setTimeout(initCityAutocomplete, 100);
+  if(type==='load') { setTimeout(initCityAutocomplete, 100); initMultiStop(); }
   if(type==='customer') setTimeout(() => setupCityAutocomplete('customer-city','customer-state'), 100);
   if(type==='crm-company') setTimeout(() => setupCityAutocomplete('cc-city','cc-state'), 100);
 }
@@ -6047,6 +6059,156 @@ openLoadDetail = function(id) {
   _origOpenLoadDetailEvents(id);
   setTimeout(() => loadEventHistory(), 300);
 };
+
+
+// ── PORTAL CITY AUTOCOMPLETE ──────────────────────────────────
+function portalCityAuto(val, stateId, dropId) {
+  const drop = document.getElementById(dropId);
+  if(!drop) return;
+  if(!val || val.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  const matches = US_CITIES.filter(c => c.city.toLowerCase().startsWith(val.toLowerCase())).slice(0,8);
+  if(matches.length === 0) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+  drop.style.display = 'block';
+  drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:8px;max-height:200px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.12);';
+  drop.innerHTML = matches.map(c =>
+    `<div onclick="selectPortalCity('${c.city}','${c.state}','${stateId}','${dropId}')" 
+      style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;"
+      onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+      ${c.city}, <strong>${c.state}</strong>
+    </div>`
+  ).join('');
+}
+
+function selectPortalCity(city, state, stateId, dropId) {
+  const stateEl = document.getElementById(stateId);
+  if(stateEl) stateEl.value = state;
+  const drop = document.getElementById(dropId);
+  if(drop) { drop.innerHTML = ''; drop.style.display = 'none'; }
+  // Find the city input and set it
+  const inputs = document.querySelectorAll('input[type="text"]');
+  inputs.forEach(inp => {
+    if(inp.getAttribute('oninput')?.includes(stateId)) {
+      inp.value = city;
+    }
+  });
+}
+
+// ── MULTI-STOP LOADS ──────────────────────────────────────────
+let loadStops = [];
+
+function initMultiStop() {
+  loadStops = [];
+  renderStopsList();
+}
+
+function addStop() {
+  loadStops.push({ city: '', state: '', type: 'Pickup', datetime: '', notes: '' });
+  renderStopsList();
+}
+
+function removeStop(idx) {
+  loadStops.splice(idx, 1);
+  renderStopsList();
+}
+
+function renderStopsList() {
+  const el = document.getElementById('load-stops-list');
+  if(!el) return;
+  if(loadStops.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0;">No additional stops. This is a direct load.</div>';
+    return;
+  }
+  el.innerHTML = loadStops.map((s, i) => `
+    <div style="background:var(--surface3);border-radius:8px;padding:12px;margin-bottom:8px;display:grid;grid-template-columns:auto 1fr 1fr auto auto auto;gap:8px;align-items:center;">
+      <span style="font-size:11px;font-weight:700;color:var(--text3);">#${i+1}</span>
+      <select onchange="loadStops[${i}].type=this.value" style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);">
+        <option ${s.type==='Pickup'?'selected':''}>Pickup</option>
+        <option ${s.type==='Delivery'?'selected':''}>Delivery</option>
+        <option ${s.type==='Drop & Hook'?'selected':''}>Drop & Hook</option>
+      </select>
+      <input type="text" value="${s.city}" placeholder="City" onchange="loadStops[${i}].city=this.value"
+        style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);"/>
+      <input type="text" value="${s.state}" placeholder="ST" maxlength="2" onchange="loadStops[${i}].state=this.value.toUpperCase()"
+        style="font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);width:50px;"/>
+      <input type="datetime-local" value="${s.datetime}" onchange="loadStops[${i}].datetime=this.value"
+        style="font-size:11px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);"/>
+      <button onclick="removeStop(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px;">✕</button>
+    </div>
+  `).join('');
+}
+
+// ── CARRIER PAY TERMS & FUEL ADVANCES ────────────────────────
+function calcQuickPayFee() {
+  const terms = document.getElementById('load-pay-terms')?.value || '';
+  const pay = Number(document.getElementById('load-carrier-pay')?.value) || 0;
+  const feeEl = document.getElementById('quickpay-fee-display');
+  if(!feeEl) return;
+
+  if(terms.includes('Quick Pay') && pay > 0) {
+    const pct = terms.includes('2%') ? 0.02 : terms.includes('3%') ? 0.03 : 0.02;
+    const fee = pay * pct;
+    const net = pay - fee;
+    feeEl.style.display = 'block';
+    feeEl.innerHTML = `<span style="color:var(--amber);">⚡ Quick Pay: ${(pct*100).toFixed(0)}% fee = $${fee.toFixed(2)} · Carrier receives $${net.toFixed(2)}</span>`;
+  } else {
+    feeEl.style.display = 'none';
+  }
+}
+
+// ── LOAD AGING REPORT ─────────────────────────────────────────
+function renderLoadAgingReport() {
+  const el = document.getElementById('load-aging-content');
+  if(!el) return;
+
+  const now = new Date();
+  const available = allLoads.filter(l => l.status === 'Available' && l.created_at);
+
+  if(available.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">No available loads</div>';
+    return;
+  }
+
+  const aged = available.map(l => {
+    const created = new Date(l.created_at);
+    const hours = Math.floor((now - created) / (1000 * 60 * 60));
+    const customer = allCustomers.find(c => c.id === l.customer_id);
+    return { ...l, hours, customerName: customer?.name || '—' };
+  }).sort((a, b) => b.hours - a.hours);
+
+  el.innerHTML = `<table class="table">
+    <thead><tr><th>Load #</th><th>Customer</th><th>Lane</th><th>Equipment</th><th>Pickup</th><th>Age</th><th>Action</th></tr></thead>
+    <tbody>${aged.map(l => {
+      const color = l.hours > 48 ? 'var(--red)' : l.hours > 24 ? 'var(--amber)' : 'var(--text2)';
+      const ageText = l.hours > 48 ? Math.floor(l.hours/24) + 'd ' + (l.hours%24) + 'h' : l.hours + 'h';
+      return `<tr onclick="openLoadDetail('${l.id}')" style="cursor:pointer;">
+        <td style="font-family:'JetBrains Mono',monospace;">${l.load_number||'—'}</td>
+        <td>${l.customerName}</td>
+        <td>${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</td>
+        <td>${l.equipment_type||'—'}</td>
+        <td>${l.pickup_date ? new Date(l.pickup_date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'}</td>
+        <td style="color:${color};font-weight:700;font-family:'JetBrains Mono',monospace;">${ageText}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openLoadDetail('${l.id}')" style="font-size:10px;">View</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ── FUEL ADVANCE TRACKER ──────────────────────────────────────
+async function saveFuelAdvance() {
+  const loadId = currentDetailLoadId;
+  if(!loadId) return;
+  const amount = document.getElementById('fuel-advance-amount')?.value;
+  if(!amount) { toast('Enter advance amount', 'error'); return; }
+
+  await db.from('loads').update({ 
+    notes: (allLoads.find(l=>l.id===loadId)?.notes||'') + '\n[Fuel Advance: $' + amount + ' issued on ' + new Date().toLocaleString() + ']'
+  }).eq('id', loadId);
+
+  await logLoadEvent(loadId, 'fuel_advance', '⛽ Fuel advance issued: $' + amount);
+  toast('Fuel advance logged: $' + amount, 'success');
+  document.getElementById('fuel-advance-amount').value = '';
+  loadEventHistory();
+}
 
 applyTheme();
 initRolePerms();
