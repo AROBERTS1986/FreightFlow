@@ -4845,6 +4845,210 @@ function buildRateConEmailHTML(load, carrier, customer, customMessage) {
   </div>
 </div>
 
+
+<!-- SUPER ADMIN PANEL -->
+<div id="super-admin-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:900;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,0.4);">
+  
+  <!-- Panel Header -->
+  <div style="padding:20px;border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">⚡ Super Admin</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="admin-panel-email"></div>
+      </div>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Tab Bar -->
+    <div style="display:flex;gap:4px;margin-top:14px;background:var(--surface3);border-radius:8px;padding:3px;">
+      <button id="admin-tab-profile" onclick="switchAdminTab('profile')" class="admin-tab-btn active-admin-tab" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:var(--accent);color:white;">👤 Profile</button>
+      <button id="admin-tab-users" onclick="switchAdminTab('users')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">👥 Users</button>
+      <button id="admin-tab-data" onclick="switchAdminTab('data')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">📊 Data</button>
+      <button id="admin-tab-system" onclick="switchAdminTab('system')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">⚙️ System</button>
+    </div>
+  </div>
+
+  <!-- Profile Tab -->
+  <div id="admin-content-profile" style="padding:20px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div id="admin-avatar-large" style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:28px;color:white;margin:0 auto 12px;"></div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);" id="admin-display-name-show">Loading...</div>
+      <div style="font-size:12px;color:var(--text3);" id="admin-role-show"></div>
+      <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;">
+        <span style="font-size:11px;color:var(--text3);">Board Code:</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);" id="admin-board-code-show">—</span>
+        <button onclick="copyBoardCode()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);" title="Copy">📋</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Edit Profile</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="admin-edit-name" placeholder="Your name"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Email</label>
+        <input type="email" id="admin-edit-email" placeholder="you@company.com" disabled style="opacity:0.6;cursor:not-allowed;"/>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAdminProfile()" style="width:100%;">Save Profile →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Change Password</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>New Password</label>
+        <input type="password" id="admin-new-password" placeholder="Min 8 characters"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Confirm Password</label>
+        <input type="password" id="admin-confirm-password" placeholder="Repeat password"/>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="changeAdminPassword()" style="width:100%;">Update Password →</button>
+    </div>
+
+    <button onclick="signOut()" style="width:100%;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">Sign Out</button>
+  </div>
+
+  <!-- Users Tab -->
+  <div id="admin-content-users" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Invite New User</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Email Address</label>
+        <input type="email" id="invite-email" placeholder="broker@company.com"/>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="invite-name" placeholder="John Smith"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Role</label>
+        <select id="invite-role">
+          <option value="broker">Broker</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="accounting">Accounting</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+          <option value="read_only">Read Only</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="inviteUser()" style="width:100%;">Send Invite →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;">Team Members</div>
+        <button onclick="loadAdminUsers()" style="background:none;border:none;color:var(--accent2);font-size:11px;cursor:pointer;">Refresh</button>
+      </div>
+      <div id="admin-users-list">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">Loading users...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Tab -->
+  <div id="admin-content-data" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">📥 Export Data</div>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportData('loads')" style="justify-content:flex-start;gap:10px;">
+          <span>📦</span> Export All Loads (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-loads-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('carriers')" style="justify-content:flex-start;gap:10px;">
+          <span>🚚</span> Export All Carriers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-carriers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('customers')" style="justify-content:flex-start;gap:10px;">
+          <span>🏢</span> Export All Customers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-customers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('invoices')" style="justify-content:flex-start;gap:10px;">
+          <span>🧾</span> Export All Invoices (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-invoices-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('events')" style="justify-content:flex-start;gap:10px;">
+          <span>📋</span> Export Load Event History (CSV)
+        </button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">📊 Quick Stats</div>
+      <div id="admin-quick-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- System Tab -->
+  <div id="admin-content-system" style="display:none;padding:20px;">
+    
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔌 System Status</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Database</span>
+          <span id="sys-db-status" style="font-size:11px;font-weight:700;color:var(--green);">● Connected</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Resend Email</span>
+          <span id="sys-resend-status" style="font-size:11px;font-weight:700;color:var(--text3);">Checking...</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">App Version</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">v1.1.0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Loads</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-load-count">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Carriers</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-carrier-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">👁 View As Broker</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Switch to any broker's board without needing their code.</div>
+      <div id="admin-broker-list" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔧 Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()" style="justify-content:flex-start;gap:10px;">
+          🔄 Force Refresh App
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('settings')" style="justify-content:flex-start;gap:10px;">
+          ⚙️ Open Company Settings
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('users')" style="justify-content:flex-start;gap:10px;">
+          👥 Open User Management
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('reports')" style="justify-content:flex-start;gap:10px;">
+          📊 Open Reports
+        </button>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">⚠️ Danger Zone</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">These actions cannot be undone. Use with caution.</div>
+      <button class="btn btn-ghost btn-sm" onclick="regenerateBoardCode()" style="color:var(--amber);border-color:rgba(245,158,11,0.3);width:100%;margin-bottom:8px;">
+        🔄 Regenerate My Board Code
+      </button>
+      <button onclick="signOut()" style="width:100%;padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">
+        Sign Out of FreightFlowHQ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Backdrop -->
+<div id="admin-panel-backdrop" onclick="closeAdminPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:899;"></div>
+
 </body>
 </html>`;
 }
@@ -5570,7 +5774,211 @@ async function sendShipperRateCon() {
       <p style="font-size:12px;color:#94a3b8;line-height:1.6;">Questions? Reply to this email or contact your broker directly. Please save this confirmation for your records.</p>
     </div>
     <div class="footer">FreightFlowHQ · freightflowhq.com</div>
-  </div></body></html>`;
+  </div>
+<!-- SUPER ADMIN PANEL -->
+<div id="super-admin-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:900;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,0.4);">
+  
+  <!-- Panel Header -->
+  <div style="padding:20px;border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">⚡ Super Admin</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="admin-panel-email"></div>
+      </div>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Tab Bar -->
+    <div style="display:flex;gap:4px;margin-top:14px;background:var(--surface3);border-radius:8px;padding:3px;">
+      <button id="admin-tab-profile" onclick="switchAdminTab('profile')" class="admin-tab-btn active-admin-tab" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:var(--accent);color:white;">👤 Profile</button>
+      <button id="admin-tab-users" onclick="switchAdminTab('users')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">👥 Users</button>
+      <button id="admin-tab-data" onclick="switchAdminTab('data')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">📊 Data</button>
+      <button id="admin-tab-system" onclick="switchAdminTab('system')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">⚙️ System</button>
+    </div>
+  </div>
+
+  <!-- Profile Tab -->
+  <div id="admin-content-profile" style="padding:20px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div id="admin-avatar-large" style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:28px;color:white;margin:0 auto 12px;"></div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);" id="admin-display-name-show">Loading...</div>
+      <div style="font-size:12px;color:var(--text3);" id="admin-role-show"></div>
+      <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;">
+        <span style="font-size:11px;color:var(--text3);">Board Code:</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);" id="admin-board-code-show">—</span>
+        <button onclick="copyBoardCode()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);" title="Copy">📋</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Edit Profile</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="admin-edit-name" placeholder="Your name"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Email</label>
+        <input type="email" id="admin-edit-email" placeholder="you@company.com" disabled style="opacity:0.6;cursor:not-allowed;"/>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAdminProfile()" style="width:100%;">Save Profile →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Change Password</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>New Password</label>
+        <input type="password" id="admin-new-password" placeholder="Min 8 characters"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Confirm Password</label>
+        <input type="password" id="admin-confirm-password" placeholder="Repeat password"/>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="changeAdminPassword()" style="width:100%;">Update Password →</button>
+    </div>
+
+    <button onclick="signOut()" style="width:100%;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">Sign Out</button>
+  </div>
+
+  <!-- Users Tab -->
+  <div id="admin-content-users" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Invite New User</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Email Address</label>
+        <input type="email" id="invite-email" placeholder="broker@company.com"/>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="invite-name" placeholder="John Smith"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Role</label>
+        <select id="invite-role">
+          <option value="broker">Broker</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="accounting">Accounting</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+          <option value="read_only">Read Only</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="inviteUser()" style="width:100%;">Send Invite →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;">Team Members</div>
+        <button onclick="loadAdminUsers()" style="background:none;border:none;color:var(--accent2);font-size:11px;cursor:pointer;">Refresh</button>
+      </div>
+      <div id="admin-users-list">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">Loading users...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Tab -->
+  <div id="admin-content-data" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">📥 Export Data</div>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportData('loads')" style="justify-content:flex-start;gap:10px;">
+          <span>📦</span> Export All Loads (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-loads-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('carriers')" style="justify-content:flex-start;gap:10px;">
+          <span>🚚</span> Export All Carriers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-carriers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('customers')" style="justify-content:flex-start;gap:10px;">
+          <span>🏢</span> Export All Customers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-customers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('invoices')" style="justify-content:flex-start;gap:10px;">
+          <span>🧾</span> Export All Invoices (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-invoices-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('events')" style="justify-content:flex-start;gap:10px;">
+          <span>📋</span> Export Load Event History (CSV)
+        </button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">📊 Quick Stats</div>
+      <div id="admin-quick-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- System Tab -->
+  <div id="admin-content-system" style="display:none;padding:20px;">
+    
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔌 System Status</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Database</span>
+          <span id="sys-db-status" style="font-size:11px;font-weight:700;color:var(--green);">● Connected</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Resend Email</span>
+          <span id="sys-resend-status" style="font-size:11px;font-weight:700;color:var(--text3);">Checking...</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">App Version</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">v1.1.0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Loads</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-load-count">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Carriers</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-carrier-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">👁 View As Broker</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Switch to any broker's board without needing their code.</div>
+      <div id="admin-broker-list" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔧 Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()" style="justify-content:flex-start;gap:10px;">
+          🔄 Force Refresh App
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('settings')" style="justify-content:flex-start;gap:10px;">
+          ⚙️ Open Company Settings
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('users')" style="justify-content:flex-start;gap:10px;">
+          👥 Open User Management
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('reports')" style="justify-content:flex-start;gap:10px;">
+          📊 Open Reports
+        </button>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">⚠️ Danger Zone</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">These actions cannot be undone. Use with caution.</div>
+      <button class="btn btn-ghost btn-sm" onclick="regenerateBoardCode()" style="color:var(--amber);border-color:rgba(245,158,11,0.3);width:100%;margin-bottom:8px;">
+        🔄 Regenerate My Board Code
+      </button>
+      <button onclick="signOut()" style="width:100%;padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">
+        Sign Out of FreightFlowHQ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Backdrop -->
+<div id="admin-panel-backdrop" onclick="closeAdminPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:899;"></div>
+
+</body></html>`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -5777,7 +6185,211 @@ async function sendQuickEmail() {
       <p style="white-space:pre-wrap;line-height:1.7;font-size:14px;color:#374151;">${body.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>
     </div>
     <p style="font-size:11px;color:#94a3b8;margin-top:16px;text-align:center;">Sent via FreightFlowHQ · freightflowhq.com</p>
-  </body></html>`;
+  
+<!-- SUPER ADMIN PANEL -->
+<div id="super-admin-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:900;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,0.4);">
+  
+  <!-- Panel Header -->
+  <div style="padding:20px;border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">⚡ Super Admin</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="admin-panel-email"></div>
+      </div>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Tab Bar -->
+    <div style="display:flex;gap:4px;margin-top:14px;background:var(--surface3);border-radius:8px;padding:3px;">
+      <button id="admin-tab-profile" onclick="switchAdminTab('profile')" class="admin-tab-btn active-admin-tab" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:var(--accent);color:white;">👤 Profile</button>
+      <button id="admin-tab-users" onclick="switchAdminTab('users')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">👥 Users</button>
+      <button id="admin-tab-data" onclick="switchAdminTab('data')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">📊 Data</button>
+      <button id="admin-tab-system" onclick="switchAdminTab('system')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">⚙️ System</button>
+    </div>
+  </div>
+
+  <!-- Profile Tab -->
+  <div id="admin-content-profile" style="padding:20px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div id="admin-avatar-large" style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:28px;color:white;margin:0 auto 12px;"></div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);" id="admin-display-name-show">Loading...</div>
+      <div style="font-size:12px;color:var(--text3);" id="admin-role-show"></div>
+      <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;">
+        <span style="font-size:11px;color:var(--text3);">Board Code:</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);" id="admin-board-code-show">—</span>
+        <button onclick="copyBoardCode()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);" title="Copy">📋</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Edit Profile</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="admin-edit-name" placeholder="Your name"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Email</label>
+        <input type="email" id="admin-edit-email" placeholder="you@company.com" disabled style="opacity:0.6;cursor:not-allowed;"/>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAdminProfile()" style="width:100%;">Save Profile →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Change Password</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>New Password</label>
+        <input type="password" id="admin-new-password" placeholder="Min 8 characters"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Confirm Password</label>
+        <input type="password" id="admin-confirm-password" placeholder="Repeat password"/>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="changeAdminPassword()" style="width:100%;">Update Password →</button>
+    </div>
+
+    <button onclick="signOut()" style="width:100%;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">Sign Out</button>
+  </div>
+
+  <!-- Users Tab -->
+  <div id="admin-content-users" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Invite New User</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Email Address</label>
+        <input type="email" id="invite-email" placeholder="broker@company.com"/>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="invite-name" placeholder="John Smith"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Role</label>
+        <select id="invite-role">
+          <option value="broker">Broker</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="accounting">Accounting</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+          <option value="read_only">Read Only</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="inviteUser()" style="width:100%;">Send Invite →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;">Team Members</div>
+        <button onclick="loadAdminUsers()" style="background:none;border:none;color:var(--accent2);font-size:11px;cursor:pointer;">Refresh</button>
+      </div>
+      <div id="admin-users-list">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">Loading users...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Tab -->
+  <div id="admin-content-data" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">📥 Export Data</div>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportData('loads')" style="justify-content:flex-start;gap:10px;">
+          <span>📦</span> Export All Loads (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-loads-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('carriers')" style="justify-content:flex-start;gap:10px;">
+          <span>🚚</span> Export All Carriers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-carriers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('customers')" style="justify-content:flex-start;gap:10px;">
+          <span>🏢</span> Export All Customers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-customers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('invoices')" style="justify-content:flex-start;gap:10px;">
+          <span>🧾</span> Export All Invoices (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-invoices-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('events')" style="justify-content:flex-start;gap:10px;">
+          <span>📋</span> Export Load Event History (CSV)
+        </button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">📊 Quick Stats</div>
+      <div id="admin-quick-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- System Tab -->
+  <div id="admin-content-system" style="display:none;padding:20px;">
+    
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔌 System Status</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Database</span>
+          <span id="sys-db-status" style="font-size:11px;font-weight:700;color:var(--green);">● Connected</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Resend Email</span>
+          <span id="sys-resend-status" style="font-size:11px;font-weight:700;color:var(--text3);">Checking...</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">App Version</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">v1.1.0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Loads</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-load-count">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Carriers</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-carrier-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">👁 View As Broker</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Switch to any broker's board without needing their code.</div>
+      <div id="admin-broker-list" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔧 Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()" style="justify-content:flex-start;gap:10px;">
+          🔄 Force Refresh App
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('settings')" style="justify-content:flex-start;gap:10px;">
+          ⚙️ Open Company Settings
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('users')" style="justify-content:flex-start;gap:10px;">
+          👥 Open User Management
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('reports')" style="justify-content:flex-start;gap:10px;">
+          📊 Open Reports
+        </button>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">⚠️ Danger Zone</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">These actions cannot be undone. Use with caution.</div>
+      <button class="btn btn-ghost btn-sm" onclick="regenerateBoardCode()" style="color:var(--amber);border-color:rgba(245,158,11,0.3);width:100%;margin-bottom:8px;">
+        🔄 Regenerate My Board Code
+      </button>
+      <button onclick="signOut()" style="width:100%;padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">
+        Sign Out of FreightFlowHQ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Backdrop -->
+<div id="admin-panel-backdrop" onclick="closeAdminPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:899;"></div>
+
+</body></html>`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -5959,7 +6571,211 @@ async function sendCarrierCancellationEmail(load, carrier) {
       </p>
     </div>
     <div class="footer">FreightFlowHQ · freightflowhq.com</div>
-  </div></body></html>`;
+  </div>
+<!-- SUPER ADMIN PANEL -->
+<div id="super-admin-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:900;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,0.4);">
+  
+  <!-- Panel Header -->
+  <div style="padding:20px;border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">⚡ Super Admin</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="admin-panel-email"></div>
+      </div>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Tab Bar -->
+    <div style="display:flex;gap:4px;margin-top:14px;background:var(--surface3);border-radius:8px;padding:3px;">
+      <button id="admin-tab-profile" onclick="switchAdminTab('profile')" class="admin-tab-btn active-admin-tab" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:var(--accent);color:white;">👤 Profile</button>
+      <button id="admin-tab-users" onclick="switchAdminTab('users')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">👥 Users</button>
+      <button id="admin-tab-data" onclick="switchAdminTab('data')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">📊 Data</button>
+      <button id="admin-tab-system" onclick="switchAdminTab('system')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">⚙️ System</button>
+    </div>
+  </div>
+
+  <!-- Profile Tab -->
+  <div id="admin-content-profile" style="padding:20px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div id="admin-avatar-large" style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:28px;color:white;margin:0 auto 12px;"></div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);" id="admin-display-name-show">Loading...</div>
+      <div style="font-size:12px;color:var(--text3);" id="admin-role-show"></div>
+      <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;">
+        <span style="font-size:11px;color:var(--text3);">Board Code:</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);" id="admin-board-code-show">—</span>
+        <button onclick="copyBoardCode()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);" title="Copy">📋</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Edit Profile</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="admin-edit-name" placeholder="Your name"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Email</label>
+        <input type="email" id="admin-edit-email" placeholder="you@company.com" disabled style="opacity:0.6;cursor:not-allowed;"/>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAdminProfile()" style="width:100%;">Save Profile →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Change Password</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>New Password</label>
+        <input type="password" id="admin-new-password" placeholder="Min 8 characters"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Confirm Password</label>
+        <input type="password" id="admin-confirm-password" placeholder="Repeat password"/>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="changeAdminPassword()" style="width:100%;">Update Password →</button>
+    </div>
+
+    <button onclick="signOut()" style="width:100%;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">Sign Out</button>
+  </div>
+
+  <!-- Users Tab -->
+  <div id="admin-content-users" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Invite New User</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Email Address</label>
+        <input type="email" id="invite-email" placeholder="broker@company.com"/>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="invite-name" placeholder="John Smith"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Role</label>
+        <select id="invite-role">
+          <option value="broker">Broker</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="accounting">Accounting</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+          <option value="read_only">Read Only</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="inviteUser()" style="width:100%;">Send Invite →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;">Team Members</div>
+        <button onclick="loadAdminUsers()" style="background:none;border:none;color:var(--accent2);font-size:11px;cursor:pointer;">Refresh</button>
+      </div>
+      <div id="admin-users-list">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">Loading users...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Tab -->
+  <div id="admin-content-data" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">📥 Export Data</div>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportData('loads')" style="justify-content:flex-start;gap:10px;">
+          <span>📦</span> Export All Loads (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-loads-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('carriers')" style="justify-content:flex-start;gap:10px;">
+          <span>🚚</span> Export All Carriers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-carriers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('customers')" style="justify-content:flex-start;gap:10px;">
+          <span>🏢</span> Export All Customers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-customers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('invoices')" style="justify-content:flex-start;gap:10px;">
+          <span>🧾</span> Export All Invoices (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-invoices-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('events')" style="justify-content:flex-start;gap:10px;">
+          <span>📋</span> Export Load Event History (CSV)
+        </button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">📊 Quick Stats</div>
+      <div id="admin-quick-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- System Tab -->
+  <div id="admin-content-system" style="display:none;padding:20px;">
+    
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔌 System Status</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Database</span>
+          <span id="sys-db-status" style="font-size:11px;font-weight:700;color:var(--green);">● Connected</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Resend Email</span>
+          <span id="sys-resend-status" style="font-size:11px;font-weight:700;color:var(--text3);">Checking...</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">App Version</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">v1.1.0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Loads</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-load-count">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Carriers</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-carrier-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">👁 View As Broker</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Switch to any broker's board without needing their code.</div>
+      <div id="admin-broker-list" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔧 Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()" style="justify-content:flex-start;gap:10px;">
+          🔄 Force Refresh App
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('settings')" style="justify-content:flex-start;gap:10px;">
+          ⚙️ Open Company Settings
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('users')" style="justify-content:flex-start;gap:10px;">
+          👥 Open User Management
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('reports')" style="justify-content:flex-start;gap:10px;">
+          📊 Open Reports
+        </button>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">⚠️ Danger Zone</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">These actions cannot be undone. Use with caution.</div>
+      <button class="btn btn-ghost btn-sm" onclick="regenerateBoardCode()" style="color:var(--amber);border-color:rgba(245,158,11,0.3);width:100%;margin-bottom:8px;">
+        🔄 Regenerate My Board Code
+      </button>
+      <button onclick="signOut()" style="width:100%;padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">
+        Sign Out of FreightFlowHQ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Backdrop -->
+<div id="admin-panel-backdrop" onclick="closeAdminPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:899;"></div>
+
+</body></html>`;
 
   try {
     await fetch('https://api.resend.com/emails', {
@@ -6230,6 +7046,321 @@ function autoFlipStatus(carrierId) {
   } else if(!carrierId && currentStatus === 'Assigned') {
     statusEl.value = 'Available';
   }
+}
+
+
+// ── SUPER ADMIN PANEL ─────────────────────────────────────────
+
+function showUserMenu() {
+  openAdminPanel();
+}
+
+function openAdminPanel() {
+  const panel = document.getElementById('super-admin-panel');
+  const backdrop = document.getElementById('admin-panel-backdrop');
+  if(panel) panel.style.display = 'block';
+  if(backdrop) backdrop.style.display = 'block';
+
+  // Populate profile tab
+  const profile = allUserProfiles?.find(p => p.user_id === currentUser?.id);
+  const email = currentUser?.email || '';
+  const name = profile?.display_name || email.split('@')[0];
+  const role = currentUserRole || 'broker';
+  const boardCode = profile?.board_code || '—';
+  const initials = name.slice(0,2).toUpperCase();
+
+  const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+
+  setEl('admin-panel-email', email);
+  setEl('admin-avatar-large', initials);
+  setEl('admin-display-name-show', name);
+  setEl('admin-role-show', role.charAt(0).toUpperCase() + role.slice(1));
+  setEl('admin-board-code-show', boardCode);
+  setVal('admin-edit-name', name);
+  setVal('admin-edit-email', email);
+
+  // Update counts on data tab
+  const setCount = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val + ' records'; };
+  setCount('export-loads-count', allLoads.length);
+  setCount('export-carriers-count', allCarriers.length);
+  setCount('export-customers-count', allCustomers.length);
+  setCount('export-invoices-count', allInvoices.length);
+
+  // System stats
+  setEl('sys-load-count', allLoads.length);
+  setEl('sys-carrier-count', allCarriers.length);
+
+  // Resend status
+  const resendEl = document.getElementById('sys-resend-status');
+  if(resendEl) {
+    resendEl.textContent = RESEND_API_KEY ? '● Configured' : '● Not configured';
+    resendEl.style.color = RESEND_API_KEY ? 'var(--green)' : 'var(--red)';
+  }
+
+  // Quick stats
+  const statsEl = document.getElementById('admin-quick-stats');
+  if(statsEl) {
+    const revenue = allLoads.reduce((s,l) => s + (Number(l.customer_rate)||0), 0);
+    const gp = allLoads.reduce((s,l) => s + (Number(l.customer_rate)||0) - (Number(l.carrier_pay)||0), 0);
+    const active = allLoads.filter(l => l.status !== 'Delivered').length;
+    const delivered = allLoads.filter(l => l.status === 'Delivered').length;
+    statsEl.innerHTML = [
+      ['Total Revenue', '$' + revenue.toLocaleString('en-US',{minimumFractionDigits:0})],
+      ['Total GP', '$' + gp.toLocaleString('en-US',{minimumFractionDigits:0})],
+      ['Active Loads', active],
+      ['Delivered', delivered],
+    ].map(([label, val]) => `
+      <div style="background:var(--surface3);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px;">${label}</div>
+        <div style="font-family:'Instrument Serif',serif;font-size:20px;color:var(--text);">${val}</div>
+      </div>
+    `).join('');
+  }
+
+  // Switch to profile tab
+  switchAdminTab('profile');
+}
+
+function closeAdminPanel() {
+  const panel = document.getElementById('super-admin-panel');
+  const backdrop = document.getElementById('admin-panel-backdrop');
+  if(panel) panel.style.display = 'none';
+  if(backdrop) backdrop.style.display = 'none';
+}
+
+function switchAdminTab(tab) {
+  ['profile','users','data','system'].forEach(t => {
+    const content = document.getElementById('admin-content-' + t);
+    const btn = document.getElementById('admin-tab-' + t);
+    if(content) content.style.display = t === tab ? 'block' : 'none';
+    if(btn) {
+      btn.style.background = t === tab ? 'var(--accent)' : 'transparent';
+      btn.style.color = t === tab ? 'white' : 'var(--text3)';
+    }
+  });
+  if(tab === 'users') loadAdminUsers();
+  if(tab === 'system') loadAdminBrokerList();
+}
+
+async function saveAdminProfile() {
+  const name = document.getElementById('admin-edit-name')?.value?.trim();
+  if(!name) { toast('Name is required', 'error'); return; }
+
+  const { error } = await db.from('user_profiles')
+    .update({ display_name: name })
+    .eq('user_id', currentUser?.id);
+
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+
+  // Update sidebar
+  document.getElementById('sidebar-username').textContent = name;
+  document.getElementById('admin-display-name-show').textContent = name;
+  document.getElementById('admin-avatar-large').textContent = name.slice(0,2).toUpperCase();
+  document.getElementById('sidebar-avatar').textContent = name.slice(0,2).toUpperCase();
+
+  // Reload profiles
+  await loadUserProfiles();
+  toast('Profile updated!', 'success');
+}
+
+async function changeAdminPassword() {
+  const newPass = document.getElementById('admin-new-password')?.value;
+  const confirm = document.getElementById('admin-confirm-password')?.value;
+
+  if(!newPass || newPass.length < 8) { toast('Password must be at least 8 characters', 'error'); return; }
+  if(newPass !== confirm) { toast('Passwords do not match', 'error'); return; }
+
+  const { error } = await db.auth.updateUser({ password: newPass });
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+
+  document.getElementById('admin-new-password').value = '';
+  document.getElementById('admin-confirm-password').value = '';
+  toast('Password updated successfully!', 'success');
+}
+
+function copyBoardCode() {
+  const code = document.getElementById('admin-board-code-show')?.textContent;
+  if(!code || code === '—') return;
+  navigator.clipboard.writeText(code).then(() => toast('Board code copied: ' + code, 'success'));
+}
+
+async function regenerateBoardCode() {
+  if(!confirm('Generate a new board code? Your current code will stop working.')) return;
+  const array = new Uint8Array(3);
+  crypto.getRandomValues(array);
+  const newCode = Array.from(array).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase().slice(0,6);
+
+  const { error } = await db.from('user_profiles')
+    .update({ board_code: newCode })
+    .eq('user_id', currentUser?.id);
+
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+
+  document.getElementById('admin-board-code-show').textContent = newCode;
+  document.getElementById('sidebar-board-code').textContent = 'Code: ' + newCode;
+  await loadUserProfiles();
+  toast('New board code: ' + newCode, 'success');
+}
+
+async function loadAdminUsers() {
+  const el = document.getElementById('admin-users-list');
+  if(!el) return;
+
+  const profiles = allUserProfiles || [];
+  if(profiles.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">No users found</div>';
+    return;
+  }
+
+  el.innerHTML = profiles.map(p => {
+    const isMe = p.user_id === currentUser?.id;
+    const roleColors = {
+      admin: 'var(--red)', manager: 'var(--accent2)', broker: 'var(--green)',
+      dispatcher: 'var(--amber)', accounting: 'var(--purple)', read_only: 'var(--text3)'
+    };
+    const color = roleColors[p.role] || 'var(--text3)';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;">
+          ${(p.display_name||p.email||'?').slice(0,2).toUpperCase()}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${p.display_name||'Unnamed'} ${isMe ? '<span style="font-size:10px;color:var(--text3);">(you)</span>' : ''}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px;">${p.email||'—'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span style="font-size:10px;font-weight:700;color:${color};background:${color}22;padding:2px 7px;border-radius:6px;">${(p.role||'broker').toUpperCase()}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);">${p.board_code||'—'}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function inviteUser() {
+  const email = document.getElementById('invite-email')?.value?.trim();
+  const name = document.getElementById('invite-name')?.value?.trim();
+  const role = document.getElementById('invite-role')?.value;
+
+  if(!email) { toast('Email is required', 'error'); return; }
+
+  // Create user via Supabase admin
+  const { data, error } = await db.auth.admin?.createUser({
+    email, password: 'TempPass123!',
+    user_metadata: { role, display_name: name },
+    email_confirm: true,
+  });
+
+  if(error) {
+    // If admin API not available, show instructions
+    toast('To add users: go to Supabase Dashboard → Authentication → Users → Add User', 'info');
+    return;
+  }
+
+  toast('User invited: ' + email, 'success');
+  document.getElementById('invite-email').value = '';
+  document.getElementById('invite-name').value = '';
+  await loadUserProfiles();
+  loadAdminUsers();
+}
+
+function loadAdminBrokerList() {
+  const el = document.getElementById('admin-broker-list');
+  if(!el) return;
+  const brokers = allUserProfiles.filter(p => p.user_id !== currentUser?.id);
+  if(brokers.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px;">No other users yet</div>';
+    return;
+  }
+  el.innerHTML = brokers.map(p => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${p.display_name||p.email||'User'}</div>
+        <div style="font-size:10px;color:var(--text3);">${p.role||'broker'} · ${p.board_code||'—'}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="viewAsBroker('${p.user_id}','${p.display_name||p.email||'User'}')" style="font-size:10px;">👁 View Board</button>
+    </div>
+  `).join('');
+}
+
+function viewAsBroker(userId, name) {
+  currentBoardMode = 'broker';
+  currentBoardUserId = userId;
+  currentBoardBrokerName = name;
+  closeAdminPanel();
+  switchPage('loads');
+  const badge = document.getElementById('viewing-broker-badge');
+  if(badge) { badge.style.display = 'inline-block'; badge.textContent = '👁 Viewing: ' + name; }
+  const title = document.getElementById('loads-page-title');
+  if(title) title.textContent = name + "'s Board";
+  filterLoads();
+  toast('Viewing ' + name + "'s board", 'info');
+}
+
+// ── DATA EXPORT ───────────────────────────────────────────────
+function exportData(type) {
+  let data, filename, headers;
+
+  if(type === 'loads') {
+    data = allLoads;
+    filename = 'freightflowhq_loads_' + new Date().toISOString().slice(0,10) + '.csv';
+    headers = ['load_number','status','origin_city','origin_state','destination_city','destination_state','equipment_type','customer_rate','carrier_pay','pickup_date','delivery_date','bol_number','pro_number','reference_number','notes'];
+  } else if(type === 'carriers') {
+    data = allCarriers;
+    filename = 'freightflowhq_carriers_' + new Date().toISOString().slice(0,10) + '.csv';
+    headers = ['name','mc_number','dot_number','contact_name','email','phone','city','state','equipment_types','insurance_expiry','safety_score','do_not_use','dnu_reason','notes'];
+  } else if(type === 'customers') {
+    data = allCustomers;
+    filename = 'freightflowhq_customers_' + new Date().toISOString().slice(0,10) + '.csv';
+    headers = ['name','contact_name','email','phone','city','state','industry','payment_terms','notes'];
+  } else if(type === 'invoices') {
+    data = allInvoices;
+    filename = 'freightflowhq_invoices_' + new Date().toISOString().slice(0,10) + '.csv';
+    headers = ['id','status','amount','carrier_pay','due_date','created_at'];
+  } else if(type === 'events') {
+    // Export from DB
+    exportLoadEvents();
+    return;
+  }
+
+  if(!data || data.length === 0) { toast('No data to export', 'error'); return; }
+
+  const csv = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => {
+      const val = row[h] || '';
+      return '"' + String(val).replace(/"/g, '""') + '"';
+    }).join(','))
+  ].join('\n');
+
+  downloadCSV(csv, filename);
+  toast(data.length + ' records exported!', 'success');
+}
+
+async function exportLoadEvents() {
+  const { data } = await db.from('load_events').select('*').order('created_at', {ascending: false});
+  if(!data || data.length === 0) { toast('No events to export', 'error'); return; }
+
+  const headers = ['load_id','event_type','event_description','performed_by_name','created_at'];
+  const csv = [
+    headers.join(','),
+    ...data.map(row => headers.map(h => '"' + String(row[h]||'').replace(/"/g,'""') + '"').join(','))
+  ].join('\n');
+
+  downloadCSV(csv, 'freightflowhq_load_events_' + new Date().toISOString().slice(0,10) + '.csv');
+  toast(data.length + ' events exported!', 'success');
+}
+
+function downloadCSV(csv, filename) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 applyTheme();
@@ -6503,5 +7634,209 @@ setTimeout(initCityAutocomplete, 500);
     </div>
   </div>
 </div>
+
+
+<!-- SUPER ADMIN PANEL -->
+<div id="super-admin-panel" style="display:none;position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--border);z-index:900;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,0.4);">
+  
+  <!-- Panel Header -->
+  <div style="padding:20px;border-bottom:1px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:10;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">⚡ Super Admin</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="admin-panel-email"></div>
+      </div>
+      <button onclick="closeAdminPanel()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <!-- Tab Bar -->
+    <div style="display:flex;gap:4px;margin-top:14px;background:var(--surface3);border-radius:8px;padding:3px;">
+      <button id="admin-tab-profile" onclick="switchAdminTab('profile')" class="admin-tab-btn active-admin-tab" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:var(--accent);color:white;">👤 Profile</button>
+      <button id="admin-tab-users" onclick="switchAdminTab('users')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">👥 Users</button>
+      <button id="admin-tab-data" onclick="switchAdminTab('data')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">📊 Data</button>
+      <button id="admin-tab-system" onclick="switchAdminTab('system')" class="admin-tab-btn" style="flex:1;padding:6px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:transparent;color:var(--text3);">⚙️ System</button>
+    </div>
+  </div>
+
+  <!-- Profile Tab -->
+  <div id="admin-content-profile" style="padding:20px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div id="admin-avatar-large" style="width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:28px;color:white;margin:0 auto 12px;"></div>
+      <div style="font-size:16px;font-weight:700;color:var(--text);" id="admin-display-name-show">Loading...</div>
+      <div style="font-size:12px;color:var(--text3);" id="admin-role-show"></div>
+      <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;">
+        <span style="font-size:11px;color:var(--text3);">Board Code:</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--accent2);" id="admin-board-code-show">—</span>
+        <button onclick="copyBoardCode()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);" title="Copy">📋</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Edit Profile</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="admin-edit-name" placeholder="Your name"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Email</label>
+        <input type="email" id="admin-edit-email" placeholder="you@company.com" disabled style="opacity:0.6;cursor:not-allowed;"/>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAdminProfile()" style="width:100%;">Save Profile →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Change Password</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>New Password</label>
+        <input type="password" id="admin-new-password" placeholder="Min 8 characters"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Confirm Password</label>
+        <input type="password" id="admin-confirm-password" placeholder="Repeat password"/>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="changeAdminPassword()" style="width:100%;">Update Password →</button>
+    </div>
+
+    <button onclick="signOut()" style="width:100%;padding:12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">Sign Out</button>
+  </div>
+
+  <!-- Users Tab -->
+  <div id="admin-content-users" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Invite New User</div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Email Address</label>
+        <input type="email" id="invite-email" placeholder="broker@company.com"/>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Display Name</label>
+        <input type="text" id="invite-name" placeholder="John Smith"/>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Role</label>
+        <select id="invite-role">
+          <option value="broker">Broker</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="accounting">Accounting</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+          <option value="read_only">Read Only</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="inviteUser()" style="width:100%;">Send Invite →</button>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;">Team Members</div>
+        <button onclick="loadAdminUsers()" style="background:none;border:none;color:var(--accent2);font-size:11px;cursor:pointer;">Refresh</button>
+      </div>
+      <div id="admin-users-list">
+        <div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">Loading users...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Tab -->
+  <div id="admin-content-data" style="display:none;padding:20px;">
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">📥 Export Data</div>
+      
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportData('loads')" style="justify-content:flex-start;gap:10px;">
+          <span>📦</span> Export All Loads (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-loads-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('carriers')" style="justify-content:flex-start;gap:10px;">
+          <span>🚚</span> Export All Carriers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-carriers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('customers')" style="justify-content:flex-start;gap:10px;">
+          <span>🏢</span> Export All Customers (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-customers-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('invoices')" style="justify-content:flex-start;gap:10px;">
+          <span>🧾</span> Export All Invoices (CSV)
+          <span style="margin-left:auto;font-size:10px;color:var(--text3);" id="export-invoices-count"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="exportData('events')" style="justify-content:flex-start;gap:10px;">
+          <span>📋</span> Export Load Event History (CSV)
+        </button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">📊 Quick Stats</div>
+      <div id="admin-quick-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- System Tab -->
+  <div id="admin-content-system" style="display:none;padding:20px;">
+    
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔌 System Status</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Database</span>
+          <span id="sys-db-status" style="font-size:11px;font-weight:700;color:var(--green);">● Connected</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Resend Email</span>
+          <span id="sys-resend-status" style="font-size:11px;font-weight:700;color:var(--text3);">Checking...</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">App Version</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);">v1.1.0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Loads</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-load-count">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+          <span style="color:var(--text2);">Total Carriers</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);" id="sys-carrier-count">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">👁 View As Broker</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">Switch to any broker's board without needing their code.</div>
+      <div id="admin-broker-list" style="max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">🔧 Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="location.reload()" style="justify-content:flex-start;gap:10px;">
+          🔄 Force Refresh App
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('settings')" style="justify-content:flex-start;gap:10px;">
+          ⚙️ Open Company Settings
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('users')" style="justify-content:flex-start;gap:10px;">
+          👥 Open User Management
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="switchPage('reports')" style="justify-content:flex-start;gap:10px;">
+          📊 Open Reports
+        </button>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">⚠️ Danger Zone</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">These actions cannot be undone. Use with caution.</div>
+      <button class="btn btn-ghost btn-sm" onclick="regenerateBoardCode()" style="color:var(--amber);border-color:rgba(245,158,11,0.3);width:100%;margin-bottom:8px;">
+        🔄 Regenerate My Board Code
+      </button>
+      <button onclick="signOut()" style="width:100%;padding:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;">
+        Sign Out of FreightFlowHQ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Backdrop -->
+<div id="admin-panel-backdrop" onclick="closeAdminPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:899;"></div>
 
 </body></html>
