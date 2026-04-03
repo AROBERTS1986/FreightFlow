@@ -992,6 +992,17 @@ textarea{resize:vertical;min-height:80px;}
       <div class="kpi-card blue"><div class="kpi-label">Overdue</div><div class="kpi-value" id="inv-overdue" style="color:var(--red)">—</div></div>
     </div>
 
+    <!-- Invoice Queue -->
+    <div class="card" style="margin-bottom:16px;border:1px solid rgba(245,158,11,0.3);">
+      <div class="card-header" style="background:rgba(245,158,11,0.06);">
+        <div class="card-title">⚡ Ready to Invoice <span id="inv-queue-count" style="background:var(--amber);color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;">0</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="renderInvoiceQueue()">Refresh</button>
+      </div>
+      <div id="inv-queue-list">
+        <div style="padding:14px 16px;text-align:center;color:var(--text3);font-size:13px;">Loading...</div>
+      </div>
+    </div>
+
     <!-- Aging Report -->
     <div class="card" style="margin-bottom:16px;">
       <div class="card-header">
@@ -2194,7 +2205,7 @@ textarea{resize:vertical;min-height:80px;}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
           <div style="position:relative;">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:5px;">Origin City *</div>
-            <input type="text" id="quote-origin-city" placeholder="Dallas" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;background:white;" oninput="portalCityAuto(this.value,'quote-origin-state','quote-origin-drop')"/>
+            <input type="text" id="quote-origin-city" placeholder="Dallas" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;background:white;" oninput="portalCityAutoFixed('quote-origin-city','quote-origin-state','quote-origin-drop',this.value)"/>
             <div id="quote-origin-drop" class="autocomplete-list"></div>
           </div>
           <div>
@@ -2203,7 +2214,7 @@ textarea{resize:vertical;min-height:80px;}
           </div>
           <div style="position:relative;">
             <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:5px;">Destination City *</div>
-            <input type="text" id="quote-dest-city" placeholder="Chicago" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;background:white;" oninput="portalCityAuto(this.value,'quote-dest-state','quote-dest-drop')"/>
+            <input type="text" id="quote-dest-city" placeholder="Chicago" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;outline:none;background:white;" oninput="portalCityAutoFixed('quote-dest-city','quote-dest-state','quote-dest-drop',this.value)"/>
             <div id="quote-dest-drop" class="autocomplete-list"></div>
           </div>
           <div>
@@ -2625,41 +2636,32 @@ function renderCustomers() {
 }
 
 async function renderInvoiceQueue() {
-  // Find delivered loads without invoices
   const invoicedLoadIds = new Set(allInvoices.map(i => i.load_id).filter(Boolean));
   const deliveredLoads = allLoads.filter(l => l.status === 'Delivered' && !invoicedLoadIds.has(l.id));
 
-  // Check which have POD uploaded
-  let loadsWithPOD = new Set();
-  if(deliveredLoads.length > 0) {
-    const loadIds = deliveredLoads.map(l => l.id);
-    const { data: docs } = await db.from('load_docs')
-      .select('load_id')
-      .in('load_id', loadIds)
-      .ilike('doc_type', '%POD%');
-    if(docs) docs.forEach(d => loadsWithPOD.add(d.load_id));
-  }
-
-  const readyToInvoice = deliveredLoads.filter(l => loadsWithPOD.has(l.id));
-  const awaitingPOD = deliveredLoads.filter(l => !loadsWithPOD.has(l.id));
-
   const countEl = document.getElementById('inv-queue-count');
   const listEl = document.getElementById('inv-queue-list');
-  if(countEl) countEl.textContent = readyToInvoice.length;
+  if(countEl) countEl.textContent = deliveredLoads.length;
   if(!listEl) return;
+
   if(deliveredLoads.length === 0) {
-    listEl.innerHTML = '<div style="padding:14px 16px;text-align:center;color:var(--text3);font-size:13px;">No loads awaiting invoicing ✓</div>';
+    listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--green);font-size:13px;">✅ All delivered loads have been invoiced!</div>';
     return;
   }
-  listEl.innerHTML = readyToInvoice.map(l => `
+
+  listEl.innerHTML = deliveredLoads.map(l => {
+    const customer = allCustomers.find(c => c.id === l.customer_id);
+    const deliveryDate = l.delivery_date ? fmtDate(l.delivery_date) : 'Unknown';
+    return `
     <div class="inv-queue-item">
-      <div class="inv-queue-pulse"></div>
+      <div class="inv-queue-pulse" style="background:var(--amber);box-shadow:0 0 6px var(--amber);"></div>
       <div style="flex:1;">
-        <div class="inv-queue-route">${l.load_number} — ${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div>
-        <div class="inv-queue-meta">${l.customers?.name||'Unknown customer'} · Delivered ${fmtDate(l.delivery_date)} · ${fmt$(l.customer_rate)}</div>
+        <div class="inv-queue-route">${l.load_number||'—'} — ${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div>
+        <div class="inv-queue-meta">${customer?.name||'Unknown customer'} · Delivered ${deliveryDate} · <strong style="color:var(--green);">${fmt$(l.customer_rate)}</strong></div>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="createInvoiceFromLoad('${l.id}')">Create Invoice →</button>
-    </div>`).join('');
+      <button class="btn btn-primary btn-sm" onclick="createInvoiceFromLoad('${l.id}')">Invoice →</button>
+    </div>`;
+  }).join('');
 }
 
 function createInvoiceFromLoad(loadId) {
@@ -2678,7 +2680,7 @@ function createInvoiceFromLoad(loadId) {
 }
 
 async function renderInvoices() {
-  await renderInvoiceQueue();
+  renderInvoiceQueue();
   renderInvoiceAging();
   const paidInvs = allInvoices.filter(i=>i.status==='Paid');
   const pendingInvs = allInvoices.filter(i=>i.status==='Pending');
@@ -7361,6 +7363,39 @@ function downloadCSV(csv, filename) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+
+// ── PORTAL CITY AUTOCOMPLETE (FIXED) ─────────────────────────
+function portalCityAutoFixed(inputId, stateId, dropId, val) {
+  const drop = document.getElementById(dropId);
+  if(!drop) return;
+  if(!val || val.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+
+  const matches = (typeof US_CITIES !== 'undefined' ? US_CITIES : [])
+    .filter(c => c.city.toLowerCase().startsWith(val.toLowerCase()))
+    .slice(0,8);
+
+  if(matches.length === 0) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
+
+  drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:8px;max-height:200px;overflow-y:auto;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.15);';
+  drop.innerHTML = matches.map(c =>
+    `<div onclick="selectPortalCityFixed('${inputId}','${stateId}','${dropId}','${c.city}','${c.state}')"
+      style="padding:9px 12px;cursor:pointer;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f1f5f9;"
+      onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+      ${c.city}, <strong>${c.state}</strong>
+    </div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+
+function selectPortalCityFixed(inputId, stateId, dropId, city, state) {
+  const cityEl = document.getElementById(inputId);
+  const stateEl = document.getElementById(stateId);
+  const drop = document.getElementById(dropId);
+  if(cityEl) cityEl.value = city;
+  if(stateEl) stateEl.value = state;
+  if(drop) { drop.innerHTML = ''; drop.style.display = 'none'; }
 }
 
 applyTheme();
