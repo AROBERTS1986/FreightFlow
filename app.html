@@ -5708,12 +5708,7 @@ async function generateRateConToken(loadId) {
   }).select().single();
 
   if(error) { console.error('Token generation failed:', error); return null; }
-  return toke
-    `).join('');
-  }
-
-  // Switch to profile tab
-  switchAdminTab('profile');
+  return token;
 }
 
 function closeAdminPanel() {
@@ -5800,35 +5795,31 @@ async function regenerateBoardCode() {
 async function loadAdminUsers() {
   const el = document.getElementById('admin-users-list');
   if(!el) return;
-
   const profiles = allUserProfiles || [];
   if(profiles.length === 0) {
     el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">No users found</div>';
     return;
   }
-
+  const roleColors = {admin:'var(--red)',manager:'var(--accent2)',broker:'var(--green)',dispatcher:'var(--amber)',accounting:'var(--purple)',read_only:'var(--text3)'};
   el.innerHTML = profiles.map(p => {
     const isMe = p.user_id === currentUser?.id;
-    const roleColors = {
-      admin: 'var(--red)', manager: 'var(--accent2)', broker: 'var(--green)',
-      dispatcher: 'var(--amber)', accounting: 'var(--purple)', read_only: 'var(--text3)'
-    };
     const color = roleColors[p.role] || 'var(--text3)';
-    return `
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;">
-          ${(p.display_name||p.email||'?').slice(0,2).toUpperCase()}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:600;color:var(--text);">${p.display_name||'Unnamed'} ${isMe ? '<span style="font-size:10px;color:var(--text3);">(you)</span>' : ''}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:1px;">${p.email||'—'}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-          <span style="font-size:10px;font-weight:700;color:${color};background:rgba(0,0,0,0.1);padding:2px 7px;border-radius:6px;">${(p.role||'broker').toUpperCase()}</span>
-          <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);">${p.board_code||'—'}</span>
-        </div>
-      </div>
-    `;
+    const name = p.display_name || 'Unnamed';
+    const initials = (p.display_name||p.email||'?').slice(0,2).toUpperCase();
+    const meTag = isMe ? ' <span style="font-size:10px;color:var(--text3);">(you)</span>' : '';
+    const roleTag = (p.role||'broker').toUpperCase();
+    const code = p.board_code || '—';
+    const email = p.email || '—';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">'
+      + '<div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#7C3AED);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;">' + initials + '</div>'
+      + '<div style="flex:1;min-width:0;">'
+      + '<div style="font-size:13px;font-weight:600;color:var(--text);">' + name + meTag + '</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin-top:1px;">' + email + '</div>'
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
+      + '<span style="font-size:10px;font-weight:700;color:' + color + ';background:rgba(0,0,0,0.1);padding:2px 7px;border-radius:6px;">' + roleTag + '</span>'
+      + '<span style="font-family:monospace;font-size:9px;color:var(--text3);">' + code + '</span>'
+      + '</div></div>';
   }).join('');
 }
 
@@ -5867,15 +5858,17 @@ function loadAdminBrokerList() {
     el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px;">No other users yet</div>';
     return;
   }
-  el.innerHTML = brokers.map(p => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--text);">${p.display_name||p.email||'User'}</div>
-        <div style="font-size:10px;color:var(--text3);">${p.role||'broker'} · ${p.board_code||'—'}</div>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="viewAsBroker('${p.user_id}','${p.display_name||p.email||'User'}')" style="font-size:10px;">👁 View Board</button>
-    </div>
-  `).join('');
+  el.innerHTML = brokers.map(p => {
+    const n = p.display_name||p.email||'User';
+    const r = p.role||'broker';
+    const c = p.board_code||'—';
+    const uid = p.user_id;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">'
+      + '<div><div style="font-size:13px;font-weight:600;color:var(--text);">' + n + '</div>'
+      + '<div style="font-size:10px;color:var(--text3);">' + r + ' · ' + c + '</div></div>'
+      + '<button class="btn btn-ghost btn-sm" data-uid="' + uid + '" data-name="' + n + '" onclick="viewAsBroker(this.dataset.uid,this.dataset.name)" style="font-size:10px;">&#128065; View Board</button>'
+      + '</div>';
+  }).join('');
 }
 
 function viewAsBroker(userId, name) {
@@ -5971,13 +5964,15 @@ function portalCityAutoFixed(inputId, stateId, dropId, val) {
   if(matches.length === 0) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
 
   drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:8px;max-height:200px;overflow-y:auto;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.15);';
-  drop.innerHTML = matches.map(c =>
-    `<div onclick="selectPortalCityFixed('${inputId}','${stateId}','${dropId}','${c.city}','${c.state}')"
-      style="padding:9px 12px;cursor:pointer;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f1f5f9;"
-      onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
-      ${c.city}, <strong>${c.state}</strong>
-    </div>`
-  ).join('');
+  drop.innerHTML = matches.map(c => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:9px 12px;cursor:pointer;font-size:13px;color:#1a1a1a;border-bottom:1px solid #f1f5f9;';
+    div.innerHTML = c.city + ', <strong>' + c.state + '</strong>';
+    div.onmouseover = function() { this.style.background='#f8fafc'; };
+    div.onmouseout = function() { this.style.background='white'; };
+    div.onclick = function() { selectPortalCityFixed(inputId, stateId, dropId, c.city, c.state); };
+    return div.outerHTML;
+  }).join('');
   drop.style.display = 'block';
 }
 
