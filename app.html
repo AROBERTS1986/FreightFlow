@@ -1762,7 +1762,7 @@ textarea{resize:vertical;min-height:80px;}
       <div class="form-grid">
         <div class="form-group"><label>Customer Rate ($)</label><input type="number" id="load-rate" placeholder="2840" oninput="calcLoadMargin()"/></div>
         <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="load-carrier-pay" placeholder="2250" oninput="calcLoadMargin()"/></div>
-        <div class="form-group"><label>Assign Carrier</label><select id="load-carrier"><option value="">Unassigned</option></select></div>
+        <div class="form-group"><label>Assign Carrier</label><select id="load-carrier" onchange="autoFlipStatus(this.value)"><option value="">Unassigned</option></select></div>
         <div class="form-group"><label>Status</label>
           <select id="load-status"><option>Available</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select>
         </div>
@@ -2784,7 +2784,15 @@ async function saveLoad() {
     pay_terms: document.getElementById('load-pay-terms')?.value||'Net 30',
     notes: document.getElementById('load-notes')?.value||null,
     assigned_to: document.getElementById('load-assigned-broker')?.value || currentUser?.id || null,
-    status: carrierId && currentStatus==='Available' ? 'Assigned' : currentStatus||'Available',
+    status: (() => {
+      const existingLoad = id ? allLoads.find(l=>l.id===id) : null;
+      const hadNoCarrier = !existingLoad?.carrier_id;
+      // Auto-flip to Assigned if carrier is being assigned for first time
+      if(carrierId && (currentStatus==='Available' || (hadNoCarrier && currentStatus==='Available'))) return 'Assigned';
+      // Auto-flip back to Available if carrier is removed
+      if(!carrierId && currentStatus==='Assigned') return 'Available';
+      return currentStatus||'Available';
+    })(),
   };
 
   if(!payload.origin_city || !payload.destination_city) { toast('Origin and destination are required', 'error'); return; }
@@ -6208,6 +6216,20 @@ async function saveFuelAdvance() {
   toast('Fuel advance logged: $' + amount, 'success');
   document.getElementById('fuel-advance-amount').value = '';
   loadEventHistory();
+}
+
+
+// ── AUTO-FLIP STATUS ON CARRIER CHANGE ───────────────────────
+function autoFlipStatus(carrierId) {
+  const statusEl = document.getElementById('load-status');
+  if(!statusEl) return;
+  const currentStatus = statusEl.value;
+  if(carrierId && currentStatus === 'Available') {
+    statusEl.value = 'Assigned';
+    toast('Status auto-updated to Assigned', 'info');
+  } else if(!carrierId && currentStatus === 'Assigned') {
+    statusEl.value = 'Available';
+  }
 }
 
 applyTheme();
