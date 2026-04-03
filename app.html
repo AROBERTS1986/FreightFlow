@@ -6902,7 +6902,7 @@ function portalCityAuto(val, stateId, dropId) {
   const drop = document.getElementById(dropId);
   if(!drop) return;
   if(!val || val.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
-  const matches = US_CITIES.filter(c => c.city.toLowerCase().startsWith(val.toLowerCase())).slice(0,8);
+  const matches = US_CITIES.filter(c => c && c.city && c.city.toLowerCase().startsWith(val.toLowerCase())).slice(0,8);
   if(matches.length === 0) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
   drop.style.display = 'block';
   drop.style.cssText = 'position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #e2e8f0;border-radius:8px;max-height:200px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.12);';
@@ -7383,7 +7383,7 @@ function portalCityAutoFixed(inputId, stateId, dropId, val) {
   if(!val || val.length < 2) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
 
   const matches = (typeof US_CITIES !== 'undefined' ? US_CITIES : [])
-    .filter(c => c.city.toLowerCase().startsWith(val.toLowerCase()))
+    .filter(c => c && c.city && c.city.toLowerCase().startsWith(val.toLowerCase()))
     .slice(0,8);
 
   if(matches.length === 0) { drop.innerHTML = ''; drop.style.display = 'none'; return; }
