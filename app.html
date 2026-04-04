@@ -3393,33 +3393,29 @@ async function runCarrierLookup() {
   if(results) results.style.display = 'none';
 
   try {
-    // FMCSA API — try MC first then DOT
-    const resp = await fetch(`https://mobile.fmcsa.dot.gov/qc/services/carriers/${input}?webKey=2f46cef8c4bda4b7b0d31c7573b14e74b4a6f0e7`);
-    let data = null;
+    // Route through Supabase edge function to avoid CORS + key issues
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/fmcsa-lookup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({ query: input })
+    });
 
-    if(resp.ok) {
-      const json = await resp.json();
-      data = json.content?.carrier || json.carrier || null;
+    if(!resp.ok) {
+      const errText = await resp.text();
+      throw new Error('Edge function error: ' + errText);
     }
 
-    // If MC lookup failed, try as DOT
-    if(!data) {
-      const resp2 = await fetch(`https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/${input}?webKey=2f46cef8c4bda4b7b0d31c7573b14e74b4a6f0e7`);
-      if(resp2.ok) {
-        const json2 = await resp2.json();
-        data = json2.content?.carrier || json2.carrier || null;
-      }
-    }
+    const result = await resp.json();
 
-    if(!data) {
-      if(placeholder) placeholder.innerHTML = `<div style="padding:40px;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">❌</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);">No Results Found</div><div style="font-size:13px;color:var(--text3);margin-top:8px;">No carrier found for "${input}". Check the MC# or DOT# and try again.</div></div>`;
+    if(result.error || !result.data) {
+      if(placeholder) placeholder.innerHTML = `<div style="padding:40px;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">❌</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);">No Results Found</div><div style="font-size:13px;color:var(--text3);margin-top:8px;">No carrier found for MC/DOT "${input}". Double-check the number and try again.</div><div style="margin-top:12px;"><a href="https://safer.fmcsa.dot.gov/CompanySnapshot.aspx" target="_blank" style="color:var(--accent2);font-size:12px;">🔗 Try FMCSA SAFER directly →</a></div></div>`;
       return;
     }
 
-    currentVetData = data;
-    displayVetResults(data);
+    currentVetData = result.data;
+    displayVetResults(result.data);
   } catch(e) {
-    if(placeholder) placeholder.innerHTML = `<div style="padding:40px;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">⚠️</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);">FMCSA Lookup Failed</div><div style="font-size:13px;color:var(--text3);margin-top:8px;">${e.message}</div></div>`;
+    if(placeholder) placeholder.innerHTML = `<div style="padding:40px;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">⚠️</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);">Lookup Failed</div><div style="font-size:13px;color:var(--text3);margin-top:8px;">${e.message}</div><div style="margin-top:12px;"><a href="https://safer.fmcsa.dot.gov/CompanySnapshot.aspx" target="_blank" style="color:var(--accent2);font-size:12px;">🔗 Search on FMCSA SAFER →</a></div></div>`;
   }
 }
 
