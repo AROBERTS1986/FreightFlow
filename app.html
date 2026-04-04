@@ -1657,7 +1657,6 @@ async function loadData(){
       orphanedLoads.forEach(ld => { const found=allLoads.find(x=>x.id===ld.id); if(found)found.status='Available'; });
     }
     // Cache company settings globally for rate con
-    if(cs?.length)window._companySettings=cs[0];
     const{data:settingsData}=await db.from('company_settings').select('*').limit(1);if(settingsData?.length)window._companySettings=settingsData[0];
     await loadQuoteRequests();
     populateSelects();
