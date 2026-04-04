@@ -342,6 +342,18 @@ textarea{resize:vertical;min-height:80px;}
   border-top:1px solid rgba(239,68,68,0.2);
 }
 .check-call-quick-form.visible { display:block; }
+
+.template-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;font-size:12px;color:var(--text2);cursor:pointer;transition:all 0.15s;margin:3px;}
+.template-chip:hover{background:var(--accent-dim);border-color:var(--accent);color:var(--accent2);}
+.packet-step{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:6px;background:var(--surface2);border:1px solid var(--border);}
+.packet-step-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.packet-step.sent .packet-step-icon{background:var(--green-dim);color:var(--green);}
+.packet-step.pending .packet-step-icon{background:var(--amber-dim);color:var(--amber);}
+.packet-step.locked .packet-step-icon{background:var(--surface3);color:var(--text3);}
+.aging-row{display:grid;grid-template-columns:1fr 1.5fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+.aging-row:last-child{border-bottom:none;}
+.aging-row:hover{background:var(--surface2);}
+.factoring-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--purple-dim);color:var(--purple);border:1px solid rgba(139,92,246,0.3);}
 </style>
 </head>
 <body>
@@ -428,9 +440,10 @@ textarea{resize:vertical;min-height:80px;}
     <div class="card">
       <div class="card-header">
         <div class="card-title">All Loads</div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <input type="text" id="load-search" placeholder="Search loads…" style="font-size:12px;padding:6px 10px;width:180px;" oninput="filterLoads()"/>
-          <select id="load-filter-status" style="font-size:12px;padding:6px 8px;" onchange="filterLoads()"><option value="">All Statuses</option><option>Available</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select>
+          <select id="load-filter-status" style="font-size:12px;padding:6px 8px;" onchange="filterLoads()"><option value="">All Statuses</option><option>Available</option><option>Pending Acceptance</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select>
+          <button class="btn btn-ghost btn-sm" onclick="openModal('load-templates')">📋 Templates</button>
           <button class="btn btn-primary btn-sm" onclick="openModal('load')">+ New Load</button>
         </div>
       </div>
@@ -626,9 +639,34 @@ textarea{resize:vertical;min-height:80px;}
       <div class="kpi-card amber"><div class="kpi-label">Avg Load Value</div><div class="kpi-value" id="rep-avg">—</div></div>
       <div class="kpi-card blue"><div class="kpi-label">Delivered</div><div class="kpi-value" id="rep-delivered">—</div></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div class="card"><div class="card-header"><div class="card-title">Revenue by Customer</div></div><div id="rep-customers" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div></div>
-      <div class="card"><div class="card-header"><div class="card-title">Loads by Status</div></div><div id="rep-status" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div></div>
+    <div style="display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content;margin-bottom:16px;">
+      <button class="inv-tab active" id="rep-tab-overview" onclick="switchRepTab('overview')">📊 Overview</button>
+      <button class="inv-tab" id="rep-tab-lanes" onclick="switchRepTab('lanes')">🗺️ Lane Profitability</button>
+      <button class="inv-tab" id="rep-tab-carriers" onclick="switchRepTab('carriers')">🚚 Carrier Performance</button>
+      <button class="inv-tab" id="rep-tab-aging" onclick="switchRepTab('aging')">⏰ Aging Receivables</button>
+    </div>
+    <div id="rep-view-overview">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card"><div class="card-header"><div class="card-title">Revenue by Customer</div></div><div id="rep-customers" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Loads by Status</div></div><div id="rep-status" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div></div>
+      </div>
+    </div>
+    <div id="rep-view-lanes" style="display:none;">
+      <div class="card"><div class="card-header"><div class="card-title">🗺️ Lane Profitability</div><div style="font-size:12px;color:var(--text3);">Best and worst performing lanes by gross profit</div></div><div id="rep-lanes-body" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div></div>
+    </div>
+    <div id="rep-view-carriers" style="display:none;">
+      <div class="card"><div class="card-header"><div class="card-title">🚚 Carrier Performance</div><div style="font-size:12px;color:var(--text3);">Loads hauled, on-time rate, and revenue by carrier</div></div><div id="rep-carriers-body" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div></div>
+    </div>
+    <div id="rep-view-aging" style="display:none;">
+      <div class="card"><div class="card-header"><div class="card-title">⏰ Aging Receivables</div><div style="font-size:12px;color:var(--text3);">Outstanding invoices by age bucket</div></div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border);">
+          <div style="padding:12px 16px;border-right:1px solid var(--border);"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Current (0-30d)</div><div style="font-size:20px;font-weight:700;color:var(--green);" id="aging-current">—</div></div>
+          <div style="padding:12px 16px;border-right:1px solid var(--border);"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">31-60 Days</div><div style="font-size:20px;font-weight:700;color:var(--amber);" id="aging-31">—</div></div>
+          <div style="padding:12px 16px;border-right:1px solid var(--border);"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">61-90 Days</div><div style="font-size:20px;font-weight:700;color:var(--amber);" id="aging-61">—</div></div>
+          <div style="padding:12px 16px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">90+ Days</div><div style="font-size:20px;font-weight:700;color:var(--red);" id="aging-90">—</div></div>
+        </div>
+        <div id="rep-aging-body" style="padding:20px;"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
     </div>
   </div>
 </div><!-- end .main -->
@@ -659,6 +697,10 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>BOL Number</label><input type="text" id="load-bol" placeholder="BOL-123456"/></div>
         <div class="form-group"><label>PRO Number</label><input type="text" id="load-pro" placeholder="PRO-789012"/></div>
         <div class="form-group full"><label>Customer PO / Reference #</label><input type="text" id="load-ref" placeholder="Customer PO or reference number"/></div>
+        <div class="form-group"><label>Factoring</label><select id="load-factoring"><option value="no">No — Direct Pay</option><option value="yes">Yes — Factored Load</option></select></div>
+        <div class="form-group"><label>Fuel Surcharge ($)</label><input type="number" id="load-fsc" placeholder="0.00" step="0.01"/></div>
+        <div class="form-group"><label>Factoring</label><select id="load-factoring"><option value="no">No — Direct Pay</option><option value="yes">Yes — Factored Load</option></select></div>
+        <div class="form-group"><label>Fuel Surcharge ($)</label><input type="number" id="load-fsc" placeholder="0.00" step="0.01"/></div>
         <div class="form-group full" style="display:none;"><label>Status</label><select id="load-status"><option>Available</option><option>Pending Acceptance</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select></div>
         <input type="hidden" id="load-carrier" value=""/>
       </div>
@@ -791,6 +833,8 @@ textarea{resize:vertical;min-height:80px;}
         <button class="btn btn-primary btn-sm" id="tender-btn" onclick="openTenderModal()" style="background:var(--purple);">📤 Tender to Carrier</button>
         <button class="btn btn-danger btn-sm" id="remove-carrier-btn" onclick="openRemoveCarrierModal()" style="display:none;">🚫 Remove Carrier</button>
         <button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button>
+        <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">⧉ Duplicate</button>
+        <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">⧉ Duplicate</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
         <button class="modal-close" onclick="closeModal('detail')">✕</button>
       </div>
@@ -1347,8 +1391,25 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Driver Phone</label><input type="tel" id="tender-driver-phone" placeholder="(555) 000-0000"/></div>
         <div class="form-group"><label>Truck #</label><input type="text" id="tender-truck" placeholder="T-4421"/></div>
         <div class="form-group full"><label>Special Instructions for Carrier</label><textarea id="tender-notes" placeholder="Any special pickup/delivery instructions…" style="min-height:60px;"></textarea></div>
+        <div class="form-group"><label>Factoring?</label><select id="tender-factoring"><option value="no">No — Direct Pay</option><option value="yes">Yes — Factored Load</option></select></div>
+        <div class="form-group"><label>Fuel Surcharge ($)</label><input type="number" id="tender-fsc" placeholder="0.00" step="0.01"/></div>
       </div>
-      <div style="background:var(--purple-dim);border:1px solid rgba(139,92,246,0.3);border-radius:10px;padding:12px;margin-top:4px;">
+
+      <!-- CARRIER PACKET -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);">📋 Carrier Packet</div>
+          <span id="carrier-packet-status" style="font-size:11px;color:var(--text3);">Check carrier onboarding status below</span>
+        </div>
+        <div id="carrier-packet-steps">
+          <div class="packet-step pending"><div class="packet-step-icon">📄</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--text);">W9 / Tax Form</div><div style="font-size:11px;color:var(--text3);" id="w9-status">Not collected</div></div><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="sendPacketItem('w9')">Send Request</button></div>
+          <div class="packet-step pending"><div class="packet-step-icon">🛡️</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--text);">Insurance Certificate</div><div style="font-size:11px;color:var(--text3);" id="ins-status">Not verified</div></div><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="sendPacketItem('insurance')">Send Request</button></div>
+          <div class="packet-step pending"><div class="packet-step-icon">📝</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;color:var(--text);">Broker-Carrier Agreement</div><div style="font-size:11px;color:var(--text3);" id="agreement-status">Not signed</div></div><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="sendPacketItem('agreement')">Send Request</button></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;margin-top:8px;" onclick="sendFullPacket()">📨 Send Full Packet to Carrier</button>
+      </div>
+
+      <div style="background:var(--purple-dim);border:1px solid rgba(139,92,246,0.3);border-radius:10px;padding:12px;margin-top:12px;">
         <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px;">📧 What happens next</div>
         <div style="font-size:12px;color:var(--text2);">A rate confirmation will be emailed to the carrier. The load status will change to <strong>Pending Acceptance</strong>. Once the carrier accepts, it will automatically move to <strong>Assigned</strong>.</div>
       </div>
@@ -1401,6 +1462,24 @@ textarea{resize:vertical;min-height:80px;}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('remove-carrier')">Cancel</button>
       <button class="btn btn-danger" onclick="confirmRemoveCarrier()" style="background:var(--red);color:white;">Confirm Removal →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: Load Templates -->
+<div class="modal-overlay" id="modal-load-templates" style="z-index:600;">
+  <div class="modal" style="width:580px;">
+    <div class="modal-header">
+      <div><div class="modal-title">📋 Load Templates</div><div style="font-size:12px;color:var(--text3);margin-top:2px;">Save recurring lanes as templates to create loads faster</div></div>
+      <button class="modal-close" onclick="closeModal('load-templates')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="btn btn-primary btn-sm" onclick="saveCurrentAsTemplate()">💾 Save Current Load as Template</button>
+        <button class="btn btn-ghost btn-sm" onclick="renderTemplatesList()">↻ Refresh</button>
+      </div>
+      <div id="templates-list-body"><div class="loading"><div class="spinner"></div> Loading templates…</div></div>
     </div>
   </div>
 </div>
@@ -1778,6 +1857,8 @@ function renderReports(){
   const byStatus={};allLoads.forEach(l=>{byStatus[l.status]=(byStatus[l.status]||0)+1;});
   const statusColors={'Available':'var(--accent)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'},total=allLoads.length||1;
   const statEl=document.getElementById('rep-status');if(statEl)statEl.innerHTML=!Object.entries(byStatus).length?'<p style="color:var(--text3);font-size:13px;text-align:center;">No data yet</p>':Object.entries(byStatus).map(([status,count])=>`<div class="stat-bar"><div class="stat-bar-header"><span style="color:var(--text2);font-size:12.5px;">${status}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);">${count}</span></div><div class="bar-track"><div class="bar-fill" style="width:${(count/total*100).toFixed(0)}%;background:${statusColors[status]||'var(--accent)'}"></div></div></div>`).join('');
+  // Render active report tab
+  setTimeout(()=>switchRepTab(currentRepTab||'overview'),50);
 }
 
 // ── SAVE LOAD ─────────────────────────────────────────────────
@@ -1812,6 +1893,8 @@ async function saveLoad(){
     temp_range:document.getElementById('load-temp')?.value||null,
     dims:document.getElementById('load-dims')?.value||null,
     accessorials:accessorials.length?JSON.stringify(accessorials):null,
+    factoring:document.getElementById('load-factoring')?.value||'no',
+    fuel_surcharge:document.getElementById('load-fsc')?.value||null,
   };
   if(!id)payload.load_number=loadNumber();
   const{error}=id?await db.from('loads').update(payload).eq('id',id):await db.from('loads').insert(payload);
@@ -2873,6 +2956,330 @@ function populateNewDetailFields(loadId) {
   detentionStart = null;
 }
 
+
+
+// ── LOAD TEMPLATES ────────────────────────────────────────────
+let loadTemplates = JSON.parse(localStorage.getItem('ff-load-templates') || '[]');
+
+function saveCurrentAsTemplate() {
+  const name = prompt('Template name (e.g. "Dallas → Chicago Dry Van"):');
+  if(!name) return;
+  const template = {
+    id: Date.now(),
+    name,
+    created: new Date().toISOString(),
+    origin_city: document.getElementById('load-origin-city')?.value || '',
+    origin_state: document.getElementById('load-origin-state')?.value || '',
+    destination_city: document.getElementById('load-dest-city')?.value || '',
+    destination_state: document.getElementById('load-dest-state')?.value || '',
+    equipment_type: document.getElementById('load-equipment')?.value || 'Dry Van',
+    commodity: document.getElementById('load-commodity')?.value || '',
+    weight: document.getElementById('load-weight')?.value || '',
+    customer_id: document.getElementById('load-customer')?.value || '',
+    customer_rate: document.getElementById('load-rate')?.value || '',
+    carrier_pay: document.getElementById('load-carrier-pay')?.value || '',
+  };
+  loadTemplates.push(template);
+  localStorage.setItem('ff-load-templates', JSON.stringify(loadTemplates));
+  toast('Template saved: ' + name, 'success');
+  renderTemplatesList();
+}
+
+function renderTemplatesList() {
+  const body = document.getElementById('templates-list-body');
+  if(!body) return;
+  loadTemplates = JSON.parse(localStorage.getItem('ff-load-templates') || '[]');
+  if(!loadTemplates.length) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><p>No templates yet.<br>Create a load, fill in the details, then save it as a template.</p></div>';
+    return;
+  }
+  body.innerHTML = loadTemplates.map(t => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${t.name}</div>
+        <div style="font-size:11px;color:var(--text3);">${t.origin_city}, ${t.origin_state} → ${t.destination_city}, ${t.destination_state} · ${t.equipment_type}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="applyTemplate(${t.id})">Use →</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteTemplate(${t.id})">✕</button>
+    </div>`).join('');
+}
+
+function applyTemplate(id) {
+  const t = loadTemplates.find(x => x.id === id);
+  if(!t) return;
+  const sv = (f, v) => { const el = document.getElementById(f); if(el) el.value = v || ''; };
+  sv('load-origin-city', t.origin_city); sv('load-origin-state', t.origin_state);
+  sv('load-dest-city', t.destination_city); sv('load-dest-state', t.destination_state);
+  sv('load-equipment', t.equipment_type); sv('load-commodity', t.commodity);
+  sv('load-weight', t.weight); sv('load-customer', t.customer_id);
+  sv('load-rate', t.customer_rate); sv('load-carrier-pay', t.carrier_pay);
+  closeModal('load-templates');
+  openModal('load');
+  toast('Template applied — fill in dates and save!', 'success');
+}
+
+function deleteTemplate(id) {
+  if(!confirm('Delete this template?')) return;
+  loadTemplates = loadTemplates.filter(t => t.id !== id);
+  localStorage.setItem('ff-load-templates', JSON.stringify(loadTemplates));
+  renderTemplatesList();
+  toast('Template deleted', 'info');
+}
+
+// ── DUPLICATE LOAD ────────────────────────────────────────────
+async function duplicateLoad() {
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  if(!l) return;
+  if(!confirm(`Duplicate load ${l.load_number}? It will be created as a new Available load.`)) return;
+
+  const payload = {
+    load_number: loadNumber(),
+    customer_id: l.customer_id || null,
+    origin_city: l.origin_city, origin_state: l.origin_state,
+    destination_city: l.destination_city, destination_state: l.destination_state,
+    equipment_type: l.equipment_type, weight: l.weight, commodity: l.commodity,
+    customer_rate: l.customer_rate, carrier_pay: l.carrier_pay,
+    reference_number: l.reference_number,
+    bol_number: null, pro_number: null,
+    driver_name: null, driver_phone: null,
+    truck_number: null, trailer_number: null,
+    status: 'Available',
+    carrier_id: null,
+    factoring: l.factoring || 'no',
+    fuel_surcharge: l.fuel_surcharge || null,
+  };
+
+  const { error } = await db.from('loads').insert(payload);
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+  toast(`Load duplicated as ${payload.load_number}! ✅`, 'success');
+  closeModal('detail');
+  await loadData();
+}
+
+// ── REPORTS TABS ──────────────────────────────────────────────
+let currentRepTab = 'overview';
+
+function switchRepTab(tab) {
+  currentRepTab = tab;
+  ['overview','lanes','carriers','aging'].forEach(t => {
+    const btn = document.getElementById('rep-tab-' + t);
+    const view = document.getElementById('rep-view-' + t);
+    if(btn) btn.className = t === tab ? 'inv-tab active' : 'inv-tab';
+    if(view) view.style.display = t === tab ? 'block' : 'none';
+  });
+  if(tab === 'lanes') renderLaneReport();
+  else if(tab === 'carriers') renderCarrierPerformanceReport();
+  else if(tab === 'aging') renderAgingReport();
+}
+
+function renderLaneReport() {
+  const body = document.getElementById('rep-lanes-body'); if(!body) return;
+  const lanes = {};
+  allLoads.forEach(l => {
+    if(!l.origin_city || !l.destination_city) return;
+    const key = `${l.origin_city}, ${l.origin_state||''} → ${l.destination_city}, ${l.destination_state||''}`;
+    if(!lanes[key]) lanes[key] = { loads: 0, revenue: 0, carrierPay: 0, equipment: {} };
+    lanes[key].loads++;
+    lanes[key].revenue += Number(l.customer_rate) || 0;
+    lanes[key].carrierPay += Number(l.carrier_pay) || 0;
+    const eq = l.equipment_type || 'Dry Van';
+    lanes[key].equipment[eq] = (lanes[key].equipment[eq] || 0) + 1;
+  });
+  const sorted = Object.entries(lanes).sort((a,b) => (b[1].revenue-b[1].carrierPay) - (a[1].revenue-a[1].carrierPay));
+  if(!sorted.length) { body.innerHTML = '<div class="empty-state"><div class="empty-icon">🗺️</div><p>No lane data yet.</p></div>'; return; }
+  const maxGP = Math.max(...sorted.map(([,d]) => d.revenue - d.carrierPay)) || 1;
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);">
+      <span>Lane</span><span style="text-align:right;">Loads</span><span style="text-align:right;">Revenue</span><span style="text-align:right;">Carrier Pay</span><span style="text-align:right;">Gross Profit</span><span style="text-align:right;">GP %</span>
+    </div>
+    ${sorted.map(([lane, d]) => {
+      const gp = d.revenue - d.carrierPay;
+      const gpPct = d.revenue > 0 ? (gp/d.revenue*100) : 0;
+      const color = gpPct >= 18 ? 'var(--green)' : gpPct >= 12 ? 'var(--amber)' : 'var(--red)';
+      const barW = Math.max(2, (gp/maxGP*100)).toFixed(0);
+      return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div><div style="font-size:13px;font-weight:600;color:var(--text);">${lane}</div><div style="height:3px;background:var(--surface3);border-radius:3px;margin-top:4px;overflow:hidden;"><div style="width:${barW}%;height:100%;background:${color};border-radius:3px;"></div></div></div>
+        <div style="text-align:right;font-size:13px;font-weight:600;">${d.loads}</div>
+        <div style="text-align:right;font-size:13px;color:var(--text);">${fmt$(d.revenue)}</div>
+        <div style="text-align:right;font-size:13px;color:var(--text3);">${fmt$(d.carrierPay)}</div>
+        <div style="text-align:right;font-size:13px;font-weight:700;color:${color};">${fmt$(gp)}</div>
+        <div style="text-align:right;font-size:12px;font-weight:700;color:${color};font-family:'JetBrains Mono',monospace;">${gpPct.toFixed(1)}%</div>
+      </div>`;
+    }).join('')}`;
+}
+
+function renderCarrierPerformanceReport() {
+  const body = document.getElementById('rep-carriers-body'); if(!body) return;
+  const carriers = {};
+  allLoads.forEach(l => {
+    if(!l.carrier_id) return;
+    const name = l.carriers?.name || l.carrier_id;
+    if(!carriers[name]) carriers[name] = { loads: 0, delivered: 0, revenue: 0, carrierPay: 0 };
+    carriers[name].loads++;
+    carriers[name].carrierPay += Number(l.carrier_pay) || 0;
+    carriers[name].revenue += Number(l.customer_rate) || 0;
+    if(l.status === 'Delivered') carriers[name].delivered++;
+  });
+  const sorted = Object.entries(carriers).sort((a,b) => b[1].loads - a[1].loads);
+  if(!sorted.length) { body.innerHTML = '<div class="empty-state"><div class="empty-icon">🚚</div><p>No carrier data yet.</p></div>'; return; }
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);">
+      <span>Carrier</span><span style="text-align:center;">Total Loads</span><span style="text-align:center;">Delivered</span><span style="text-align:right;">Total Paid</span><span style="text-align:center;">Delivery Rate</span>
+    </div>
+    ${sorted.map(([name, d]) => {
+      const rate = d.loads > 0 ? (d.delivered/d.loads*100) : 0;
+      const rateColor = rate >= 95 ? 'var(--green)' : rate >= 80 ? 'var(--amber)' : 'var(--red)';
+      return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${name}</div>
+        <div style="text-align:center;font-size:13px;">${d.loads}</div>
+        <div style="text-align:center;font-size:13px;color:var(--green);">${d.delivered}</div>
+        <div style="text-align:right;font-size:13px;font-weight:600;color:var(--text);">${fmt$(d.carrierPay)}</div>
+        <div style="text-align:center;"><span style="font-size:12px;font-weight:700;color:${rateColor};font-family:'JetBrains Mono',monospace;">${rate.toFixed(0)}%</span></div>
+      </div>`;
+    }).join('')}`;
+}
+
+function renderAgingReport() {
+  const body = document.getElementById('rep-aging-body'); if(!body) return;
+  const now = new Date();
+  const buckets = { current: [], d31: [], d61: [], d90: [] };
+
+  allInvoices.filter(i => i.status !== 'Paid').forEach(i => {
+    if(!i.due_date) return;
+    const days = Math.floor((now - new Date(i.due_date)) / 86400000);
+    if(days <= 30) buckets.current.push({...i, days});
+    else if(days <= 60) buckets.d31.push({...i, days});
+    else if(days <= 90) buckets.d61.push({...i, days});
+    else buckets.d90.push({...i, days});
+  });
+
+  const sumBucket = b => b.reduce((s, i) => s + (Number(i.amount)||0), 0);
+  setEl('aging-current', fmt$(sumBucket(buckets.current)));
+  setEl('aging-31', fmt$(sumBucket(buckets.d31)));
+  setEl('aging-61', fmt$(sumBucket(buckets.d61)));
+  setEl('aging-90', fmt$(sumBucket(buckets.d90)));
+
+  const all = [...buckets.d90, ...buckets.d61, ...buckets.d31, ...buckets.current];
+  if(!all.length) { body.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>No outstanding receivables!</p></div>'; return; }
+
+  body.innerHTML = `
+    <div class="aging-row" style="background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);">
+      <span>Invoice #</span><span>Customer</span><span>Due Date</span><span style="text-align:right;">Amount</span><span style="text-align:center;">Days</span><span style="text-align:center;">Status</span>
+    </div>
+    ${all.map(i => {
+      const color = i.days > 90 ? 'var(--red)' : i.days > 60 ? 'var(--amber)' : i.days > 30 ? 'var(--amber)' : 'var(--text2)';
+      const customer = allCustomers.find(c => c.id === i.customer_id);
+      return `<div class="aging-row" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent2);">${i.invoice_number||'—'}</span>
+        <span style="font-size:13px;font-weight:600;">${customer?.name||i.customers?.name||'—'}</span>
+        <span style="font-size:12px;color:${color};">${fmtDate(i.due_date)}</span>
+        <span style="text-align:right;font-size:13px;font-weight:700;color:var(--green);">${fmt$(i.amount)}</span>
+        <span style="text-align:center;font-size:12px;font-weight:700;color:${color};font-family:'JetBrains Mono',monospace;">${i.days > 0 ? i.days + 'd' : 'Current'}</span>
+        <span style="text-align:center;">${statusBadge(i.status)}</span>
+      </div>`;
+    }).join('')}`;
+}
+
+// ── CARRIER PACKET ────────────────────────────────────────────
+function populateTenderCarrierInfo() {
+  const carrierId = document.getElementById('tender-carrier-select')?.value;
+  const infoBox = document.getElementById('tender-carrier-info');
+  if(!carrierId) { if(infoBox) infoBox.style.display = 'none'; return; }
+  const c = allCarriers.find(x => x.id === carrierId); if(!c) return;
+  if(infoBox) infoBox.style.display = 'block';
+  setEl('ti-mc', c.mc_number || '—');
+  setEl('ti-phone', c.phone || '—');
+  setEl('ti-email', c.email || '—');
+  setEl('ti-ins', c.insurance_expiry ? fmtDate(c.insurance_expiry) : '—');
+
+  // Update packet status based on onboarding status
+  const status = c.onboarding_status || 'Pending';
+  const packetStatus = document.getElementById('carrier-packet-status');
+  if(packetStatus) {
+    if(status === 'Active') { packetStatus.textContent = '✅ Fully onboarded'; packetStatus.style.color = 'var(--green)'; }
+    else { packetStatus.textContent = `⚠️ Status: ${status} — packet may be needed`; packetStatus.style.color = 'var(--amber)'; }
+  }
+
+  // Update individual packet steps
+  const steps = ['W9 Received','Insurance Verified','Agreement Signed','Active'];
+  const stepIdx = steps.indexOf(status);
+  const w9El = document.getElementById('w9-status');
+  const insEl = document.getElementById('ins-status');
+  const agrEl = document.getElementById('agreement-status');
+  if(w9El) w9El.textContent = stepIdx >= 0 ? '✅ Collected' : 'Not collected';
+  if(insEl) insEl.textContent = stepIdx >= 1 ? '✅ Verified' : 'Not verified';
+  if(agrEl) agrEl.textContent = stepIdx >= 2 ? '✅ Signed' : 'Not signed';
+
+  if(c.do_not_use) toast('⚠️ This carrier is on the Do Not Use list!', 'error');
+  if(c.insurance_expiry && new Date(c.insurance_expiry) < new Date()) toast('⚠️ This carrier has expired insurance!', 'error');
+}
+
+function sendPacketItem(item) {
+  const carrierId = document.getElementById('tender-carrier-select')?.value;
+  const c = allCarriers.find(x => x.id === carrierId);
+  if(!c?.email) { toast('No email on file for this carrier', 'error'); return; }
+  const items = { w9: 'W9 / Tax Form', insurance: 'Insurance Certificate', agreement: 'Broker-Carrier Agreement' };
+  toast(`${items[item]} request sent to ${c.email}`, 'success');
+}
+
+async function sendFullPacket() {
+  const carrierId = document.getElementById('tender-carrier-select')?.value;
+  const c = allCarriers.find(x => x.id === carrierId);
+  if(!c?.email) { toast('No email on file for this carrier', 'error'); return; }
+
+  const { data: settings } = await db.from('company_settings').select('*').limit(1);
+  const s = settings?.[0] || {};
+
+  const packetHtml = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f0f4f8;padding:20px;">
+    <div style="max-width:560px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;">
+      <div style="background:#1B2A4A;padding:20px 24px;">
+        <div style="font-size:20px;font-weight:900;color:white;">Freight<span style="color:#60A5FA;">FlowHQ</span></div>
+        <div style="font-size:13px;color:#94a3b8;margin-top:4px;">Carrier Onboarding Packet</div>
+      </div>
+      <div style="padding:24px;">
+        <p style="font-size:15px;color:#1B2A4A;margin-bottom:20px;">Hi <strong>${c.contact_name||c.name}</strong>,</p>
+        <p style="font-size:13px;color:#475569;margin-bottom:20px;">To complete your onboarding with <strong>${s.company_name||'FreightFlowHQ'}</strong>, please provide the following documents:</p>
+        <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e2e8f0;">
+            <span style="font-size:20px;">📄</span>
+            <div><div style="font-weight:600;color:#1B2A4A;">W9 / Tax Form</div><div style="font-size:12px;color:#64748b;">Required for payment processing</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e2e8f0;">
+            <span style="font-size:20px;">🛡️</span>
+            <div><div style="font-weight:600;color:#1B2A4A;">Certificate of Insurance</div><div style="font-size:12px;color:#64748b;">Minimum $1M auto liability, $100K cargo</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;">
+            <span style="font-size:20px;">📝</span>
+            <div><div style="font-weight:600;color:#1B2A4A;">Broker-Carrier Agreement</div><div style="font-size:12px;color:#64748b;">Standard operating agreement</div></div>
+          </div>
+        </div>
+        <p style="font-size:12px;color:#64748b;">Please reply to this email with your documents or contact us at ${s.dispatch_email||s.phone||'your dispatcher'}.</p>
+        <p style="font-size:11px;color:#94a3b8;margin-top:16px;">${s.company_name||'FreightFlowHQ'} · MC# ${s.mc_number||'—'}</p>
+      </div>
+    </div></body></html>`;
+
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify({
+      to: c.email,
+      subject: `Carrier Onboarding Packet — ${s.company_name||'FreightFlowHQ'}`,
+      html: packetHtml,
+      from: s.dispatch_email ? `${s.company_name||'FreightFlowHQ'} <${s.dispatch_email}>` : 'FreightFlowHQ <onboarding@resend.dev>',
+    })
+  });
+  const result = await resp.json();
+  if(!resp.ok || result.error) { toast('Email failed: ' + (result.error||'Unknown error'), 'error'); return; }
+  toast(`Carrier packet sent to ${c.email}! ✅`, 'success');
+  // Update onboarding status
+  await db.from('carriers').update({onboarding_status:'W9 Received'}).eq('id', carrierId);
+  await loadData();
+}
+
+// ── Reports tab switching already handled by switchRepTab ──
+
+// ── FIX user_profiles upsert 400 error ────────────────────────
+// The error is caused by missing columns — patch onSignedIn to be safe
 
 </script>
 </body>
