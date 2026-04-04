@@ -2476,8 +2476,17 @@ async function sendTender() {
       <a href="${window.location.origin}/accept.html?load=${l.id}&carrier=${carrierId}&token=${btoa(l.id+carrierId).replace(/=/g,'')}" style="display:inline-block;background:#2563EB;color:white;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;">✅ Accept Rate Confirmation →</a>
     </div>
     <p style="font-size:12px;color:#64748b;text-align:center;">Questions? Reply to this email or call ${s.phone||'your dispatcher'}.</p>
-    <div style="text-align:center;margin-top:16px;padding:12px;border-top:1px solid #e2e8f0;">
-      <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;">By accepting this rate confirmation, Carrier agrees to all terms including: no re-brokering, full cargo liability under the Carmack Amendment, and compliance with all DOT/FMCSA regulations.</div>
+    <div style="margin-top:16px;padding:14px;border-top:2px solid #1B2A4A;background:#f8fafc;border-radius:0 0 12px 12px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:8px;">Key Terms & Conditions</div>
+      <div style="font-size:11px;color:#475569;line-height:1.7;">
+        <p style="margin-bottom:4px;">🚫 <strong>No Re-brokering:</strong> Do not sub-haul or re-broker this load without prior written consent from ${s.company_name||'FreightFlowHQ'}.</p>
+        <p style="margin-bottom:4px;">🛡️ <strong>Insurance Required:</strong> Min. $1M auto liability and $100K cargo. ${s.company_name||'FreightFlowHQ'} must be named as additional insured.</p>
+        <p style="margin-bottom:4px;">📦 <strong>Cargo Liability:</strong> Carrier assumes full liability under 49 U.S.C. § 14706 (Carmack Amendment) from pickup through delivery.</p>
+        <p style="margin-bottom:4px;">⏱️ <strong>Detention:</strong> 2 hours free time at each stop. Pre-approval required before billing detention.</p>
+        <p style="margin-bottom:4px;">💰 <strong>Payment:</strong> Net ${s.payment_terms||'30'} days from receipt of signed BOL, POD, and complete invoice. Submit within 180 days of delivery.</p>
+        <p style="margin-bottom:4px;">📞 <strong>Check Calls:</strong> Provide updates as requested. Notify immediately of any delay, accident, or issue affecting delivery.</p>
+        <p style="margin-bottom:0;">✅ <strong>Acceptance:</strong> Clicking "Accept Rate Confirmation" constitutes your agreement to all terms herein and any Broker-Carrier Agreement on file.</p>
+      </div>
     </div>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/>
     <p style="font-size:11px;color:#94a3b8;text-align:center;">${s.company_name||'FreightFlowHQ'} · MC# ${s.mc_number||'—'}</p>
