@@ -881,21 +881,20 @@ textarea{resize:vertical;min-height:80px;}
         <div id="rate-con-preview-area" style="display:none;margin-top:12px;"><div class="rate-con-preview" id="rate-con-content"></div></div>
         <div id="rate-con-collapsed" style="font-size:12px;color:var(--text3);">Rate confirmation ready to generate. Preview or print to send to carrier.</div>
       </div>
+      <!-- LOAD MILESTONE TIMELINE -->
       <div style="background:var(--surface2);border-radius:10px;padding:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📞 Check Calls</div><button class="btn btn-primary btn-sm" onclick="openCheckCallForm()">+ Log Check Call</button></div>
-        <div class="check-call-list" id="check-call-list"><div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No check calls logged yet</div></div>
-        <div id="check-call-form" style="display:none;background:var(--surface3);border-radius:10px;padding:16px;margin-top:8px;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;">Log Check Call</div>
-          <div class="form-grid" style="margin-bottom:12px;">
-            <div class="form-group"><label>Spoke With</label><input type="text" id="cc-contact" placeholder="Driver / Dispatcher name"/></div>
-            <div class="form-group"><label>Call Status</label><select id="cc-status"><option value="On Time">✅ On Time</option><option value="Delayed">⚠️ Delayed</option><option value="Issue">🔴 Issue</option></select></div>
-            <div class="form-group"><label>Current City</label><input type="text" id="cc-city" placeholder="Kansas City"/></div>
-            <div class="form-group"><label>Current State</label><input type="text" id="cc-state" placeholder="MO" maxlength="2"/></div>
-            <div class="form-group"><label>Updated ETA</label><input type="datetime-local" id="cc-eta"/></div>
-            <div class="form-group"><label>Next Check Call</label><input type="datetime-local" id="cc-next"/></div>
-            <div class="form-group full"><label>Notes</label><textarea id="cc-notes" placeholder="Any issues, updates, or instructions…" style="min-height:60px;"></textarea></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📍 Load Milestones</div>
+          <div id="detention-display" style="display:none;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--green-dim);color:var(--green);">⏱ 0:00:00</div>
+        </div>
+        <div id="milestone-timeline" style="display:flex;flex-direction:column;gap:0;"></div>
+        <div id="milestone-note-form" style="display:none;margin-top:12px;padding:12px;background:var(--surface3);border-radius:10px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;" id="milestone-note-label">Notes for this milestone</div>
+          <textarea id="milestone-note-input" placeholder="Optional notes…" style="width:100%;min-height:60px;font-size:12px;margin-bottom:8px;"></textarea>
+          <div style="display:flex;gap:8px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="cancelMilestone()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="confirmMilestone()">Confirm →</button>
           </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn btn-ghost btn-sm" onclick="closeCheckCallForm()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveCheckCall()">Save Check Call</button></div>
         </div>
       </div>
     </div>
@@ -1861,7 +1860,7 @@ function openLoadDetail(loadId){
   document.querySelector('.status-btn.'+map[l.status])?.classList.add('active-status');
   const rcPrev=document.getElementById('rate-con-preview-area'),rcColl=document.getElementById('rate-con-collapsed');
   if(rcPrev)rcPrev.style.display='none';if(rcColl)rcColl.style.display='block';
-  renderCheckCalls(loadId);closeCheckCallForm();openModal('detail');
+  openModal('detail');
   populateNewDetailFields(loadId);
   // Show/hide tender vs remove carrier button based on load status
   const tenderBtn = document.getElementById('tender-btn');
