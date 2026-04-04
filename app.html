@@ -1656,6 +1656,10 @@ async function loadData(){
       ));
       orphanedLoads.forEach(ld => { const found=allLoads.find(x=>x.id===ld.id); if(found)found.status='Available'; });
     }
+    // Cache company settings globally for rate con
+    const{data:csData}=await db.from('company_settings').select('*').limit(1);if(csData?.length)window._companySettings=csData[0];
+    if(cs?.length)window._companySettings=cs[0];
+    const{data:cs}=await db.from('company_settings').select('*').limit(1);if(cs?.length)window._companySettings=cs[0];
     await loadQuoteRequests();
     populateSelects();
     renderCurrentPage();
@@ -2474,6 +2478,9 @@ async function sendTender() {
       <a href="${window.location.origin}/accept.html?load=${l.id}&carrier=${carrierId}&token=${btoa(l.id+carrierId).replace(/=/g,'')}" style="display:inline-block;background:#2563EB;color:white;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;">✅ Accept Rate Confirmation →</a>
     </div>
     <p style="font-size:12px;color:#64748b;text-align:center;">Questions? Reply to this email or call ${s.phone||'your dispatcher'}.</p>
+    <div style="text-align:center;margin-top:16px;padding:12px;border-top:1px solid #e2e8f0;">
+      <div style="font-size:10px;color:#94a3b8;margin-bottom:8px;">By accepting this rate confirmation, Carrier agrees to all terms including: no re-brokering, full cargo liability under the Carmack Amendment, and compliance with all DOT/FMCSA regulations.</div>
+    </div>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/>
     <p style="font-size:11px;color:#94a3b8;text-align:center;">${s.company_name||'FreightFlowHQ'} · MC# ${s.mc_number||'—'}</p>
   </div>
@@ -2547,11 +2554,180 @@ async function confirmRemoveCarrier() {
 function toggleRateCon(){const preview=document.getElementById('rate-con-preview-area'),collapsed=document.getElementById('rate-con-collapsed');if(preview.style.display==='none'){buildRateCon();preview.style.display='block';if(collapsed)collapsed.style.display='none';}else{preview.style.display='none';if(collapsed)collapsed.style.display='block';}}
 function buildRateCon(){
   const l=allLoads.find(x=>x.id===currentDetailLoadId);if(!l)return;
-  const carrier=allCarriers.find(c=>c.id===l.carrier_id),customer=allCustomers.find(c=>c.id===l.customer_id);
-  const rcNum='RC-'+l.load_number,today=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),el=document.getElementById('rate-con-content');if(!el)return;
-  el.innerHTML=`<div class="rate-con-header"><div><div class="rate-con-logo">Freight<span>FlowHQ</span></div><div style="font-size:11px;color:#666;margin-top:4px;">Transportation Management System</div></div><div><div class="rate-con-title">RATE CONFIRMATION</div><div class="rate-con-num">${rcNum} · ${today}</div></div></div><div class="rate-con-grid"><div class="rate-con-section"><div class="rate-con-section-title">Carrier Information</div><div class="rate-con-field"><span class="rate-con-field-label">Carrier</span><span class="rate-con-field-val">${carrier?.name||'TBD'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">MC #</span><span class="rate-con-field-val">${carrier?.mc_number||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">DOT #</span><span class="rate-con-field-val">${carrier?.dot_number||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Phone</span><span class="rate-con-field-val">${carrier?.phone||'—'}</span></div></div><div class="rate-con-section"><div class="rate-con-section-title">Load Info</div><div class="rate-con-field"><span class="rate-con-field-label">Load #</span><span class="rate-con-field-val">${l.load_number}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Customer</span><span class="rate-con-field-val">${customer?.name||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Equipment</span><span class="rate-con-field-val">${l.equipment_type||'—'}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Weight</span><span class="rate-con-field-val">${l.weight?Number(l.weight).toLocaleString()+' lbs':'—'}</span></div></div><div class="rate-con-section"><div class="rate-con-section-title">Pickup</div><div class="rate-con-field"><span class="rate-con-field-label">Origin</span><span class="rate-con-field-val">${l.origin_city||'—'}, ${l.origin_state||''}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Date</span><span class="rate-con-field-val">${fmtDate(l.pickup_date)}</span></div></div><div class="rate-con-section"><div class="rate-con-section-title">Delivery</div><div class="rate-con-field"><span class="rate-con-field-label">Destination</span><span class="rate-con-field-val">${l.destination_city||'—'}, ${l.destination_state||''}</span></div><div class="rate-con-field"><span class="rate-con-field-label">Date</span><span class="rate-con-field-val">${fmtDate(l.delivery_date)}</span></div></div></div><div class="rate-con-total"><div><div class="rate-con-total-label">Carrier Pay</div><div style="font-size:11px;color:#94a3b8;">All-in rate</div></div><div class="rate-con-total-val">${fmt$(l.carrier_pay)}</div></div><div class="rate-con-terms">Carrier agrees to transport the above shipment in full compliance with all applicable DOT regulations. Payment processed upon receipt of signed BOL and POD. Carrier shall not re-broker without prior written consent.</div><div class="rate-con-sig"><div class="rate-con-sig-box">Broker Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div><div class="rate-con-sig-box">Carrier Signature &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div></div>`;
+  const carrier=allCarriers.find(c=>c.id===l.carrier_id);
+  const customer=allCustomers.find(c=>c.id===l.customer_id);
+  const el=document.getElementById('rate-con-content');if(!el)return;
+  const rcNum='RC-'+l.load_number;
+  const today=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  // Get company settings from loaded data
+  const s=window._companySettings||{};
+
+  // Parse accessorials
+  let accessorialRows='';
+  let accessorialTotal=0;
+  try{
+    const acc=l.accessorials?JSON.parse(l.accessorials):[];
+    if(acc.length){
+      accessorialRows=acc.map(a=>`
+        <div class="rate-con-field">
+          <span class="rate-con-field-label">${a.type}</span>
+          <span class="rate-con-field-val">${a.amount?'$'+Number(a.amount).toLocaleString():'TBD'}</span>
+        </div>`).join('');
+      accessorialTotal=acc.reduce((s,a)=>s+(Number(a.amount)||0),0);
+    }
+  }catch(e){}
+
+  const fsc=Number(l.fuel_surcharge)||0;
+  const totalPay=(Number(l.carrier_pay)||0)+accessorialTotal+fsc;
+
+  const companyName=s.company_name||'FreightFlowHQ';
+  const companyMC=s.mc_number||'—';
+  const companyDOT=s.dot_number||'—';
+  const companyEmail=s.dispatch_email||'—';
+  const companyPhone=s.phone||'—';
+  const companyCity=s.city||'';
+  const companyState=s.state||'';
+  const customTerms=s.rate_con_terms||'';
+
+  // QR code URL — links to freightflowhq.com for marketing
+  const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent('https://freightflowhq.com')}`;
+
+  el.innerHTML=`
+<div style="font-family:Arial,sans-serif;color:#1a1a1a;max-width:780px;margin:0 auto;">
+
+  <!-- HEADER -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid #1B2A4A;padding-bottom:16px;margin-bottom:20px;">
+    <div>
+      <div style="font-size:26px;font-weight:900;color:#1B2A4A;letter-spacing:-0.5px;">Freight<span style="color:#2563EB;">FlowHQ</span></div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">${companyCity?companyCity+', '+companyState+' · ':''} MC# ${companyMC} · DOT# ${companyDOT}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${companyPhone} · ${companyEmail}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:22px;font-weight:900;color:#1B2A4A;text-transform:uppercase;letter-spacing:1px;">Rate Confirmation</div>
+      <div style="font-size:13px;font-weight:700;color:#2563EB;margin-top:4px;">${rcNum}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:2px;">Issued: ${today}</div>
+    </div>
+  </div>
+
+  <!-- CARRIER + LOAD INFO GRID -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🚚 Carrier Information</div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Carrier Name</span><span class="rate-con-field-val">${carrier?.name||'TBD'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">MC #</span><span class="rate-con-field-val">${carrier?.mc_number||'—'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">DOT #</span><span class="rate-con-field-val">${carrier?.dot_number||'—'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Contact</span><span class="rate-con-field-val">${carrier?.contact_name||'—'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Phone</span><span class="rate-con-field-val">${carrier?.phone||'—'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Email</span><span class="rate-con-field-val">${carrier?.email||'—'}</span></div>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📦 Shipment Details</div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Load #</span><span class="rate-con-field-val">${l.load_number}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Equipment</span><span class="rate-con-field-val">${l.equipment_type||'Dry Van'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Commodity</span><span class="rate-con-field-val">${l.commodity||'General Freight'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Weight</span><span class="rate-con-field-val">${l.weight?Number(l.weight).toLocaleString()+' lbs':'—'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Reference #</span><span class="rate-con-field-val">${l.reference_number||'—'}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">BOL #</span><span class="rate-con-field-val">${l.bol_number||'TBD'}</span></div>
+      ${l.hazmat?'<div class="rate-con-field"><span class="rate-con-field-label" style="color:#dc2626;font-weight:700;">⚠️ HAZMAT</span><span class="rate-con-field-val" style="color:#dc2626;font-weight:700;">YES — Placards Required</span></div>':''}
+    </div>
+  </div>
+
+  <!-- PICKUP + DELIVERY GRID -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <div style="border:2px solid #2563EB;border-radius:8px;padding:14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#2563EB;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📍 Pickup</div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Location</span><span class="rate-con-field-val">${l.origin_city||'—'}, ${l.origin_state||''}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Date</span><span class="rate-con-field-val" style="color:#2563EB;font-weight:700;">${l.pickup_date?new Date(l.pickup_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'—'}</span></div>
+      ${l.temp_range?`<div class="rate-con-field"><span class="rate-con-field-label">Temp Range</span><span class="rate-con-field-val">${l.temp_range}</span></div>`:''}
+      ${l.dims?`<div class="rate-con-field"><span class="rate-con-field-label">Dimensions</span><span class="rate-con-field-val">${l.dims}</span></div>`:''}
+    </div>
+    <div style="border:2px solid #16a34a;border-radius:8px;padding:14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#16a34a;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🏁 Delivery</div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Location</span><span class="rate-con-field-val">${l.destination_city||'—'}, ${l.destination_state||''}</span></div>
+      <div class="rate-con-field"><span class="rate-con-field-label">Date</span><span class="rate-con-field-val" style="color:#16a34a;font-weight:700;">${l.delivery_date?new Date(l.delivery_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'—'}</span></div>
+    </div>
+  </div>
+
+  <!-- DRIVER INFO (if assigned) -->
+  ${l.driver_name||l.truck_number?`
+  <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:16px;background:#f8fafc;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🧑‍✈️ Driver & Equipment</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+      ${l.driver_name?`<div><div style="font-size:10px;color:#94a3b8;margin-bottom:2px;">Driver Name</div><div style="font-size:12px;font-weight:600;">${l.driver_name}</div></div>`:''}
+      ${l.driver_phone?`<div><div style="font-size:10px;color:#94a3b8;margin-bottom:2px;">Driver Phone</div><div style="font-size:12px;font-weight:600;">${l.driver_phone}</div></div>`:''}
+      ${l.truck_number?`<div><div style="font-size:10px;color:#94a3b8;margin-bottom:2px;">Truck #</div><div style="font-size:12px;font-weight:600;">${l.truck_number}</div></div>`:''}
+      ${l.trailer_number?`<div><div style="font-size:10px;color:#94a3b8;margin-bottom:2px;">Trailer #</div><div style="font-size:12px;font-weight:600;">${l.trailer_number}</div></div>`:''}
+    </div>
+  </div>`:''}
+
+  <!-- PAY BREAKDOWN -->
+  <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:16px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">💰 Rate Breakdown</div>
+    <div class="rate-con-field"><span class="rate-con-field-label">Base Carrier Rate</span><span class="rate-con-field-val">$${Number(l.carrier_pay||0).toLocaleString()}</span></div>
+    ${fsc>0?`<div class="rate-con-field"><span class="rate-con-field-label">Fuel Surcharge</span><span class="rate-con-field-val">$${fsc.toLocaleString()}</span></div>`:''}
+    ${accessorialRows}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:14px 16px;background:#1B2A4A;border-radius:8px;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:white;">TOTAL CARRIER PAY — ALL IN</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Payment upon receipt of signed BOL & POD · Net ${s.payment_terms||'30'} days</div>
+        ${l.factoring==='yes'?'<div style="font-size:11px;color:#c084fc;margin-top:2px;">⚡ Factoring Eligible</div>':''}
+      </div>
+      <div style="font-size:28px;font-weight:900;color:#60A5FA;">$${totalPay.toLocaleString()}</div>
+    </div>
+  </div>
+
+  <!-- TERMS & CONDITIONS -->
+  <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:16px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📋 Terms & Conditions</div>
+    <div style="font-size:10.5px;color:#475569;line-height:1.75;">
+      <p style="margin-bottom:6px;"><strong>1. COMPLIANCE.</strong> Carrier agrees to transport the above-described shipment in strict compliance with all applicable federal, state, and local laws and regulations, including but not limited to those of the U.S. Department of Transportation (DOT), Federal Motor Carrier Safety Administration (FMCSA), and any applicable hazardous materials regulations.</p>
+      <p style="margin-bottom:6px;"><strong>2. NO RE-BROKERING.</strong> Carrier shall not re-broker, co-broker, subcontract, or assign this load to any other carrier or party without the prior express written consent of ${companyName}. Violation of this provision shall make Carrier liable for all resulting damages.</p>
+      <p style="margin-bottom:6px;"><strong>3. INSURANCE.</strong> Carrier warrants that it maintains, at minimum, the following insurance coverage: (a) Auto Liability — $1,000,000 combined single limit; (b) Cargo — $100,000 per occurrence; (c) General Liability — $1,000,000 per occurrence. ${companyName} must be named as an additional insured on all applicable policies.</p>
+      <p style="margin-bottom:6px;"><strong>4. CARGO LIABILITY.</strong> Carrier assumes full liability as a motor carrier for loss, damage, or delay to the cargo from the time of pickup until delivery. Carrier's liability shall be governed by 49 U.S.C. § 14706 (Carmack Amendment).</p>
+      <p style="margin-bottom:6px;"><strong>5. DETENTION & LAYOVER.</strong> Free time at shipper and consignee is two (2) hours from the scheduled appointment time. Detention charges must be pre-approved by ${companyName} before being added to the invoice. Carrier must provide written documentation of detention time to be eligible for payment.</p>
+      <p style="margin-bottom:6px;"><strong>6. PAYMENT.</strong> Payment will be made within ${s.payment_terms||'30'} days of receipt of a complete invoice packet including: (a) signed Bill of Lading; (b) signed Proof of Delivery; (c) any applicable lumper receipts or detention documentation. Carrier agrees to submit all documentation within 180 days of delivery or forfeit the right to payment.</p>
+      <p style="margin-bottom:6px;"><strong>7. DOUBLE BROKERING & FRAUD.</strong> Carrier certifies that it is the actual motor carrier that will transport this shipment and that this is not a load board posting or re-brokered load. Any misrepresentation is grounds for immediate termination and potential legal action.</p>
+      <p style="margin-bottom:6px;"><strong>8. NOTIFICATION.</strong> Carrier shall provide check calls as requested and must immediately notify ${companyName} of any delay, accident, theft, or event that may affect the timely and safe delivery of the shipment.</p>
+      <p style="margin-bottom:6px;"><strong>9. GOVERNING LAW.</strong> This agreement shall be governed by the laws of the state in which ${companyName} maintains its principal place of business. Any disputes shall be resolved through binding arbitration.</p>
+      <p><strong>10. ENTIRE AGREEMENT.</strong> This Rate Confirmation, together with any Broker-Carrier Agreement on file, constitutes the entire agreement between the parties for this shipment. Carrier's acceptance of this load, whether by signature, electronic acceptance, or commencement of transport, constitutes acceptance of all terms herein.</p>
+      ${customTerms?`<p style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;"><strong>ADDITIONAL TERMS:</strong> ${customTerms}</p>`:''}
+    </div>
+  </div>
+
+  <!-- SIGNATURE BLOCKS + QR CODE -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:16px;margin-bottom:16px;align-items:end;">
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:8px;">Broker Authorization</div>
+      <div style="border-bottom:2px solid #1a1a1a;margin-bottom:6px;height:40px;"></div>
+      <div style="font-size:10px;color:#64748b;">Authorized Signature · ${companyName}</div>
+      <div style="border-bottom:1px solid #e2e8f0;margin:8px 0;"></div>
+      <div style="font-size:10px;color:#94a3b8;">Printed Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:8px;">Carrier Acceptance</div>
+      <div style="border-bottom:2px solid #1a1a1a;margin-bottom:6px;height:40px;"></div>
+      <div style="font-size:10px;color:#64748b;">Authorized Signature · ${carrier?.name||'Carrier'}</div>
+      <div style="border-bottom:1px solid #e2e8f0;margin:8px 0;"></div>
+      <div style="font-size:10px;color:#94a3b8;">Printed Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Date</div>
+    </div>
+    <div style="text-align:center;">
+      <img src="${qrUrl}" alt="FreightFlowHQ QR" style="width:80px;height:80px;border-radius:8px;border:1px solid #e2e8f0;"/>
+      <div style="font-size:9px;color:#94a3b8;margin-top:4px;">freightflowhq.com</div>
+      <div style="font-size:8px;color:#cbd5e1;margin-top:1px;">Powered by FreightFlowHQ</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="text-align:center;padding-top:12px;border-top:2px solid #1B2A4A;">
+    <div style="font-size:10px;color:#94a3b8;">${rcNum} · Generated ${today} · ${companyName} · MC# ${companyMC}</div>
+    <div style="font-size:9px;color:#cbd5e1;margin-top:2px;">This document is confidential and intended solely for the named carrier. Unauthorized use, disclosure, or distribution is prohibited.</div>
+  </div>
+
+</div>`;
 }
-function printRateCon(){
+async function printRateCon(){
+  if(!window._companySettings){const{data}=await db.from('company_settings').select('*').limit(1);if(data?.length)window._companySettings=data[0];}
   buildRateCon();const rcContent=document.getElementById('rate-con-content')?.innerHTML||'';
   const printWin=window.open('','_blank','width=800,height=900');if(!printWin){toast('Please allow popups to print','error');return;}
   const rcStyles='body{font-family:Arial,sans-serif;margin:0;padding:20px;}.rate-con-header{display:flex;justify-content:space-between;border-bottom:3px solid #1B2A4A;padding-bottom:16px;margin-bottom:20px;}.rate-con-logo{font-size:22px;font-weight:900;color:#1B2A4A;}.rate-con-logo span{color:#2563EB;}.rate-con-title{font-size:18px;font-weight:800;color:#1B2A4A;text-align:right;}.rate-con-num{font-size:11px;color:#666;text-align:right;}.rate-con-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}.rate-con-section{border:1px solid #e2e8f0;border-radius:8px;padding:12px;}.rate-con-section-title{font-size:10px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:8px;}.rate-con-field{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f1f5f9;}.rate-con-field:last-child{border-bottom:none;}.rate-con-field-label{color:#666;}.rate-con-field-val{font-weight:600;}.rate-con-total{background:#1B2A4A;color:white;border-radius:8px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}.rate-con-total-label{font-size:13px;font-weight:600;}.rate-con-total-val{font-size:22px;font-weight:900;color:#60A5FA;}.rate-con-terms{font-size:11px;color:#666;line-height:1.6;border-top:1px solid #e2e8f0;padding-top:12px;}.rate-con-sig{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;}.rate-con-sig-box{border-top:1px solid #1a1a1a;padding-top:6px;font-size:10px;color:#666;}';
@@ -2706,7 +2882,7 @@ async function toggleUserStatus(userId,currentStatus){const newStatus=currentSta
 // ── SETTINGS ──────────────────────────────────────────────────
 function renderSettings(){
   switchSettingsTab('profile');
-  db.from('company_settings').select('*').limit(1).then(({data})=>{
+  db.from('company_settings').select('*').limit(1).then(({data})=>{if(data?.length)window._companySettings=data[0];
     if(!data?.length)return;const s=data[0];
     const sv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
     sv('s-company-name',s.company_name);sv('s-mc',s.mc_number);sv('s-dot',s.dot_number);sv('s-email',s.dispatch_email);sv('s-phone',s.phone);sv('s-city',s.city);sv('s-state',s.state);sv('s-zip',s.zip);sv('s-terms',s.rate_con_terms);
