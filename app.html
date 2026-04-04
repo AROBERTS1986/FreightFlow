@@ -104,12 +104,13 @@ textarea{resize:vertical;min-height:80px;}
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px;color:var(--text3);gap:12px;text-align:center;}
 .empty-state .empty-icon{font-size:40px;opacity:0.4;}
 .empty-state p{font-size:13px;max-width:280px;line-height:1.6;}
-.dispatch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.dispatch-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
 .dispatch-col{display:flex;flex-direction:column;gap:10px;}
 .dispatch-col-header{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
 .load-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:all 0.15s ease;position:relative;overflow:hidden;}
 .load-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
 .load-card.Available::after{background:var(--accent);}
+.load-card.Pending\20 Acceptance::after{background:var(--purple);}
 .load-card.Assigned::after{background:var(--amber);}
 .load-card.In\ Transit::after{background:var(--green);}
 .load-card.Delivered::after{background:var(--text3);}
@@ -135,6 +136,8 @@ textarea{resize:vertical;min-height:80px;}
 .status-btn.s-assigned.active-status{background:var(--amber);color:#1a1a1a;}
 .status-btn.s-transit{border-color:var(--green);color:var(--green);background:var(--green-dim);}
 .status-btn.s-transit.active-status{background:var(--green);color:white;}
+.status-btn.s-pending{border-color:var(--purple);color:var(--purple);background:var(--purple-dim);}
+.status-btn.s-pending.active-status{background:var(--purple);color:white;}
 .status-btn.s-delivered{border-color:var(--text3);color:var(--text3);background:rgba(255,255,255,0.05);}
 .status-btn.s-delivered.active-status{background:var(--text3);color:white;}
 .check-call-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;margin-bottom:12px;}
@@ -624,15 +627,19 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Weight (lbs)</label><input type="number" id="load-weight" placeholder="42000"/></div>
         <div class="form-group"><label>Commodity</label><input type="text" id="load-commodity" placeholder="General Freight"/></div>
       </div>
-      <div class="form-section-title">💰 Rate & Carrier</div>
+      <div class="form-section-title">💰 Rate Details</div>
       <div class="form-grid">
         <div class="form-group"><label>Customer Rate ($)</label><input type="number" id="load-rate" placeholder="2840"/></div>
         <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="load-carrier-pay" placeholder="2250"/></div>
-        <div class="form-group"><label>Assign Carrier</label><select id="load-carrier"><option value="">Unassigned</option></select></div>
-        <div class="form-group"><label>Status</label><select id="load-status"><option>Available</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select></div>
         <div class="form-group"><label>BOL Number</label><input type="text" id="load-bol" placeholder="BOL-123456"/></div>
         <div class="form-group"><label>PRO Number</label><input type="text" id="load-pro" placeholder="PRO-789012"/></div>
         <div class="form-group full"><label>Customer PO / Reference #</label><input type="text" id="load-ref" placeholder="Customer PO or reference number"/></div>
+        <div class="form-group full" style="display:none;"><label>Status</label><select id="load-status"><option>Available</option><option>Pending Acceptance</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select></div>
+        <input type="hidden" id="load-carrier" value=""/>
+      </div>
+      <div style="background:var(--accent-dim);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px 14px;margin-top:4px;">
+        <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:4px;">🚚 Carrier Assignment</div>
+        <div style="font-size:12px;color:var(--text2);">Save the load first, then use <strong>"Tender to Carrier"</strong> from the load detail to assign a carrier and send a rate confirmation. The carrier must accept before being assigned.</div>
       </div>
       <div class="form-section-title" style="margin-top:8px;">🚛 Driver Info</div>
       <div class="form-grid">
@@ -755,11 +762,17 @@ textarea{resize:vertical;min-height:80px;}
   <div class="modal" style="width:820px;max-height:92vh;">
     <div class="modal-header">
       <div><div class="modal-title" id="detail-load-number">Load Detail</div><div style="font-size:12px;color:var(--text3);margin-top:2px;" id="detail-load-route"></div></div>
-      <div style="display:flex;gap:8px;align-items:center;"><button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button><button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button><button class="modal-close" onclick="closeModal('detail')">✕</button></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-primary btn-sm" id="tender-btn" onclick="openTenderModal()" style="background:var(--purple);">📤 Tender to Carrier</button>
+        <button class="btn btn-danger btn-sm" id="remove-carrier-btn" onclick="openRemoveCarrierModal()" style="display:none;">🚫 Remove Carrier</button>
+        <button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
+        <button class="modal-close" onclick="closeModal('detail')">✕</button>
+      </div>
     </div>
     <div class="modal-body" style="padding:20px;">
       <div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Load Status</div>
-        <div class="status-btn-group"><button class="status-btn s-available" onclick="updateLoadStatus('Available')">📋 Available</button><button class="status-btn s-assigned" onclick="updateLoadStatus('Assigned')">✅ Assigned</button><button class="status-btn s-transit" onclick="updateLoadStatus('In Transit')">🚛 In Transit</button><button class="status-btn s-delivered" onclick="updateLoadStatus('Delivered')">📦 Delivered</button></div>
+        <div class="status-btn-group"><button class="status-btn s-available" onclick="updateLoadStatus('Available')">📋 Available</button><button class="status-btn s-pending" onclick="updateLoadStatus('Pending Acceptance')">⏳ Pending</button><button class="status-btn s-assigned" onclick="updateLoadStatus('Assigned')">✅ Assigned</button><button class="status-btn s-transit" onclick="updateLoadStatus('In Transit')">🚛 In Transit</button><button class="status-btn s-delivered" onclick="updateLoadStatus('Delivered')">📦 Delivered</button></div>
       </div>
       <div class="load-detail-grid">
         <div class="detail-section">
@@ -1240,6 +1253,96 @@ textarea{resize:vertical;min-height:80px;}
   </div>
 </div>
 
+
+<!-- MODAL: Tender to Carrier -->
+<div class="modal-overlay" id="modal-tender" style="z-index:700;">
+  <div class="modal" style="width:580px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">📤 Tender Load to Carrier</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="tender-load-label">Select a carrier and send a rate confirmation for acceptance</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('tender')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Select Carrier *</label>
+          <select id="tender-carrier-select" onchange="populateTenderCarrierInfo()">
+            <option value="">Choose carrier…</option>
+          </select>
+        </div>
+        <div id="tender-carrier-info" style="display:none;grid-column:1/-1;background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+            <div><span style="color:var(--text3);">MC #: </span><strong id="ti-mc">—</strong></div>
+            <div><span style="color:var(--text3);">Phone: </span><strong id="ti-phone">—</strong></div>
+            <div><span style="color:var(--text3);">Email: </span><strong id="ti-email">—</strong></div>
+            <div><span style="color:var(--text3);">Insurance: </span><strong id="ti-ins">—</strong></div>
+          </div>
+        </div>
+        <div class="form-group"><label>Carrier Pay ($) *</label><input type="number" id="tender-pay" placeholder="2250"/></div>
+        <div class="form-group"><label>Driver Name</label><input type="text" id="tender-driver" placeholder="John Smith"/></div>
+        <div class="form-group"><label>Driver Phone</label><input type="tel" id="tender-driver-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>Truck #</label><input type="text" id="tender-truck" placeholder="T-4421"/></div>
+        <div class="form-group full"><label>Special Instructions for Carrier</label><textarea id="tender-notes" placeholder="Any special pickup/delivery instructions…" style="min-height:60px;"></textarea></div>
+      </div>
+      <div style="background:var(--purple-dim);border:1px solid rgba(139,92,246,0.3);border-radius:10px;padding:12px;margin-top:4px;">
+        <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px;">📧 What happens next</div>
+        <div style="font-size:12px;color:var(--text2);">A rate confirmation will be emailed to the carrier. The load status will change to <strong>Pending Acceptance</strong>. Once the carrier accepts, it will automatically move to <strong>Assigned</strong>.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('tender')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--purple);" onclick="sendTender()">📤 Send Rate Con →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Remove Carrier -->
+<div class="modal-overlay" id="modal-remove-carrier" style="z-index:700;">
+  <div class="modal" style="width:500px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" style="color:var(--red);">🚫 Remove Carrier</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">This will unassign the carrier and return the load to Available</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('remove-carrier')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--red-dim);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:4px;">⚠️ This action will:</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;">
+          • Unassign the carrier from this load<br>
+          • Return load status to <strong>Available</strong><br>
+          • Send the carrier a cancellation email<br>
+          • Log this event in the load timeline
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Reason for Removal * <span style="color:var(--red);">(Required)</span></label>
+        <select id="remove-carrier-reason">
+          <option value="">— Select a reason —</option>
+          <option>Carrier no-show</option>
+          <option>Carrier cancelled</option>
+          <option>Carrier broke down</option>
+          <option>Rate dispute</option>
+          <option>Safety concern</option>
+          <option>Load cancelled by customer</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Additional Notes</label>
+        <textarea id="remove-carrier-notes" placeholder="Provide any additional context…" style="min-height:70px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('remove-carrier')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmRemoveCarrier()" style="background:var(--red);color:white;">Confirm Removal →</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
 <iframe id="print-frame" style="display:none;"></iframe>
@@ -1420,8 +1523,8 @@ function renderDashboardQuoteQueue(){
 }
 
 function renderDispatch(){
-  const statuses=['Available','Assigned','In Transit','Delivered'];
-  const colors={'Available':'var(--accent)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'};
+  const statuses=['Available','Pending Acceptance','Assigned','In Transit','Delivered'];
+  const colors={'Available':'var(--accent)','Pending Acceptance':'var(--purple)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'};
   const cols=statuses.map(status=>{const loads=allLoads.filter(l=>l.status===status);const cards=!loads.length?`<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No ${status.toLowerCase()} loads</div>`:loads.map(l=>`<div class="load-card ${l.status}" onclick="openLoadDetail('${l.id}')"><div class="load-id">${l.load_number} · ${l.equipment_type||'Dry Van'}</div><div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div><div class="load-meta-row"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div><div class="load-meta-row"><span>Rate</span><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></div><div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div></div>`).join('');return`<div class="dispatch-col"><div class="dispatch-col-header" style="border-top:3px solid ${colors[status]}">${status} <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span></div>${cards}</div>`;}).join('');
   const board=document.getElementById('dispatch-board');if(board)board.innerHTML=`<div class="dispatch-grid">${cols}</div>`;
 }
@@ -1754,12 +1857,25 @@ function openLoadDetail(loadId){
   const carrier=allCarriers.find(c=>c.id===l.carrier_id);
   setEl('d-carrier',carrier?.name||'Unassigned');setEl('d-mc',carrier?.mc_number||'—');setEl('d-carrier-phone',carrier?.phone||'—');
   document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
-  const map={'Available':'s-available','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
+  const map={'Available':'s-available','Pending Acceptance':'s-pending','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
   document.querySelector('.status-btn.'+map[l.status])?.classList.add('active-status');
   const rcPrev=document.getElementById('rate-con-preview-area'),rcColl=document.getElementById('rate-con-collapsed');
   if(rcPrev)rcPrev.style.display='none';if(rcColl)rcColl.style.display='block';
   renderCheckCalls(loadId);closeCheckCallForm();openModal('detail');
   populateNewDetailFields(loadId);
+  // Show/hide tender vs remove carrier button based on load status
+  const tenderBtn = document.getElementById('tender-btn');
+  const removeBtn = document.getElementById('remove-carrier-btn');
+  const loadForDetail = allLoads.find(x => x.id === loadId);
+  if(tenderBtn && removeBtn && loadForDetail) {
+    const hasCarrier = !!loadForDetail.carrier_id;
+    const isPending = loadForDetail.status === 'Pending Acceptance';
+    const isAssigned = ['Assigned','In Transit'].includes(loadForDetail.status);
+    tenderBtn.style.display = hasCarrier ? 'none' : '';
+    removeBtn.style.display = (hasCarrier && (isPending || isAssigned)) ? '' : 'none';
+  }
+  // Reset and render milestone timeline
+  resetMilestonesForLoad(loadId);
 }
 
 async function updateLoadStatus(newStatus){
@@ -1767,7 +1883,7 @@ async function updateLoadStatus(newStatus){
   const{error}=await db.from('loads').update({status:newStatus}).eq('id',currentDetailLoadId);
   if(error){toast('Error: '+error.message,'error');return;}
   document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
-  const map={'Available':'s-available','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
+  const map={'Available':'s-available','Pending Acceptance':'s-pending','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
   document.querySelector('.status-btn.'+map[newStatus])?.classList.add('active-status');
   toast('Status updated to '+newStatus,'success');
   if(newStatus==='Delivered')setTimeout(()=>toast('Load delivered! ⚡ Check Invoicing → Invoice Queue','info'),800);
@@ -1775,27 +1891,251 @@ async function updateLoadStatus(newStatus){
 }
 function openEditFromDetail(){closeModal('detail');setTimeout(()=>editLoad(currentDetailLoadId),200);}
 
-// ── CHECK CALLS ───────────────────────────────────────────────
-function openCheckCallForm(){document.getElementById('check-call-form').style.display='block';}
-function closeCheckCallForm(){
-  const f=document.getElementById('check-call-form');if(f)f.style.display='none';
-  ['cc-contact','cc-city','cc-state','cc-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  const eta=document.getElementById('cc-eta');if(eta)eta.value='';const next=document.getElementById('cc-next');if(next)next.value='';const st=document.getElementById('cc-status');if(st)st.value='On Time';
+// ── MILESTONE TIMELINE ───────────────────────────────────────
+const MILESTONES = [
+  {id:'dispatched',   label:'Dispatched',          icon:'📋', color:'var(--accent)',  detention:false},
+  {id:'arr_shipper',  label:'Arrived at Shipper',  icon:'🏭', color:'var(--amber)',   detention:'start'},
+  {id:'loaded',       label:'Loaded',               icon:'📦', color:'var(--green)',   detention:'stop'},
+  {id:'arr_receiver', label:'Arrived at Receiver',  icon:'🏢', color:'var(--amber)',   detention:'start'},
+  {id:'empty',        label:'Empty / Delivered',    icon:'✅', color:'var(--green)',   detention:'stop'},
+];
+
+let loadMilestones = {}; // {loadId: [{id, timestamp, notes}]}
+let detentionInterval = null;
+let detentionStart = null;
+let detentionPhase = null; // 'shipper' or 'receiver'
+let pendingMilestone = null;
+
+function renderMilestoneTimeline(loadId) {
+  const container = document.getElementById('milestone-timeline'); if(!container) return;
+  const done = loadMilestones[loadId] || [];
+  const doneIds = done.map(m => m.id);
+  const nextIdx = MILESTONES.findIndex(m => !doneIds.includes(m.id));
+
+  container.innerHTML = MILESTONES.map((m, idx) => {
+    const completed = doneIds.includes(m.id);
+    const isNext = idx === nextIdx;
+    const entry = done.find(d => d.id === m.id);
+    const isLast = idx === MILESTONES.length - 1;
+    return `
+      <div style="display:flex;gap:0;align-items:stretch;">
+        <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0;">
+          <div style="width:24px;height:24px;border-radius:50%;background:${completed?m.color:'var(--surface3)'};border:2px solid ${completed?m.color:isNext?'var(--border2)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:6px;">${completed?'✓':isNext?'○':'·'}</div>
+          ${!isLast?`<div style="width:2px;flex:1;background:${completed?m.color:'var(--border)'};min-height:20px;margin:2px 0;"></div>`:''}
+        </div>
+        <div style="flex:1;padding:6px 0 ${isLast?'0':'14px'} 10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:14px;">${m.icon}</span>
+              <span style="font-size:13px;font-weight:${completed||isNext?'600':'400'};color:${completed?'var(--text)':isNext?'var(--text2)':'var(--text3)'};">${m.label}</span>
+              ${m.detention?`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:var(--amber-dim);color:var(--amber);">DETENTION</span>`:''}
+            </div>
+            ${completed?`<span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${new Date(entry.timestamp).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`
+            :isNext?`<button class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;" onclick="triggerMilestone('${m.id}','${m.label}')">Mark ${m.label} →</button>`:''}
+          </div>
+          ${completed&&entry.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px;font-style:italic;padding-left:20px;">"${entry.notes}"</div>`:''}
+        </div>
+      </div>`;
+  }).join('');
 }
-async function saveCheckCall(){
-  const contact=document.getElementById('cc-contact')?.value,status=document.getElementById('cc-status')?.value,city=document.getElementById('cc-city')?.value,state=document.getElementById('cc-state')?.value?.toUpperCase(),eta=document.getElementById('cc-eta')?.value,next=document.getElementById('cc-next')?.value,notes=document.getElementById('cc-notes')?.value;
-  if(!city&&!notes){toast('Please enter a location or notes','error');return;}
-  const call={id:Date.now(),timestamp:new Date().toISOString(),contact,status,city,state,eta,next,notes};
-  if(!checkCalls[currentDetailLoadId])checkCalls[currentDetailLoadId]=[];
-  checkCalls[currentDetailLoadId].unshift(call);
-  try{await db.from('check_calls').insert({load_id:currentDetailLoadId,contact,status,city,state,eta:eta||null,next_call:next||null,notes});}catch(e){}
-  renderCheckCalls(currentDetailLoadId);closeCheckCallForm();toast('Check call logged!','success');
+
+function triggerMilestone(milestoneId, label) {
+  pendingMilestone = milestoneId;
+  const form = document.getElementById('milestone-note-form');
+  const lbl = document.getElementById('milestone-note-label');
+  const input = document.getElementById('milestone-note-input');
+  if(lbl) lbl.textContent = `Notes for: ${label} (optional)`;
+  if(input) input.value = '';
+  if(form) form.style.display = 'block';
 }
-function renderCheckCalls(loadId){
-  const calls=checkCalls[loadId]||[],container=document.getElementById('check-call-list');if(!container)return;
-  if(!calls.length){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">No check calls logged yet</div>';return;}
-  const statusColors={'On Time':'var(--green)','Delayed':'var(--amber)','Issue':'var(--red)'},statusIcons={'On Time':'✅','Delayed':'⚠️','Issue':'🔴'},classMap={'On Time':'','Delayed':'delayed','Issue':'issue'};
-  container.innerHTML=calls.map(c=>`<div class="check-call-item ${classMap[c.status]}"><div class="check-call-header"><span class="check-call-time">${new Date(c.timestamp).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span><span class="check-call-status" style="color:${statusColors[c.status]}">${statusIcons[c.status]} ${c.status}</span></div>${c.city?`<div class="check-call-location">📍 ${c.city}${c.state?', '+c.state:''}</div>`:''}<div class="check-call-meta">${c.contact?'👤 '+c.contact:''}${c.eta?' · 🕐 ETA: '+new Date(c.eta).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):''}</div>${c.notes?`<div class="check-call-notes">"${c.notes}"</div>`:''}</div>`).join('');
+
+function cancelMilestone() {
+  pendingMilestone = null;
+  const form = document.getElementById('milestone-note-form');
+  if(form) form.style.display = 'none';
+}
+
+async function confirmMilestone() {
+  if(!pendingMilestone || !currentDetailLoadId) return;
+  const notes = document.getElementById('milestone-note-input')?.value || '';
+  const milestone = MILESTONES.find(m => m.id === pendingMilestone);
+  if(!loadMilestones[currentDetailLoadId]) loadMilestones[currentDetailLoadId] = [];
+  const entry = {id: pendingMilestone, timestamp: new Date().toISOString(), notes};
+  loadMilestones[currentDetailLoadId].push(entry);
+
+  // Handle detention clock
+  if(milestone.detention === 'start') {
+    detentionStart = new Date();
+    detentionPhase = pendingMilestone === 'arr_shipper' ? 'shipper' : 'receiver';
+    startDetentionClock();
+  } else if(milestone.detention === 'stop' && detentionStart) {
+    stopDetentionClock(true);
+  }
+
+  // Auto-update load status for key milestones
+  const statusMap = {dispatched:'Assigned', arr_shipper:'In Transit', loaded:'In Transit', arr_receiver:'In Transit', empty:'Delivered'};
+  if(statusMap[pendingMilestone]) {
+    await db.from('loads').update({status: statusMap[pendingMilestone]}).eq('id', currentDetailLoadId);
+    document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active-status'));
+    const map = {'Available':'s-available','Pending Acceptance':'s-pending','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
+    document.querySelector('.status-btn.' + (map[statusMap[pendingMilestone]]||''))?.classList.add('active-status');
+  }
+
+  // Save to DB
+  try { await db.from('check_calls').insert({load_id: currentDetailLoadId, status: pendingMilestone, notes, contact: milestone.label}); } catch(e){}
+
+  cancelMilestone();
+  renderMilestoneTimeline(currentDetailLoadId);
+  toast(milestone.label + ' logged!', 'success');
+  if(pendingMilestone === 'empty') { await loadData(); setTimeout(() => toast('Load delivered! ⚡ Ready to invoice', 'info'), 800); }
+}
+
+// ── DETENTION CLOCK ───────────────────────────────────────────
+function startDetentionClock() {
+  if(detentionInterval) clearInterval(detentionInterval);
+  const display = document.getElementById('detention-display');
+  if(display) display.style.display = 'block';
+  detentionInterval = setInterval(updateDetentionDisplay, 1000);
+  updateDetentionDisplay();
+}
+
+function stopDetentionClock(calculate) {
+  clearInterval(detentionInterval); detentionInterval = null;
+  if(calculate && detentionStart) {
+    const elapsed = Math.floor((new Date() - detentionStart) / 60000);
+    const billable = Math.max(0, elapsed - 120);
+    if(billable > 0) {
+      // Auto-add detention accessorial
+      if(!accessorials.find(a => a.type === 'Detention' && a.phase === detentionPhase)) {
+        const rate = 75; // $75/hr default
+        const hrs = (billable / 60).toFixed(1);
+        const amt = (billable / 60 * rate).toFixed(0);
+        accessorials.push({id: Date.now(), type: 'Detention', amount: amt, phase: detentionPhase, note: `${hrs} hrs billable at $${rate}/hr`});
+        toast(`Detention: ${hrs} hrs billable — $${amt} accessorial added`, 'info');
+      }
+    } else {
+      toast('No detention — within free time window ✅', 'success');
+    }
+  }
+  detentionStart = null;
+  const display = document.getElementById('detention-display');
+  if(display) display.style.display = 'none';
+}
+
+function updateDetentionDisplay() {
+  if(!detentionStart) return;
+  const elapsed = Math.floor((new Date() - detentionStart) / 1000);
+  const h = String(Math.floor(elapsed/3600)).padStart(2,'0');
+  const m = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+  const s = String(elapsed%60).padStart(2,'0');
+  const display = document.getElementById('detention-display');
+  if(!display) return;
+  display.textContent = `⏱ ${h}:${m}:${s}`;
+  if(elapsed >= 7200) { // 2 hours — turn red, detention is now billable
+    display.style.background = 'var(--red-dim)';
+    display.style.color = 'var(--red)';
+  } else {
+    display.style.background = 'var(--green-dim)';
+    display.style.color = 'var(--green)';
+  }
+}
+
+function resetMilestonesForLoad(loadId) {
+  if(detentionInterval) { clearInterval(detentionInterval); detentionInterval = null; }
+  detentionStart = null; pendingMilestone = null;
+  const display = document.getElementById('detention-display'); if(display) display.style.display = 'none';
+  const form = document.getElementById('milestone-note-form'); if(form) form.style.display = 'none';
+  renderMilestoneTimeline(loadId);
+}
+
+// ── TENDER TO CARRIER ─────────────────────────────────────────
+function openTenderModal() {
+  const l = allLoads.find(x => x.id === currentDetailLoadId); if(!l) return;
+  const sel = document.getElementById('tender-carrier-select');
+  if(sel) sel.innerHTML = '<option value="">Choose carrier…</option>' +
+    allCarriers.filter(c => !c.do_not_use).map(c => `<option value="${c.id}">${c.name}${c.onboarding_status==='Active'?' ✅':''}</option>`).join('');
+  const lbl = document.getElementById('tender-load-label');
+  if(lbl) lbl.textContent = `${l.load_number} · ${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}`;
+  const pay = document.getElementById('tender-pay');
+  if(pay) pay.value = l.carrier_pay || '';
+  document.getElementById('tender-carrier-info').style.display = 'none';
+  openModal('tender');
+}
+
+function populateTenderCarrierInfo() {
+  const carrierId = document.getElementById('tender-carrier-select')?.value;
+  const infoBox = document.getElementById('tender-carrier-info');
+  if(!carrierId) { if(infoBox) infoBox.style.display = 'none'; return; }
+  const c = allCarriers.find(x => x.id === carrierId); if(!c) return;
+  if(infoBox) infoBox.style.display = 'block';
+  setEl('ti-mc', c.mc_number || '—');
+  setEl('ti-phone', c.phone || '—');
+  setEl('ti-email', c.email || '—');
+  setEl('ti-ins', c.insurance_expiry ? fmtDate(c.insurance_expiry) : '—');
+  // Warn if DNL or expired insurance
+  if(c.do_not_use) toast('⚠️ This carrier is on the Do Not Use list!', 'error');
+  if(c.insurance_expiry && new Date(c.insurance_expiry) < new Date()) toast('⚠️ This carrier has expired insurance!', 'error');
+}
+
+async function sendTender() {
+  const carrierId = document.getElementById('tender-carrier-select')?.value;
+  const pay = document.getElementById('tender-pay')?.value;
+  const driver = document.getElementById('tender-driver')?.value;
+  const driverPhone = document.getElementById('tender-driver-phone')?.value;
+  const truck = document.getElementById('tender-truck')?.value;
+  const notes = document.getElementById('tender-notes')?.value;
+  if(!carrierId) { toast('Please select a carrier', 'error'); return; }
+  if(!pay) { toast('Please enter carrier pay amount', 'error'); return; }
+
+  const carrier = allCarriers.find(c => c.id === carrierId);
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+
+  // Update load to Pending Acceptance with carrier info
+  const {error} = await db.from('loads').update({
+    carrier_id: carrierId,
+    carrier_pay: parseFloat(pay),
+    driver_name: driver || null,
+    driver_phone: driverPhone || null,
+    truck_number: truck || null,
+    status: 'Pending Acceptance',
+  }).eq('id', currentDetailLoadId);
+
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+
+  toast(`Rate con sent to ${carrier?.name}! Load is now Pending Acceptance 📤`, 'success');
+  closeModal('tender');
+  await loadData();
+  // Reopen detail
+  setTimeout(() => openLoadDetail(currentDetailLoadId), 300);
+}
+
+// ── REMOVE CARRIER ────────────────────────────────────────────
+function openRemoveCarrierModal() {
+  document.getElementById('remove-carrier-reason').value = '';
+  document.getElementById('remove-carrier-notes').value = '';
+  openModal('remove-carrier');
+}
+
+async function confirmRemoveCarrier() {
+  const reason = document.getElementById('remove-carrier-reason')?.value;
+  const notes = document.getElementById('remove-carrier-notes')?.value;
+  if(!reason) { toast('Please select a reason for removal', 'error'); return; }
+
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  const carrier = allCarriers.find(c => c.id === l?.carrier_id);
+
+  const {error} = await db.from('loads').update({
+    carrier_id: null, driver_name: null, driver_phone: null,
+    truck_number: null, trailer_number: null, status: 'Available',
+  }).eq('id', currentDetailLoadId);
+
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+
+  toast(`${carrier?.name || 'Carrier'} removed — load back to Available`, 'success');
+  setTimeout(() => toast('Cancellation notification sent to carrier 📧', 'info'), 1000);
+  closeModal('remove-carrier');
+  closeModal('detail');
+  await loadData();
 }
 
 // ── RATE CON ──────────────────────────────────────────────────
@@ -2201,8 +2541,6 @@ function renderAccessorials() {
 }
 
 // ── DETENTION TIMER ───────────────────────────────────────────
-let detentionInterval = null;
-let detentionStart = null;
 
 function startDetention() {
   detentionStart = new Date();
