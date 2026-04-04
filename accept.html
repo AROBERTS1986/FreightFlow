@@ -3,347 +3,243 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Rate Confirmation Acceptance — FreightFlowHQ</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%231A56DB'/%3E%3Ctext x='20' y='27' text-anchor='middle' font-family='DM Sans,system-ui,sans-serif' font-size='16' font-weight='700' fill='white'%3EHQ%3C/text%3E%3C/svg%3E"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Rate Confirmation — FreightFlowHQ</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #f8fafc; color: #1a1a1a; min-height: 100vh; display: flex; flex-direction: column; }
-  .header { background: #0D1829; padding: 16px 24px; display: flex; align-items: center; gap: 10px; }
-  .logo { font-family: 'Instrument Serif', serif; font-size: 22px; color: white; font-weight: 700; }
-  .logo span { color: #60A5FA; }
-  .powered { font-size: 11px; color: #475569; margin-left: auto; }
-  .container { max-width: 600px; margin: 40px auto; padding: 0 20px; flex: 1; }
-  .card { background: white; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); overflow: hidden; }
-  .card-banner { background: #1A56DB; padding: 20px 28px; }
-  .card-banner.accepted { background: #10B981; }
-  .banner-title { font-size: 18px; font-weight: 700; color: white; }
-  .banner-sub { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 3px; }
-  .card-body { padding: 28px; }
-  .section-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #94A3B8; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
-  .detail-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-  .detail-label { color: #64748b; }
-  .detail-value { font-weight: 600; color: #1a1a1a; }
-  .rate-box { background: #0D1829; border-radius: 10px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; margin: 20px 0; }
-  .rate-label { font-size: 13px; color: rgba(255,255,255,0.6); }
-  .rate-value { font-family: 'Instrument Serif', serif; font-size: 36px; font-weight: 900; color: #60A5FA; }
-  .accept-section { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 20px; margin-top: 20px; }
-  .accept-title { font-size: 15px; font-weight: 700; color: #065f46; margin-bottom: 12px; }
-  .input-group { margin-bottom: 14px; }
-  .input-group label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .input-group input { width: 100%; padding: 11px 14px; border: 1px solid #d1fae5; border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: white; outline: none; transition: border-color 0.2s; }
-  .input-group input:focus { border-color: #10B981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
-  .accept-btn { width: 100%; padding: 14px; background: #10B981; color: white; border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-  .accept-btn:hover { background: #059669; transform: translateY(-1px); }
-  .accept-btn:disabled { background: #94A3B8; cursor: not-allowed; transform: none; }
-  .accepted-banner { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 20px; text-align: center; margin-top: 20px; }
-  .accepted-icon { font-size: 48px; margin-bottom: 10px; }
-  .accepted-title { font-size: 20px; font-weight: 700; color: #065f46; margin-bottom: 6px; }
-  .accepted-sub { font-size: 14px; color: #047857; }
-  .error-state { text-align: center; padding: 60px 20px; }
-  .error-icon { font-size: 56px; margin-bottom: 16px; }
-  .error-title { font-size: 22px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
-  .error-sub { font-size: 14px; color: #64748b; line-height: 1.6; }
-  .loading-state { text-align: center; padding: 60px 20px; }
-  .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #1A56DB; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .terms { font-size: 11px; color: #94A3B8; line-height: 1.6; margin-top: 16px; }
-  footer { text-align: center; padding: 24px; font-size: 12px; color: #94A3B8; }
-  footer a { color: #1A56DB; text-decoration: none; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;background:#f0f4f8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.card{background:white;border-radius:16px;width:100%;max-width:640px;box-shadow:0 8px 40px rgba(0,0,0,0.12);overflow:hidden;}
+.header{background:#1B2A4A;padding:24px 28px;display:flex;justify-content:space-between;align-items:center;}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:white;}
+.logo span{color:#60A5FA;}
+.rc-label{font-size:13px;font-weight:600;color:#94a3b8;text-align:right;}
+.rc-num{font-size:11px;color:#64748b;margin-top:2px;}
+.body{padding:28px;}
+.status-banner{border-radius:12px;padding:20px 24px;margin-bottom:24px;text-align:center;}
+.status-banner.loading{background:#EFF6FF;border:1px solid #BFDBFE;}
+.status-banner.success{background:#ECFDF5;border:1px solid #A7F3D0;}
+.status-banner.error{background:#FEF2F2;border:1px solid #FECACA;}
+.status-banner.already{background:#FFFBEB;border:1px solid #FDE68A;}
+.status-icon{font-size:48px;margin-bottom:12px;}
+.status-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;}
+.status-sub{font-size:14px;color:#64748b;line-height:1.6;}
+.load-details{background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:24px;}
+.load-details-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:14px;}
+.detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e2e8f0;font-size:13px;}
+.detail-row:last-child{border-bottom:none;}
+.detail-label{color:#64748b;}
+.detail-val{font-weight:600;color:#1B2A4A;}
+.pay-box{background:#1B2A4A;border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.pay-label{color:#94a3b8;font-size:13px;}
+.pay-sub{color:#64748b;font-size:11px;margin-top:2px;}
+.pay-amount{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#60A5FA;}
+.btn-accept{width:100%;background:#2563EB;color:white;border:none;border-radius:12px;padding:16px;font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;}
+.btn-accept:hover{background:#1D4ED8;transform:translateY(-1px);}
+.btn-accept:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.btn-decline{width:100%;background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:12px;padding:12px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;}
+.btn-decline:hover{background:#fef2f2;}
+.terms{font-size:11px;color:#94a3b8;text-align:center;margin-top:16px;line-height:1.6;}
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <svg width="28" height="28" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="10" fill="#142035"/>
-    <line x1="8" y1="13" x2="28" y2="13" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="8" y1="20" x2="25" y2="20" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="8" y1="27" x2="32" y2="27" stroke="#1A56DB" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="32" cy="13" r="3" fill="#10B981"/>
-    <circle cx="25" cy="20" r="3" fill="#10B981"/>
-  </svg>
-  <div class="logo">Freight<span>Flow</span><span style="font-size:12px;font-weight:700;letter-spacing:2px;color:#475569;margin-left:2px;">HQ</span></div>
-  <div class="powered">Secure Rate Confirmation Portal</div>
-</div>
+<div class="card">
+  <div class="header">
+    <div class="logo">Freight<span>FlowHQ</span></div>
+    <div>
+      <div class="rc-label">RATE CONFIRMATION</div>
+      <div class="rc-num" id="rc-num">Loading…</div>
+    </div>
+  </div>
 
-<div class="container">
-  <div class="card">
-    <!-- Loading state -->
-    <div id="state-loading" class="loading-state">
-      <div class="spinner"></div>
-      <div style="font-size:14px;color:#64748b;">Loading rate confirmation...</div>
+  <div class="body">
+    <!-- Status banner -->
+    <div class="status-banner loading" id="status-banner">
+      <div class="status-icon">⏳</div>
+      <div class="status-title" style="color:#1E40AF;">Loading Rate Confirmation…</div>
+      <div class="status-sub">Please wait while we retrieve the load details.</div>
     </div>
 
-    <!-- Error state -->
-    <div id="state-error" style="display:none;" class="card-body">
-      <div class="error-state">
-        <div class="error-icon">❌</div>
-        <div class="error-title">Invalid or Expired Link</div>
-        <div class="error-sub">This rate confirmation link is invalid or has expired.<br/>Please contact your broker for a new confirmation.</div>
+    <!-- Load details (hidden until loaded) -->
+    <div id="load-section" style="display:none;">
+      <div class="load-details">
+        <div class="load-details-title">📦 Load Details</div>
+        <div class="detail-row"><span class="detail-label">Load #</span><span class="detail-val" id="d-load-num">—</span></div>
+        <div class="detail-row"><span class="detail-label">Origin</span><span class="detail-val" id="d-origin">—</span></div>
+        <div class="detail-row"><span class="detail-label">Destination</span><span class="detail-val" id="d-dest">—</span></div>
+        <div class="detail-row"><span class="detail-label">Pickup Date</span><span class="detail-val" id="d-pickup">—</span></div>
+        <div class="detail-row"><span class="detail-label">Delivery Date</span><span class="detail-val" id="d-delivery">—</span></div>
+        <div class="detail-row"><span class="detail-label">Equipment</span><span class="detail-val" id="d-equip">—</span></div>
+        <div class="detail-row"><span class="detail-label">Commodity</span><span class="detail-val" id="d-commodity">—</span></div>
+        <div class="detail-row"><span class="detail-label">Weight</span><span class="detail-val" id="d-weight">—</span></div>
       </div>
-    </div>
 
-    <!-- Already accepted -->
-    <div id="state-already-accepted" style="display:none;">
-      <div class="card-banner accepted">
-        <div class="banner-title">✅ Rate Confirmation Accepted</div>
-        <div class="banner-sub" id="accepted-load-info"></div>
-      </div>
-      <div class="card-body">
-        <div class="accepted-banner">
-          <div class="accepted-icon">✅</div>
-          <div class="accepted-title">Already Accepted</div>
-          <div class="accepted-sub" id="accepted-details">This rate confirmation has already been accepted.</div>
+      <div class="pay-box">
+        <div>
+          <div class="pay-label">ALL-IN CARRIER PAY</div>
+          <div class="pay-sub">Upon receipt of signed BOL & POD</div>
         </div>
+        <div class="pay-amount" id="d-pay">—</div>
       </div>
-    </div>
 
-    <!-- Main acceptance form -->
-    <div id="state-main" style="display:none;">
-      <div class="card-banner" id="main-banner">
-        <div class="banner-title">📋 Rate Confirmation</div>
-        <div class="banner-sub" id="main-load-info">Loading...</div>
-      </div>
-      <div class="card-body">
-        <div class="section-title">Shipment Details</div>
-        <div id="load-details"></div>
-
-        <div id="rate-section" class="rate-box">
-          <div>
-            <div class="rate-label">Your Rate (Carrier Pay)</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">All-in for this load</div>
-          </div>
-          <div class="rate-value" id="load-rate">—</div>
-        </div>
-
-        <div class="accept-section">
-          <div class="accept-title">✍️ Accept Rate Confirmation</div>
-          <p style="font-size:13px;color:#047857;margin-bottom:16px;line-height:1.5;">
-            By signing below, you agree to transport the above shipment at the stated rate and in accordance with all applicable regulations.
-          </p>
-          <div class="input-group">
-            <label>Your Full Name *</label>
-            <input type="text" id="signer-name" placeholder="John Smith"/>
-          </div>
-          <div class="input-group">
-            <label>Your Title / Role</label>
-            <input type="text" id="signer-title" placeholder="Dispatcher / Owner Operator"/>
-          </div>
-          <button class="accept-btn" onclick="acceptRateCon()" id="accept-btn">
-            ✅ I Accept This Rate Confirmation
-          </button>
-          <div class="terms">
-            By clicking Accept, you confirm that you have the authority to accept this load on behalf of your company and agree to transport the freight as described above at the stated rate. This constitutes a legally binding agreement.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Success state -->
-    <div id="state-success" style="display:none;">
-      <div class="card-banner accepted">
-        <div class="banner-title">✅ Rate Confirmation Accepted!</div>
-        <div class="banner-sub" id="success-load-info"></div>
-      </div>
-      <div class="card-body">
-        <div class="accepted-banner">
-          <div class="accepted-icon">🎉</div>
-          <div class="accepted-title">You're Confirmed!</div>
-          <div class="accepted-sub" id="success-details">Your acceptance has been recorded and the broker has been notified.</div>
-        </div>
-        <div id="success-load-details" style="margin-top:20px;"></div>
+      <button class="btn-accept" id="accept-btn" onclick="acceptLoad()">
+        ✅ Accept Rate Confirmation
+      </button>
+      <button class="btn-decline" id="decline-btn" onclick="declineLoad()">
+        ✗ Decline This Load
+      </button>
+      <div class="terms">
+        By clicking Accept, you agree to haul this load in full compliance with all DOT regulations.
+        Payment will be processed upon receipt of signed BOL and POD.
+        Do not re-broker without prior written consent.
       </div>
     </div>
   </div>
 </div>
 
-<footer>
-  Powered by <a href="https://freightflowhq.com">FreightFlowHQ</a> — The Modern TMS for Freight Brokers
-</footer>
-
 <script>
 const SUPABASE_URL = 'https://vbkxsenqnjvdmaabsnmz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZia3hzZW5xbmp2ZG1hYWJzbm16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njk0MTgsImV4cCI6MjA5MDU0NTQxOH0.8vjyfNvirR2dOIroCBddpeULuA9GTnPi08DS8AtUFZk';
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let tokenData = null;
+// Parse URL params
+const params = new URLSearchParams(window.location.search);
+const loadId = params.get('load');
+const carrierId = params.get('carrier');
+const token = params.get('token');
+
 let loadData = null;
 
-function showState(state) {
-  ['loading','error','already-accepted','main','success'].forEach(s => {
-    const el = document.getElementById('state-' + s);
-    if(el) el.style.display = s === state ? 'block' : 'none';
-  });
-}
-
 function fmt$(n) {
-  return '$' + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(!n && n !== 0) return '—';
+  return '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
 }
-
 function fmtDate(d) {
   if(!d) return '—';
-  return new Date(d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  return new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+function setEl(id, val) {
+  const el = document.getElementById(id);
+  if(el) el.textContent = val;
+}
+function showStatus(type, icon, title, sub) {
+  const banner = document.getElementById('status-banner');
+  banner.className = 'status-banner ' + type;
+  const colors = {success:'#065F46', error:'#991B1B', already:'#92400E', loading:'#1E40AF'};
+  banner.innerHTML = `<div class="status-icon">${icon}</div><div class="status-title" style="color:${colors[type]||'#1E40AF'}">${title}</div><div class="status-sub">${sub}</div>`;
 }
 
 async function init() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
-
-  if(!token) { showState('error'); return; }
-
-  try {
-    // Look up token
-    const { data: tokenRecord, error: tokenError } = await db
-      .from('ratecon_tokens')
-      .select('*, loads(*)')
-      .eq('token', token)
-      .single();
-
-    if(tokenError || !tokenRecord) { showState('error'); return; }
-
-    // Check expiry
-    if(new Date(tokenRecord.expires_at) < new Date()) { showState('error'); return; }
-
-    tokenData = tokenRecord;
-    loadData = tokenRecord.loads;
-
-    // Already accepted?
-    if(tokenRecord.accepted) {
-      document.getElementById('accepted-load-info').textContent =
-        'Load #' + loadData.load_number + ' · ' + (loadData.origin_city||'') + ' → ' + (loadData.destination_city||'');
-      document.getElementById('accepted-details').textContent =
-        'Accepted by ' + tokenRecord.accepted_by_name + ' on ' +
-        new Date(tokenRecord.accepted_at).toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      showState('already-accepted');
-      return;
-    }
-
-    // Show main form
-    document.getElementById('main-load-info').textContent =
-      'Load #' + loadData.load_number + ' · ' + (loadData.origin_city||'') + ', ' + (loadData.origin_state||'') + ' → ' + (loadData.destination_city||'') + ', ' + (loadData.destination_state||'');
-
-    const details = [
-      ['Load Number', loadData.load_number],
-      ['Origin', (loadData.origin_city||'—') + ', ' + (loadData.origin_state||'')],
-      ['Destination', (loadData.destination_city||'—') + ', ' + (loadData.destination_state||'')],
-      ['Equipment', loadData.equipment_type||'—'],
-      ['Pickup Date', fmtDate(loadData.pickup_date)],
-      ['Delivery Date', fmtDate(loadData.delivery_date)],
-      loadData.commodity ? ['Commodity', loadData.commodity] : null,
-      loadData.weight ? ['Weight', Number(loadData.weight).toLocaleString() + ' lbs'] : null,
-      loadData.reference_number ? ['Reference #', loadData.reference_number] : null,
-    ].filter(Boolean);
-
-    document.getElementById('load-details').innerHTML = details.map(([label, value]) =>
-      `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`
-    ).join('');
-
-    document.getElementById('load-rate').textContent = fmt$(loadData.carrier_pay);
-    showState('main');
-
-  } catch(e) {
-    console.error(e);
-    showState('error');
-  }
-}
-
-async function acceptRateCon() {
-  const name = document.getElementById('signer-name')?.value?.trim();
-  const title = document.getElementById('signer-title')?.value?.trim();
-
-  if(!name) {
-    document.getElementById('signer-name').style.borderColor = '#EF4444';
-    document.getElementById('signer-name').focus();
+  if(!loadId || !carrierId) {
+    showStatus('error', '❌', 'Invalid Link', 'This rate confirmation link is missing required information. Please contact your dispatcher for a new link.');
     return;
   }
 
-  const btn = document.getElementById('accept-btn');
-  btn.disabled = true;
-  btn.textContent = 'Processing...';
-
-  try {
-    const now = new Date().toISOString();
-
-    // Mark token as accepted
-    await db.from('ratecon_tokens').update({
-      accepted: true,
-      accepted_at: now,
-      accepted_by_name: name + (title ? ' — ' + title : ''),
-    }).eq('id', tokenData.id);
-
-    // Update load status to Assigned if still Available
-    if(loadData.status === 'Available') {
-      await db.from('loads').update({status: 'Assigned'}).eq('id', loadData.id);
-    }
-
-    // Log event
-    await db.from('load_events').insert({
-      load_id: loadData.id,
-      event_type: 'ratecon_accepted',
-      event_description: '✅ Rate confirmation accepted by ' + name + (title ? ' (' + title + ')' : ''),
-      performed_by_name: name,
-      metadata: { accepted_by: name, title, accepted_at: now },
-    });
-
-    // Notify broker via Resend if API key is set
-    const { data: settings } = await db.from('company_settings').select('resend_api_key').limit(1).single();
-    if(settings?.resend_api_key) {
-      // Get broker email from load's assigned_to
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + settings.resend_api_key, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'FreightFlowHQ Notifications <noreply@freightflowhq.com>',
-          to: ['aroberts.ar31@gmail.com'], // TODO: use assigned broker email
-          subject: '✅ Rate Con Accepted — ' + loadData.load_number,
-          html: `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px;">
-            <h2 style="color:#10B981;">✅ Rate Confirmation Accepted!</h2>
-            <p><strong>${name}</strong>${title?' ('+title+')':''} has accepted the rate confirmation for Load #${loadData.load_number}.</p>
-            <p><strong>Route:</strong> ${loadData.origin_city||''}, ${loadData.origin_state||''} → ${loadData.destination_city||''}, ${loadData.destination_state||''}</p>
-            <p><strong>Carrier Pay:</strong> ${fmt$(loadData.carrier_pay)}</p>
-            <p><strong>Accepted at:</strong> ${new Date(now).toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}</p>
-            <p style="color:#64748b;font-size:12px;">Log in to FreightFlowHQ to view the load details.</p>
-          </div>`,
-        }),
-      });
-    }
-
-    // Show success
-    document.getElementById('success-load-info').textContent =
-      'Load #' + loadData.load_number + ' · ' + (loadData.origin_city||'') + ' → ' + (loadData.destination_city||'');
-    document.getElementById('success-details').textContent =
-      'Accepted by ' + name + ' at ' + new Date(now).toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
-
-    const successDetails = [
-      ['Load Number', loadData.load_number],
-      ['Route', (loadData.origin_city||'') + ', ' + (loadData.origin_state||'') + ' → ' + (loadData.destination_city||'') + ', ' + (loadData.destination_state||'')],
-      ['Pickup', fmtDate(loadData.pickup_date)],
-      ['Carrier Pay', fmt$(loadData.carrier_pay)],
-      ['Accepted By', name + (title ? ' — ' + title : '')],
-      ['Accepted At', new Date(now).toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})],
-    ];
-
-    document.getElementById('success-load-details').innerHTML =
-      '<div class="section-title">Confirmation Summary</div>' +
-      successDetails.map(([label, value]) =>
-        `<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value}</span></div>`
-      ).join('');
-
-    showState('success');
-
-  } catch(e) {
-    console.error(e);
-    btn.disabled = false;
-    btn.textContent = '✅ I Accept This Rate Confirmation';
-    alert('Something went wrong. Please try again or contact your broker.');
+  // Validate token
+  const expectedToken = btoa(loadId + carrierId).replace(/=/g, '');
+  if(token !== expectedToken) {
+    showStatus('error', '❌', 'Invalid Token', 'This link appears to be invalid or has been tampered with. Please contact your dispatcher.');
+    return;
   }
+
+  // Fetch load from Supabase
+  const { data: load, error } = await db
+    .from('loads')
+    .select('*, carriers(name, email, mc_number)')
+    .eq('id', loadId)
+    .single();
+
+  if(error || !load) {
+    showStatus('error', '❌', 'Load Not Found', 'We could not find this load. It may have been cancelled or removed. Please contact your dispatcher.');
+    return;
+  }
+
+  loadData = load;
+
+  // Check if already accepted
+  if(load.status === 'Assigned') {
+    showStatus('already', '✅', 'Already Accepted', `This rate confirmation for load ${load.load_number} has already been accepted. No further action needed.`);
+    document.getElementById('rc-num').textContent = 'RC-' + load.load_number;
+    return;
+  }
+
+  // Check if load was cancelled or no longer pending
+  if(load.status !== 'Pending Acceptance') {
+    showStatus('error', '⚠️', 'Rate Con No Longer Active', `This load (${load.load_number}) is currently "${load.status}" and is no longer awaiting acceptance. Please contact your dispatcher.`);
+    document.getElementById('rc-num').textContent = 'RC-' + load.load_number;
+    return;
+  }
+
+  // Show load details
+  document.getElementById('rc-num').textContent = 'RC-' + load.load_number;
+  setEl('d-load-num', load.load_number);
+  setEl('d-origin', (load.origin_city || '—') + ', ' + (load.origin_state || ''));
+  setEl('d-dest', (load.destination_city || '—') + ', ' + (load.destination_state || ''));
+  setEl('d-pickup', fmtDate(load.pickup_date));
+  setEl('d-delivery', fmtDate(load.delivery_date));
+  setEl('d-equip', load.equipment_type || '—');
+  setEl('d-commodity', load.commodity || 'General Freight');
+  setEl('d-weight', load.weight ? Number(load.weight).toLocaleString() + ' lbs' : '—');
+  setEl('d-pay', fmt$(load.carrier_pay));
+
+  // Hide loading banner, show load section
+  document.getElementById('status-banner').style.display = 'none';
+  document.getElementById('load-section').style.display = 'block';
 }
 
-// Update buildRateConEmailHTML to include acceptance link
-// This gets called from app.html context
-window.addEventListener('load', init);
+async function acceptLoad() {
+  const btn = document.getElementById('accept-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Accepting…';
+
+  const { error } = await db
+    .from('loads')
+    .update({ status: 'Assigned', carrier_accepted_at: new Date().toISOString() })
+    .eq('id', loadId)
+    .eq('status', 'Pending Acceptance'); // Safety check
+
+  if(error) {
+    btn.disabled = false;
+    btn.innerHTML = '✅ Accept Rate Confirmation';
+    showStatus('error', '❌', 'Something Went Wrong', 'We could not process your acceptance. Please try again or contact your dispatcher. Error: ' + error.message);
+    document.getElementById('load-section').style.display = 'none';
+    document.getElementById('status-banner').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('load-section').style.display = 'none';
+  document.getElementById('status-banner').style.display = 'block';
+  showStatus('success', '🎉', 'Rate Confirmation Accepted!',
+    `You have successfully accepted load ${loadData?.load_number}.\n\n` +
+    `${loadData?.origin_city}, ${loadData?.origin_state} → ${loadData?.destination_city}, ${loadData?.destination_state}\n\n` +
+    `Pickup: ${fmtDate(loadData?.pickup_date)}\n\nYour dispatcher has been notified. Drive safe! 🚛`
+  );
+}
+
+async function declineLoad() {
+  if(!confirm('Are you sure you want to decline this load? Your dispatcher will be notified.')) return;
+
+  const { error } = await db
+    .from('loads')
+    .update({ status: 'Available', carrier_id: null })
+    .eq('id', loadId);
+
+  if(error) {
+    alert('Error declining load: ' + error.message);
+    return;
+  }
+
+  document.getElementById('load-section').style.display = 'none';
+  document.getElementById('status-banner').style.display = 'block';
+  showStatus('error', '👋', 'Load Declined', `You have declined load ${loadData?.load_number}. Your dispatcher has been notified and will find another carrier.`);
+}
+
+// Init on page load
+init();
 </script>
 </body>
 </html>
