@@ -2,51 +2,62 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Rate Confirmation — FreightFlowHQ</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Outfit',sans-serif;background:#f0f4f8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-.card{background:white;border-radius:16px;width:100%;max-width:640px;box-shadow:0 8px 40px rgba(0,0,0,0.12);overflow:hidden;}
-.header{background:#1B2A4A;padding:24px 28px;display:flex;justify-content:space-between;align-items:center;}
-.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:white;}
+body{font-family:'Outfit',sans-serif;background:#f0f4f8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;}
+.card{background:white;border-radius:16px;width:100%;max-width:600px;box-shadow:0 4px 24px rgba(0,0,0,0.10);overflow:hidden;margin-bottom:20px;}
+.header{background:#1B2A4A;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:white;}
 .logo span{color:#60A5FA;}
-.rc-label{font-size:13px;font-weight:600;color:#94a3b8;text-align:right;}
+.rc-label{font-size:12px;font-weight:600;color:#94a3b8;text-align:right;}
 .rc-num{font-size:11px;color:#64748b;margin-top:2px;}
-.body{padding:28px;}
-.status-banner{border-radius:12px;padding:20px 24px;margin-bottom:24px;text-align:center;}
+.body{padding:20px;}
+.status-banner{border-radius:12px;padding:20px;margin-bottom:20px;text-align:center;}
 .status-banner.loading{background:#EFF6FF;border:2px solid #BFDBFE;}
 .status-banner.success{background:#ECFDF5;border:2px solid #A7F3D0;}
 .status-banner.error{background:#FEF2F2;border:2px solid #FECACA;}
 .status-banner.already{background:#FFFBEB;border:2px solid #FDE68A;}
-.status-icon{font-size:48px;margin-bottom:12px;}
-.status-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;margin-bottom:8px;}
-.status-sub{font-size:14px;color:#64748b;line-height:1.6;white-space:pre-line;}
-.load-details{background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid #e2e8f0;}
-.load-details-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:14px;}
-.detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e2e8f0;font-size:13px;}
+.status-icon{font-size:44px;margin-bottom:10px;}
+.status-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px;}
+.status-sub{font-size:13px;color:#64748b;line-height:1.7;white-space:pre-line;}
+.section{background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;}
+.section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:10px;}
+.detail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid #e2e8f0;font-size:13px;gap:8px;}
 .detail-row:last-child{border-bottom:none;}
-.detail-label{color:#64748b;}
-.detail-val{font-weight:600;color:#1B2A4A;text-align:right;}
-.pay-box{background:#1B2A4A;border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.detail-label{color:#64748b;flex-shrink:0;}
+.detail-val{font-weight:600;color:#1B2A4A;text-align:right;word-break:break-word;}
+.pay-box{background:#1B2A4A;border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
 .pay-label{color:#94a3b8;font-size:13px;font-weight:600;}
 .pay-sub{color:#64748b;font-size:11px;margin-top:2px;}
-.pay-amount{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:#60A5FA;}
-.btn-accept{width:100%;background:#16a34a;color:white;border:none;border-radius:12px;padding:16px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;}
-.btn-accept:hover{background:#15803d;transform:translateY(-1px);box-shadow:0 4px 20px rgba(22,163,74,0.3);}
-.btn-accept:disabled{opacity:0.6;cursor:not-allowed;transform:none;box-shadow:none;}
-.btn-decline{width:100%;background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:12px;padding:12px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;}
-.btn-decline:hover{background:#fef2f2;}
-.btn-decline:disabled{opacity:0.4;cursor:not-allowed;}
-.terms{font-size:11px;color:#94a3b8;text-align:center;margin-top:16px;line-height:1.7;padding:0 8px;}
-.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
+.pay-amount{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:#60A5FA;}
+.btn-accept{width:100%;background:#16a34a;color:white;border:none;border-radius:12px;padding:18px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:700;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;-webkit-tap-highlight-color:transparent;}
+.btn-accept:active{background:#15803d;transform:scale(0.98);}
+.btn-accept:disabled{opacity:0.6;cursor:not-allowed;}
+.btn-decline{width:100%;background:transparent;color:#ef4444;border:1px solid #fecaca;border-radius:12px;padding:14px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.btn-decline:active{background:#fef2f2;}
+.btn-decline:disabled{opacity:0.4;}
+.terms-box{background:#f8fafc;border-radius:10px;padding:14px;border:1px solid #e2e8f0;margin-top:12px;}
+.terms-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b;margin-bottom:10px;}
+.terms-item{display:flex;gap:8px;padding:5px 0;font-size:11px;color:#475569;line-height:1.6;border-bottom:1px solid #f1f5f9;}
+.terms-item:last-child{border-bottom:none;}
+.terms-item .ti{flex-shrink:0;font-size:13px;}
+.spinner{width:22px;height:22px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.debug-info{margin-top:12px;padding:10px;background:#f1f5f9;border-radius:8px;font-size:11px;color:#64748b;font-family:monospace;text-align:left;word-break:break-all;}
+@media(max-width:400px){
+  .header{padding:16px;}
+  .logo{font-size:18px;}
+  .body{padding:14px;}
+  .pay-amount{font-size:24px;}
+  .btn-accept{font-size:16px;padding:16px;}
+}
 </style>
 </head>
 <body>
+
 <div class="card">
   <div class="header">
     <div class="logo">Freight<span>FlowHQ</span></div>
@@ -58,166 +69,140 @@ body{font-family:'Outfit',sans-serif;background:#f0f4f8;min-height:100vh;display
   <div class="body">
     <div class="status-banner loading" id="status-banner">
       <div class="status-icon">⏳</div>
-      <div class="status-title" style="color:#1E40AF;">Loading Rate Confirmation…</div>
-      <div class="status-sub">Please wait while we retrieve the load details.</div>
+      <div class="status-title" style="color:#1E40AF;">Loading…</div>
+      <div class="status-sub">Retrieving load details.</div>
     </div>
+
     <div id="load-section" style="display:none;">
-      <div class="load-details">
-        <div class="load-details-title">📦 Shipment Details</div>
+      <!-- Route highlight -->
+      <div style="background:linear-gradient(135deg,#1B2A4A,#2563EB);border-radius:12px;padding:16px;margin-bottom:14px;color:white;text-align:center;">
+        <div style="font-size:11px;color:#93c5fd;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Your Load</div>
+        <div style="font-size:18px;font-weight:700;" id="d-route">— → —</div>
+        <div style="font-size:12px;color:#93c5fd;margin-top:4px;" id="d-dates">Pickup: — · Delivery: —</div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📦 Shipment Details</div>
         <div class="detail-row"><span class="detail-label">Load #</span><span class="detail-val" id="d-load-num">—</span></div>
-        <div class="detail-row"><span class="detail-label">Origin</span><span class="detail-val" id="d-origin">—</span></div>
-        <div class="detail-row"><span class="detail-label">Destination</span><span class="detail-val" id="d-dest">—</span></div>
-        <div class="detail-row"><span class="detail-label">Pickup</span><span class="detail-val" id="d-pickup">—</span></div>
-        <div class="detail-row"><span class="detail-label">Delivery</span><span class="detail-val" id="d-delivery">—</span></div>
         <div class="detail-row"><span class="detail-label">Equipment</span><span class="detail-val" id="d-equip">—</span></div>
         <div class="detail-row"><span class="detail-label">Commodity</span><span class="detail-val" id="d-commodity">—</span></div>
         <div class="detail-row"><span class="detail-label">Weight</span><span class="detail-val" id="d-weight">—</span></div>
       </div>
+
       <div class="pay-box">
-        <div><div class="pay-label">ALL-IN CARRIER PAY</div><div class="pay-sub">Upon receipt of signed BOL & POD</div></div>
+        <div>
+          <div class="pay-label">ALL-IN CARRIER PAY</div>
+          <div class="pay-sub">Upon receipt of BOL & POD</div>
+        </div>
         <div class="pay-amount" id="d-pay">—</div>
       </div>
+
       <button class="btn-accept" id="accept-btn" onclick="acceptLoad()">✅ Accept Rate Confirmation</button>
       <button class="btn-decline" id="decline-btn" onclick="declineLoad()">✗ Decline This Load</button>
-      <div class="terms">By clicking Accept, you agree to transport this shipment in full compliance with all applicable DOT regulations. Payment will be processed upon receipt of signed BOL and POD. Do not re-broker this load without prior written consent from the broker.</div>
+
+      <div class="terms-box">
+        <div class="terms-title">Key Terms — Read Before Accepting</div>
+        <div class="terms-item"><span class="ti">🚫</span><span><strong>No re-brokering</strong> without prior written consent.</span></div>
+        <div class="terms-item"><span class="ti">🛡️</span><span><strong>Insurance:</strong> Min. $1M auto liability, $100K cargo required.</span></div>
+        <div class="terms-item"><span class="ti">📦</span><span><strong>Full cargo liability</strong> under Carmack Amendment (49 U.S.C. § 14706).</span></div>
+        <div class="terms-item"><span class="ti">⏱️</span><span><strong>Detention:</strong> 2 hours free time. Pre-approval required to bill.</span></div>
+        <div class="terms-item"><span class="ti">💰</span><span><strong>Payment</strong> upon receipt of signed BOL + POD. Submit within 180 days.</span></div>
+        <div class="terms-item"><span class="ti">✅</span><span>Accepting constitutes agreement to all terms and any Broker-Carrier Agreement on file.</span></div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-const SUPABASE_URL = 'https://vbkxsenqnjvdmaabsnmz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZia3hzZW5xbmp2ZG1hYWJzbm16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njk0MTgsImV4cCI6MjA5MDU0NTQxOH0.8vjyfNvirR2dOIroCBddpeULuA9GTnPi08DS8AtUFZk';
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL='https://vbkxsenqnjvdmaabsnmz.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZia3hzZW5xbmp2ZG1hYWJzbm16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njk0MTgsImV4cCI6MjA5MDU0NTQxOH0.8vjyfNvirR2dOIroCBddpeULuA9GTnPi08DS8AtUFZk';
+const{createClient}=supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const params = new URLSearchParams(window.location.search);
-const loadId = params.get('load');
-const carrierId = params.get('carrier');
-const token = params.get('token');
-
-let loadData = null;
+const params=new URLSearchParams(window.location.search);
+const loadId=params.get('load');
+const carrierId=params.get('carrier');
+let loadData=null;
 
 function fmt$(n){if(!n&&n!==0)return'—';return'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fmtDate(d){if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
 function setEl(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'—';}
 
-function showStatus(type, icon, title, sub) {
-  const banner = document.getElementById('status-banner');
-  const colors = {success:'#065F46',error:'#991B1B',already:'#92400E',loading:'#1E40AF'};
-  banner.className = 'status-banner ' + type;
-  banner.style.display = 'block';
-  banner.innerHTML = `<div class="status-icon">${icon}</div><div class="status-title" style="color:${colors[type]||'#1E40AF'}">${title}</div><div class="status-sub">${sub}</div>`;
-  document.getElementById('load-section').style.display = 'none';
+function showStatus(type,icon,title,sub){
+  const banner=document.getElementById('status-banner');
+  const colors={success:'#065F46',error:'#991B1B',already:'#92400E',loading:'#1E40AF'};
+  banner.className='status-banner '+type;
+  banner.style.display='block';
+  banner.innerHTML=`<div class="status-icon">${icon}</div><div class="status-title" style="color:${colors[type]||'#1E40AF'}">${title}</div><div class="status-sub">${sub}</div>`;
+  document.getElementById('load-section').style.display='none';
 }
 
-async function init() {
-  console.log('Accept page init — loadId:', loadId, 'carrierId:', carrierId, 'token:', token);
+async function init(){
+  console.log('Accept page — loadId:',loadId,'carrierId:',carrierId);
+  if(!loadId||!carrierId){showStatus('error','❌','Invalid Link','This rate confirmation link is missing required information. Please contact your dispatcher.');return;}
 
-  if(!loadId || !carrierId) {
-    showStatus('error','❌','Invalid Link','This rate confirmation link is missing required information. Please contact your dispatcher for a new link.');
-    return;
-  }
+  const{data:load,error}=await db.from('loads').select('*, carriers(name,email,mc_number,phone)').eq('id',loadId).single();
+  console.log('Load:',load?.load_number,'Status:',load?.status,'Error:',error?.message);
 
-  // Fetch load — no token validation (token is just a basic anti-tamper check, not security critical)
-  const { data: load, error } = await db
-    .from('loads')
-    .select('*, carriers(name, email, mc_number, phone)')
-    .eq('id', loadId)
-    .single();
+  if(error||!load){showStatus('error','❌','Load Not Found',`We could not find this load.\n\nIt may have been cancelled or the link expired.\n\nError: ${error?.message||'Not found'}`);return;}
 
-  console.log('Load fetch result:', load?.load_number, '| Status:', load?.status, '| Error:', error?.message);
+  loadData=load;
+  document.getElementById('rc-num').textContent='RC-'+load.load_number;
 
-  if(error || !load) {
-    showStatus('error','❌','Load Not Found',`We could not find this load in our system.\n\nIt may have been cancelled or the link may be expired.\n\nPlease contact your dispatcher.\n\nError: ${error?.message||'Not found'}`);
-    return;
-  }
+  if(load.status==='Assigned'){showStatus('already','✅','Already Accepted!',`Load ${load.load_number} has already been accepted.\n\n${load.origin_city}, ${load.origin_state} → ${load.destination_city}, ${load.destination_state}\n\nNo further action needed. Drive safe! 🚛`);return;}
+  if(load.status==='Available'){showStatus('error','⚠️','No Longer Available',`This load (${load.load_number}) is no longer pending acceptance.\n\nPlease contact your dispatcher.`);return;}
 
-  loadData = load;
-  document.getElementById('rc-num').textContent = 'RC-' + load.load_number;
+  // Populate fields
+  setEl('d-route',`${load.origin_city||'—'}, ${load.origin_state||''} → ${load.destination_city||'—'}, ${load.destination_state||''}`);
+  setEl('d-dates',`Pickup: ${fmtDate(load.pickup_date)} · Delivery: ${fmtDate(load.delivery_date)}`);
+  setEl('d-load-num',load.load_number);
+  setEl('d-equip',load.equipment_type||'Dry Van');
+  setEl('d-commodity',load.commodity||'General Freight');
+  setEl('d-weight',load.weight?Number(load.weight).toLocaleString()+' lbs':'—');
+  document.getElementById('d-pay').textContent=fmt$(load.carrier_pay);
 
-  if(load.status === 'Assigned') {
-    showStatus('already','✅','Already Accepted!',`Load ${load.load_number} has already been accepted.\n\n${load.origin_city}, ${load.origin_state} → ${load.destination_city}, ${load.destination_state}\n\nNo further action is needed. Drive safe!`);
-    return;
-  }
-
-  if(load.status === 'Available') {
-    showStatus('error','⚠️','Load No Longer Available',`This load (${load.load_number}) is no longer pending your acceptance — it may have been reassigned or cancelled.\n\nPlease contact your dispatcher.`);
-    return;
-  }
-
-  // Show load details
-  setEl('d-load-num', load.load_number);
-  setEl('d-origin', `${load.origin_city||'—'}, ${load.origin_state||''}`);
-  setEl('d-dest', `${load.destination_city||'—'}, ${load.destination_state||''}`);
-  setEl('d-pickup', fmtDate(load.pickup_date));
-  setEl('d-delivery', fmtDate(load.delivery_date));
-  setEl('d-equip', load.equipment_type || 'Dry Van');
-  setEl('d-commodity', load.commodity || 'General Freight');
-  setEl('d-weight', load.weight ? Number(load.weight).toLocaleString() + ' lbs' : '—');
-  document.getElementById('d-pay').textContent = fmt$(load.carrier_pay);
-
-  document.getElementById('status-banner').style.display = 'none';
-  document.getElementById('load-section').style.display = 'block';
+  document.getElementById('status-banner').style.display='none';
+  document.getElementById('load-section').style.display='block';
 }
 
-async function acceptLoad() {
-  const acceptBtn = document.getElementById('accept-btn');
-  const declineBtn = document.getElementById('decline-btn');
-  acceptBtn.disabled = true;
-  declineBtn.disabled = true;
-  acceptBtn.innerHTML = '<div class="spinner"></div> Processing…';
+async function acceptLoad(){
+  const acceptBtn=document.getElementById('accept-btn');
+  const declineBtn=document.getElementById('decline-btn');
+  acceptBtn.disabled=true;
+  declineBtn.disabled=true;
+  acceptBtn.innerHTML='<div class="spinner"></div> Processing…';
 
-  console.log('Accepting load:', loadId);
+  console.log('Accepting load:',loadId);
+  const{data,error}=await db.from('loads').update({status:'Assigned',carrier_accepted_at:new Date().toISOString()}).eq('id',loadId).select();
+  console.log('Result:',data,'Error:',error?.message);
 
-  const { data, error } = await db
-    .from('loads')
-    .update({
-      status: 'Assigned',
-      carrier_accepted_at: new Date().toISOString()
-    })
-    .eq('id', loadId)
-    .select();
-
-  console.log('Accept result:', data, 'Error:', error?.message);
-
-  if(error) {
-    acceptBtn.disabled = false;
-    declineBtn.disabled = false;
-    acceptBtn.innerHTML = '✅ Accept Rate Confirmation';
-    showStatus('error','❌','Something Went Wrong',`We could not process your acceptance. Please try again.\n\nError: ${error.message}\n\nOr contact your dispatcher directly.`);
-    document.getElementById('status-banner').style.display = 'block';
-    document.getElementById('load-section').style.display = 'none';
+  if(error){
+    acceptBtn.disabled=false;
+    declineBtn.disabled=false;
+    acceptBtn.innerHTML='✅ Accept Rate Confirmation';
+    showStatus('error','❌','Something Went Wrong',`Could not process acceptance.\n\nError: ${error.message}\n\nPlease try again or contact your dispatcher.`);
+    document.getElementById('status-banner').style.display='block';
+    document.getElementById('load-section').style.display='none';
     return;
   }
 
   showStatus('success','🎉','Rate Confirmation Accepted!',
-    `You have successfully accepted load ${loadData?.load_number}!\n\n` +
-    `📍 ${loadData?.origin_city}, ${loadData?.origin_state} → ${loadData?.destination_city}, ${loadData?.destination_state}\n\n` +
-    `📅 Pickup: ${fmtDate(loadData?.pickup_date)}\n\n` +
+    `You have successfully accepted load ${loadData?.load_number}!\n\n`+
+    `📍 ${loadData?.origin_city}, ${loadData?.origin_state} → ${loadData?.destination_city}, ${loadData?.destination_state}\n\n`+
+    `📅 Pickup: ${fmtDate(loadData?.pickup_date)}\n\n`+
     `Your dispatcher has been notified. Drive safe! 🚛`
   );
 }
 
-async function declineLoad() {
-  if(!confirm('Are you sure you want to decline this load? Your dispatcher will be notified.')) return;
+async function declineLoad(){
+  if(!confirm('Decline this load? Your dispatcher will be notified.'))return;
+  const declineBtn=document.getElementById('decline-btn');
+  const acceptBtn=document.getElementById('accept-btn');
+  declineBtn.disabled=true;
+  acceptBtn.disabled=true;
 
-  const declineBtn = document.getElementById('decline-btn');
-  const acceptBtn = document.getElementById('accept-btn');
-  declineBtn.disabled = true;
-  acceptBtn.disabled = true;
-
-  console.log('Declining load:', loadId);
-
-  const { error } = await db
-    .from('loads')
-    .update({ status: 'Available', carrier_id: null })
-    .eq('id', loadId);
-
-  console.log('Decline error:', error?.message);
-
-  showStatus('error','👋','Load Declined',
-    `You have declined load ${loadData?.load_number}.\n\nYour dispatcher has been notified and will find another carrier.\n\nThank you for letting us know promptly.`
-  );
+  const{error}=await db.from('loads').update({status:'Available',carrier_id:null}).eq('id',loadId);
+  showStatus('error','👋','Load Declined',`You have declined load ${loadData?.load_number}.\n\nYour dispatcher has been notified and will find another carrier.\n\nThank you for letting us know promptly.`);
 }
 
 init();
