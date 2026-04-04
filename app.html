@@ -2253,7 +2253,13 @@ async function sendTender() {
 
   const carrier = allCarriers.find(c => c.id === carrierId);
   const l = allLoads.find(x => x.id === currentDetailLoadId);
-  if(!carrier?.email) { toast('⚠️ This carrier has no email on file — add one in Carrier settings first.', 'error'); return; }
+
+  if(!carrier?.email) {
+    toast('⚠️ No email on file for this carrier — add one in Carriers first', 'error');
+    return;
+  }
+
+  toast('Sending rate confirmation…', 'info');
 
   // Update load to Pending Acceptance
   const {error} = await db.from('loads').update({
@@ -2264,12 +2270,11 @@ async function sendTender() {
     truck_number: truck || null,
     status: 'Pending Acceptance',
   }).eq('id', currentDetailLoadId);
-  if(error) { toast('Error: ' + error.message, 'error'); return; }
+  if(error) { toast('DB Error: ' + error.message, 'error'); return; }
 
-  // Get company settings + Resend API key (single query)
+  // Get company settings
   const { data: settings } = await db.from('company_settings').select('*').limit(1);
   const s = settings?.[0] || {};
-  const resendKey = s.resend_api_key;
   // Note: resendKey is handled server-side in the edge function
 
   // Build rate con HTML email
@@ -2284,7 +2289,7 @@ async function sendTender() {
     <div style="text-align:right;"><div style="font-size:16px;font-weight:700;color:white;">RATE CONFIRMATION</div><div style="font-size:12px;color:#94a3b8;">${rcNum} · ${today}</div></div>
   </div>
   <div style="padding:24px;">
-    <p style="font-size:15px;color:#1B2A4A;margin-bottom:20px;">Hi <strong>${carrier.contact_name||carrier.name}</strong>,<br><br>Please review and accept the rate confirmation below for the following load:</p>
+    <p style="font-size:15px;color:#1B2A4A;margin-bottom:20px;">Hi <strong>${carrier.contact_name||carrier.name}</strong>,<br><br>Please review and accept the rate confirmation below:</p>
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr style="background:#f8fafc;"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">LOAD #</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:700;color:#1B2A4A;">${l.load_number}</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">EQUIPMENT</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.equipment_type||'Dry Van'}</td></tr>
       <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">ORIGIN</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.origin_city||'—'}, ${l.origin_state||''}</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">PICKUP</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.pickup_date?new Date(l.pickup_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</td></tr>
@@ -2299,33 +2304,40 @@ async function sendTender() {
     <div style="text-align:center;margin-bottom:20px;">
       <a href="${window.location.origin}/accept.html?load=${l.id}&carrier=${carrierId}&token=${btoa(l.id+carrierId).replace(/=/g,'')}" style="display:inline-block;background:#2563EB;color:white;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;">✅ Accept Rate Confirmation →</a>
     </div>
-    <p style="font-size:12px;color:#64748b;text-align:center;">By clicking accept, you agree to haul this load under the terms stated. If you have questions, reply to this email or call ${s.phone||'your dispatcher'}.</p>
+    <p style="font-size:12px;color:#64748b;text-align:center;">Questions? Reply to this email or call ${s.phone||'your dispatcher'}.</p>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-    <p style="font-size:11px;color:#94a3b8;text-align:center;">${s.company_name||'FreightFlowHQ'} · MC# ${s.mc_number||'—'} · ${s.dispatch_email||''}</p>
+    <p style="font-size:11px;color:#94a3b8;text-align:center;">${s.company_name||'FreightFlowHQ'} · MC# ${s.mc_number||'—'}</p>
   </div>
 </div></body></html>`;
 
-  // Send via Supabase Edge Function (avoids CORS issue with direct Resend calls)
-  const resp = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-    },
-    body: JSON.stringify({
-      to: carrier.email,
-      subject: `Rate Confirmation — ${l.load_number} · ${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}`,
-      html: emailHtml,
-      from: 'FreightFlowHQ <onboarding@resend.dev>',
-    })
-  });
+  // Call edge function
+  console.log('[FF] Calling send-email edge function for:', carrier.email);
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+      },
+      body: JSON.stringify({
+        to: carrier.email,
+        subject: `Rate Confirmation — ${l.load_number} · ${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}`,
+        html: emailHtml,
+        from: 'FreightFlowHQ <onboarding@resend.dev>',
+      })
+    });
 
-  const result = await resp.json();
-  if(!resp.ok || result.error) {
-    console.error('Email error:', result);
-    toast(`Load updated but email failed: ${result.error||'Check Resend API key in Supabase'}`, 'error');
-  } else {
-    toast(`Rate con emailed to ${carrier.email}! ✅ Load is Pending Acceptance.`, 'success');
+    const result = await resp.json();
+    console.log('[FF] Edge function response:', resp.status, JSON.stringify(result));
+
+    if(!resp.ok || result.error) {
+      toast(`Email failed: ${result.error || result.message || 'Unknown error — check console'}`, 'error');
+    } else {
+      toast(`✅ Rate con sent to ${carrier.email}! Load is Pending Acceptance.`, 'success');
+    }
+  } catch(fetchErr) {
+    console.error('[FF] Edge function fetch error:', fetchErr);
+    toast(`Network error calling edge function: ${fetchErr.message}`, 'error');
   }
 
   closeModal('tender');
