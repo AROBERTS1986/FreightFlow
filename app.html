@@ -296,6 +296,24 @@ textarea{resize:vertical;min-height:80px;}
 .admin-action-arrow{color:var(--text3);font-size:14px;}
 .user-info-card{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);}
 .user-info-avatar{width:44px;height:44px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;flex-shrink:0;}
+
+.dnl-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--red-dim);color:var(--red);border:1px solid var(--red);}
+.accessorial-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-bottom:6px;}
+.accessorial-row input{font-size:12px;padding:6px 10px;}
+.accessorial-row select{font-size:12px;padding:6px 8px;}
+.doc-upload-zone{border:2px dashed var(--border2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all 0.15s;}
+.doc-upload-zone:hover{border-color:var(--accent);background:var(--accent-dim);}
+.doc-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;}
+.doc-item-icon{font-size:18px;}
+.doc-item-name{flex:1;font-size:12px;font-weight:600;color:var(--text);}
+.doc-item-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.doc-status-pending{background:var(--amber-dim);color:var(--amber);}
+.doc-status-received{background:var(--green-dim);color:var(--green);}
+.detention-timer{background:var(--amber-dim);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.detention-time{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--amber);}
+.repower-banner{background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.load-template-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all 0.15s;}
+.load-template-item:hover{border-color:var(--accent);background:var(--accent-dim);}
 </style>
 </head>
 <body>
@@ -612,8 +630,27 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Carrier Pay ($)</label><input type="number" id="load-carrier-pay" placeholder="2250"/></div>
         <div class="form-group"><label>Assign Carrier</label><select id="load-carrier"><option value="">Unassigned</option></select></div>
         <div class="form-group"><label>Status</label><select id="load-status"><option>Available</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select></div>
-        <div class="form-group full"><label>Reference # / Notes</label><input type="text" id="load-ref" placeholder="Customer PO or reference number"/></div>
+        <div class="form-group"><label>BOL Number</label><input type="text" id="load-bol" placeholder="BOL-123456"/></div>
+        <div class="form-group"><label>PRO Number</label><input type="text" id="load-pro" placeholder="PRO-789012"/></div>
+        <div class="form-group full"><label>Customer PO / Reference #</label><input type="text" id="load-ref" placeholder="Customer PO or reference number"/></div>
       </div>
+      <div class="form-section-title" style="margin-top:8px;">🚛 Driver Info</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Driver Name</label><input type="text" id="load-driver-name" placeholder="John Smith"/></div>
+        <div class="form-group"><label>Driver Phone</label><input type="tel" id="load-driver-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>Truck # / Unit #</label><input type="text" id="load-truck-num" placeholder="T-4421"/></div>
+        <div class="form-group"><label>Trailer #</label><input type="text" id="load-trailer-num" placeholder="TR-8821"/></div>
+      </div>
+      <div class="form-section-title" style="margin-top:8px;">⚠️ Special Requirements</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Temp Range (°F)</label><input type="text" id="load-temp" placeholder="e.g. 34–38°F (reefer)"/></div>
+        <div class="form-group"><label>Dims (LxWxH)</label><input type="text" id="load-dims" placeholder="e.g. 48x8x8 ft"/></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="load-hazmat" style="width:auto;accent-color:var(--red);"/> Hazmat Load</label></div>
+        <div class="form-group"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="load-tsa" style="width:auto;accent-color:var(--accent);"/> TSA Certified Driver Required</label></div>
+      </div>
+      <div class="form-section-title" style="margin-top:8px;">💵 Accessorial Charges</div>
+      <div id="accessorial-list" style="margin-bottom:8px;"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addAccessorial()" style="width:100%;justify-content:center;">+ Add Accessorial</button>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('load')">Cancel</button><button class="btn btn-primary" onclick="saveLoad()">Save Load →</button></div>
   </div>
@@ -636,6 +673,38 @@ textarea{resize:vertical;min-height:80px;}
         <div class="form-group"><label>Safety Score</label><input type="number" id="carrier-safety" placeholder="95.0" min="0" max="100" step="0.1"/></div>
         <div class="form-group full"><label>Equipment Types (comma separated)</label><input type="text" id="carrier-equipment" placeholder="Dry Van, Reefer, Flatbed"/></div>
         <div class="form-group full"><label>Notes</label><textarea id="carrier-notes" placeholder="Any additional notes…"></textarea></div>
+        <div class="form-group full" style="background:var(--red-dim);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--red);letter-spacing:0;font-weight:600;">
+            <input type="checkbox" id="carrier-dnl" style="width:auto;accent-color:var(--red);cursor:pointer;"/> 🚫 Do Not Use (DNL) — Block this carrier
+          </label>
+          <input type="text" id="carrier-dnl-reason" placeholder="Reason (safety violation, cargo claim, etc.)" style="margin-top:8px;border-color:rgba(239,68,68,0.3);"/>
+        </div>
+        <div class="form-group full">
+          <label>Onboarding Status</label>
+          <select id="carrier-onboard-status">
+            <option value="Pending">Pending — Not yet onboarded</option>
+            <option value="W9 Received">W9 Received</option>
+            <option value="Insurance Verified">Insurance Verified</option>
+            <option value="Agreement Signed">Agreement Signed</option>
+            <option value="Active">✅ Fully Active</option>
+          </select>
+        </div>
+        <div class="form-group full" style="background:var(--red-dim);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:12px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--red);letter-spacing:0;font-weight:600;">
+            <input type="checkbox" id="carrier-dnl" style="width:auto;accent-color:var(--red);cursor:pointer;"/> 🚫 Do Not Use (DNL) — Block this carrier from being assigned
+          </label>
+          <input type="text" id="carrier-dnl-reason" placeholder="Reason (e.g. safety violation, cargo claim, etc.)" style="margin-top:8px;border-color:rgba(239,68,68,0.3);"/>
+        </div>
+        <div class="form-group full">
+          <label>Onboarding Status</label>
+          <select id="carrier-onboard-status">
+            <option value="Pending">Pending — Not yet onboarded</option>
+            <option value="W9 Received">W9 Received</option>
+            <option value="Insurance Verified">Insurance Verified</option>
+            <option value="Agreement Signed">Agreement Signed</option>
+            <option value="Active">✅ Fully Active</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('carrier')">Cancel</button><button class="btn btn-primary" onclick="saveCarrier()">Save Carrier →</button></div>
@@ -718,6 +787,80 @@ textarea{resize:vertical;min-height:80px;}
             <div class="detail-row"><span class="detail-label">MC #</span><span class="detail-val" id="d-mc">—</span></div>
             <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-val" id="d-carrier-phone">—</span></div>
           </div>
+        </div>
+      </div>
+      <!-- DETENTION TIMER -->
+      <div id="detention-section" style="display:none;margin-bottom:16px;">
+        <div class="detention-timer">
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:4px;">⏱️ Detention Clock</div>
+            <div id="detention-time" class="detention-time">00:00:00</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="detention-started">Started —</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="btn btn-primary btn-sm" onclick="startDetention()" id="detention-start-btn">▶ Start</button>
+            <button class="btn btn-ghost btn-sm" onclick="stopDetention()" id="detention-stop-btn" style="display:none;">⏹ Stop</button>
+            <div style="font-size:10px;color:var(--text3);text-align:right;">Free time: 2hrs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📎 Documents</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="markDocReceived('bol')" id="bol-btn" style="font-size:11px;">📄 BOL Received</button>
+            <button class="btn btn-ghost btn-sm" onclick="markDocReceived('pod')" id="pod-btn" style="font-size:11px;">✅ POD Received</button>
+          </div>
+        </div>
+        <div id="doc-list">
+          <div id="bol-status" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+            <span style="font-size:16px;">📄</span>
+            <span style="flex:1;font-size:12px;font-weight:600;color:var(--text);">Bill of Lading (BOL)</span>
+            <span id="bol-badge" class="doc-item-status doc-status-pending">Pending</span>
+          </div>
+          <div id="pod-status" style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+            <span style="font-size:16px;">✅</span>
+            <span style="flex:1;font-size:12px;font-weight:600;color:var(--text);">Proof of Delivery (POD)</span>
+            <span id="pod-badge" class="doc-item-status doc-status-pending">Pending</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DETENTION TIMER -->
+      <div id="detention-section" style="margin-bottom:16px;">
+        <div class="detention-timer">
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:4px;">⏱️ Detention Clock</div>
+            <div id="detention-time" class="detention-time">00:00:00</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="detention-started">Not started</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+            <button class="btn btn-primary btn-sm" onclick="startDetention()" id="detention-start-btn">▶ Start</button>
+            <button class="btn btn-danger btn-sm" onclick="stopDetention()" id="detention-stop-btn" style="display:none;">⏹ Stop</button>
+            <div style="font-size:10px;color:var(--text3);">Free time: 2 hrs</div>
+          </div>
+        </div>
+      </div>
+      <!-- DOCUMENTS -->
+      <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📎 Documents</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="markDocReceived('bol')" style="font-size:11px;">📄 Mark BOL Received</button>
+            <button class="btn btn-ghost btn-sm" onclick="markDocReceived('pod')" style="font-size:11px;">✅ Mark POD Received</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+          <span style="font-size:16px;">📄</span>
+          <span style="flex:1;font-size:12px;font-weight:600;color:var(--text);">Bill of Lading (BOL)</span>
+          <span id="bol-badge" class="doc-item-status doc-status-pending">Pending</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
+          <span style="font-size:16px;">✅</span>
+          <span style="flex:1;font-size:12px;font-weight:600;color:var(--text);">Proof of Delivery (POD)</span>
+          <span id="pod-badge" class="doc-item-status doc-status-pending">Pending</span>
         </div>
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid rgba(59,130,246,0.2);">
@@ -1061,6 +1204,38 @@ textarea{resize:vertical;min-height:80px;}
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('invite')">Cancel</button>
       <button class="btn btn-primary" onclick="sendInvite()">Send Invite →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: Repower -->
+<div class="modal-overlay" id="modal-repower" style="z-index:700;">
+  <div class="modal" style="width:500px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">🔄 Repower Load</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">Reassign this load to a new carrier mid-transit</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('repower')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--red-dim);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--red);">
+        ⚠️ This will unassign the current carrier and send them a cancellation notification.
+      </div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Repower Reason</label><select id="rp-reason"><option>Carrier broke down</option><option>Carrier cancelled</option><option>Safety concern</option><option>Rate dispute</option><option>No-show</option><option>Other</option></select></div>
+        <div class="form-group full"><label>New Carrier</label><select id="rp-carrier"><option value="">Select new carrier…</option></select></div>
+        <div class="form-group"><label>New Driver Name</label><input type="text" id="rp-driver" placeholder="Driver name"/></div>
+        <div class="form-group"><label>New Driver Phone</label><input type="tel" id="rp-driver-phone" placeholder="(555) 000-0000"/></div>
+        <div class="form-group"><label>New Carrier Pay ($)</label><input type="number" id="rp-pay" placeholder="2250"/></div>
+        <div class="form-group"><label>New Truck #</label><input type="text" id="rp-truck" placeholder="T-4421"/></div>
+        <div class="form-group full"><label>Internal Notes</label><textarea id="rp-notes" placeholder="Document reason for repower…" style="min-height:60px;"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('repower')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--red);" onclick="executeRepower()">🔄 Confirm Repower →</button>
     </div>
   </div>
 </div>
@@ -1919,6 +2094,256 @@ applyTheme();
 initRolePerms();
 checkAuth();
 loadRememberedEmail();
+
+// ── ACCESSORIALS ──────────────────────────────────────────────
+let accessorials = [];
+const ACCESSORIAL_TYPES = ['Detention','Layover','TONU (Truck Order Not Used)','Lumper','Fuel Surcharge','Stop-Off','Driver Assist','Oversize Permit','Scale Ticket','Other'];
+
+function addAccessorial() {
+  const id = Date.now();
+  accessorials.push({id, type: 'Detention', amount: ''});
+  renderAccessorials();
+}
+function removeAccessorial(id) {
+  accessorials = accessorials.filter(a => a.id !== id);
+  renderAccessorials();
+}
+function renderAccessorials() {
+  const el = document.getElementById('accessorial-list'); if(!el) return;
+  if(!accessorials.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px;">No accessorials — click below to add</div>'; return; }
+  el.innerHTML = accessorials.map(a => `
+    <div class="accessorial-row">
+      <select onchange="accessorials.find(x=>x.id===${a.id}).type=this.value" style="font-size:12px;padding:6px 8px;">
+        ${ACCESSORIAL_TYPES.map(t=>`<option ${a.type===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <input type="number" placeholder="$0" value="${a.amount}" oninput="accessorials.find(x=>x.id===${a.id}).amount=this.value" style="width:90px;font-size:12px;padding:6px 10px;"/>
+      <button class="btn btn-danger btn-sm" onclick="removeAccessorial(${a.id})" style="flex-shrink:0;">✕</button>
+    </div>`).join('');
+}
+
+// ── DETENTION TIMER ───────────────────────────────────────────
+let detentionInterval = null;
+let detentionStart = null;
+
+function startDetention() {
+  detentionStart = new Date();
+  document.getElementById('detention-start-btn').style.display = 'none';
+  document.getElementById('detention-stop-btn').style.display = '';
+  document.getElementById('detention-started').textContent = 'Started ' + detentionStart.toLocaleTimeString();
+  detentionInterval = setInterval(updateDetentionClock, 1000);
+  toast('Detention clock started', 'info');
+}
+function stopDetention() {
+  clearInterval(detentionInterval); detentionInterval = null;
+  document.getElementById('detention-start-btn').style.display = '';
+  document.getElementById('detention-stop-btn').style.display = 'none';
+  const elapsed = detentionStart ? Math.floor((new Date() - detentionStart) / 60000) : 0;
+  const billable = Math.max(0, elapsed - 120);
+  toast(`Detention stopped. Billable time: ${billable} min${billable !== 1 ? 's' : ''}`, 'success');
+}
+function updateDetentionClock() {
+  if(!detentionStart) return;
+  const elapsed = Math.floor((new Date() - detentionStart) / 1000);
+  const h = String(Math.floor(elapsed/3600)).padStart(2,'0');
+  const m = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+  const s = String(elapsed%60).padStart(2,'0');
+  const el = document.getElementById('detention-time');
+  if(el) { el.textContent = `${h}:${m}:${s}`; el.style.color = elapsed > 7200 ? 'var(--red)' : 'var(--amber)'; }
+}
+
+// ── BOL / POD TRACKING ────────────────────────────────────────
+const loadDocStatus = {};
+
+function markDocReceived(type) {
+  if(!currentDetailLoadId) return;
+  if(!loadDocStatus[currentDetailLoadId]) loadDocStatus[currentDetailLoadId] = {};
+  loadDocStatus[currentDetailLoadId][type] = { received: true, at: new Date().toISOString() };
+  const badge = document.getElementById(type + '-badge');
+  if(badge) { badge.textContent = 'Received ✓'; badge.className = 'doc-item-status doc-status-received'; }
+  toast((type === 'bol' ? 'BOL' : 'POD') + ' marked as received!', 'success');
+  if(type === 'pod') setTimeout(() => toast('POD received — load is ready to invoice ⚡', 'info'), 800);
+}
+
+function refreshDocStatus(loadId) {
+  const status = loadDocStatus[loadId] || {};
+  ['bol','pod'].forEach(type => {
+    const badge = document.getElementById(type + '-badge');
+    if(!badge) return;
+    if(status[type]?.received) { badge.textContent = 'Received ✓'; badge.className = 'doc-item-status doc-status-received'; }
+    else { badge.textContent = 'Pending'; badge.className = 'doc-item-status doc-status-pending'; }
+  });
+}
+
+// ── REPOWER ───────────────────────────────────────────────────
+function openRepowerModal() {
+  const cs = document.getElementById('rp-carrier');
+  if(cs) cs.innerHTML = '<option value="">Select new carrier…</option>' + allCarriers.filter(c=>!c.do_not_use).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  closeModal('detail');
+  setTimeout(() => openModal('repower'), 200);
+}
+
+async function executeRepower() {
+  const carrierId = document.getElementById('rp-carrier')?.value;
+  const reason = document.getElementById('rp-reason')?.value;
+  const driverName = document.getElementById('rp-driver')?.value;
+  const driverPhone = document.getElementById('rp-driver-phone')?.value;
+  const pay = document.getElementById('rp-pay')?.value;
+  const truck = document.getElementById('rp-truck')?.value;
+  const notes = document.getElementById('rp-notes')?.value;
+  if(!carrierId) { toast('Please select a new carrier', 'error'); return; }
+  const payload = { carrier_id: carrierId, status: 'Assigned', driver_name: driverName||null, driver_phone: driverPhone||null, carrier_pay: pay||null, truck_number: truck||null };
+  const {error} = await db.from('loads').update(payload).eq('id', currentDetailLoadId);
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+  toast('Load repowered successfully! 🔄', 'success');
+  closeModal('repower');
+  await loadData();
+}
+
+// ── LOAD MODAL — clear accessorials on open ───────────────────
+const _origOpenModal = openModal;
+function openModal(type) {
+  if(type === 'load') { accessorials = []; renderAccessorials(); }
+  _origOpenModal(type);
+}
+
+// ── UPGRADE openLoadDetail to populate new fields ─────────────
+const _origOpenLoadDetail = openLoadDetail;
+function openLoadDetail(loadId) {
+  _origOpenLoadDetail(loadId);
+  const l = allLoads.find(x => x.id === loadId); if(!l) return;
+  setEl('d-driver-name', l.driver_name || '—');
+  setEl('d-driver-phone', l.driver_phone || '—');
+  setEl('d-truck', l.truck_number || '—');
+  setEl('d-trailer', l.trailer_number || '—');
+  setEl('d-bol', l.bol_number || '—');
+  setEl('d-pro', l.pro_number || '—');
+  refreshDocStatus(loadId);
+  // Reset detention
+  if(detentionInterval) { clearInterval(detentionInterval); detentionInterval = null; }
+  const dt = document.getElementById('detention-time'); if(dt) dt.textContent = '00:00:00';
+  const ds = document.getElementById('detention-started'); if(ds) ds.textContent = 'Not started';
+  const sb = document.getElementById('detention-start-btn'); if(sb) sb.style.display = '';
+  const stb = document.getElementById('detention-stop-btn'); if(stb) stb.style.display = 'none';
+  detentionStart = null;
+}
+
+// ── UPGRADE saveLoad to include new fields ────────────────────
+const _origSaveLoad = saveLoad;
+async function saveLoad() {
+  // patch extra fields onto the payload before original save runs
+  // We override saveLoad entirely here
+  const id = document.getElementById('load-id')?.value;
+  const carrierId = document.getElementById('load-carrier')?.value;
+  const currentStatus = document.getElementById('load-status')?.value;
+  const payload = {
+    customer_id: document.getElementById('load-customer')?.value||null,
+    carrier_id: carrierId||null,
+    origin_city: document.getElementById('load-origin-city')?.value,
+    origin_state: document.getElementById('load-origin-state')?.value?.toUpperCase(),
+    destination_city: document.getElementById('load-dest-city')?.value,
+    destination_state: document.getElementById('load-dest-state')?.value?.toUpperCase(),
+    equipment_type: document.getElementById('load-equipment')?.value,
+    weight: document.getElementById('load-weight')?.value||null,
+    commodity: document.getElementById('load-commodity')?.value,
+    pickup_date: document.getElementById('load-pickup')?.value||null,
+    delivery_date: document.getElementById('load-delivery')?.value||null,
+    customer_rate: document.getElementById('load-rate')?.value||null,
+    carrier_pay: document.getElementById('load-carrier-pay')?.value||null,
+    status: carrierId && currentStatus==='Available' ? 'Assigned' : currentStatus,
+    reference_number: document.getElementById('load-ref')?.value,
+    bol_number: document.getElementById('load-bol')?.value||null,
+    pro_number: document.getElementById('load-pro')?.value||null,
+    driver_name: document.getElementById('load-driver-name')?.value||null,
+    driver_phone: document.getElementById('load-driver-phone')?.value||null,
+    truck_number: document.getElementById('load-truck-num')?.value||null,
+    trailer_number: document.getElementById('load-trailer-num')?.value||null,
+    hazmat: document.getElementById('load-hazmat')?.checked||false,
+    tsa_required: document.getElementById('load-tsa')?.checked||false,
+    temp_range: document.getElementById('load-temp')?.value||null,
+    dims: document.getElementById('load-dims')?.value||null,
+    accessorials: accessorials.length ? JSON.stringify(accessorials) : null,
+  };
+  if(!id) payload.load_number = loadNumber();
+  const {error} = id ? await db.from('loads').update(payload).eq('id',id) : await db.from('loads').insert(payload);
+  if(error) { toast('Error: '+error.message,'error'); return; }
+  toast(id ? 'Load updated!' : 'Load created!','success');
+  closeModal('load'); await loadData();
+}
+
+// ── UPGRADE editLoad to populate new fields ───────────────────
+const _origEditLoad = editLoad;
+async function editLoad(id) {
+  _origEditLoad(id);
+  const l = allLoads.find(x => x.id === id); if(!l) return;
+  setTimeout(() => {
+    const sv = (f,v) => { const el=document.getElementById(f); if(el) el.value=v||''; };
+    sv('load-bol', l.bol_number); sv('load-pro', l.pro_number);
+    sv('load-driver-name', l.driver_name); sv('load-driver-phone', l.driver_phone);
+    sv('load-truck-num', l.truck_number); sv('load-trailer-num', l.trailer_number);
+    sv('load-temp', l.temp_range); sv('load-dims', l.dims);
+    const hz = document.getElementById('load-hazmat'); if(hz) hz.checked = !!l.hazmat;
+    const tsa = document.getElementById('load-tsa'); if(tsa) tsa.checked = !!l.tsa_required;
+    if(l.accessorials) { try { accessorials = JSON.parse(l.accessorials); } catch(e) { accessorials = []; } }
+    else { accessorials = []; }
+    renderAccessorials();
+  }, 150);
+}
+
+// ── UPGRADE saveCarrier to include DNL + onboarding ──────────
+const _origSaveCarrier = saveCarrier;
+async function saveCarrier() {
+  const id = document.getElementById('carrier-id')?.value;
+  const equip = document.getElementById('carrier-equipment')?.value;
+  const dnl = document.getElementById('carrier-dnl')?.checked;
+  const payload = {
+    name: document.getElementById('carrier-name')?.value,
+    mc_number: document.getElementById('carrier-mc')?.value,
+    dot_number: document.getElementById('carrier-dot')?.value,
+    contact_name: document.getElementById('carrier-contact')?.value,
+    email: document.getElementById('carrier-email')?.value,
+    phone: document.getElementById('carrier-phone')?.value,
+    insurance_expiry: document.getElementById('carrier-insurance')?.value||null,
+    safety_score: document.getElementById('carrier-safety')?.value||null,
+    equipment_types: equip ? equip.split(',').map(s=>s.trim()).filter(Boolean) : [],
+    notes: document.getElementById('carrier-notes')?.value,
+    do_not_use: dnl||false,
+    dnl_reason: dnl ? document.getElementById('carrier-dnl-reason')?.value : null,
+    onboarding_status: document.getElementById('carrier-onboard-status')?.value||'Pending',
+  };
+  const {error} = id ? await db.from('carriers').update(payload).eq('id',id) : await db.from('carriers').insert(payload);
+  if(error) { toast('Error: '+error.message,'error'); return; }
+  toast(id ? 'Carrier updated!' : 'Carrier added!','success');
+  closeModal('carrier'); await loadData();
+}
+
+// ── UPGRADE editCarrier to populate DNL + onboarding ─────────
+const _origEditCarrier = editCarrier;
+async function editCarrier(id) {
+  _origEditCarrier(id);
+  const c = allCarriers.find(x => x.id === id); if(!c) return;
+  setTimeout(() => {
+    const dnl = document.getElementById('carrier-dnl'); if(dnl) dnl.checked = !!c.do_not_use;
+    const dr = document.getElementById('carrier-dnl-reason'); if(dr) dr.value = c.dnl_reason||'';
+    const os = document.getElementById('carrier-onboard-status'); if(os) os.value = c.onboarding_status||'Pending';
+  }, 100);
+}
+
+// ── UPGRADE renderCarriers to show DNL badge + onboarding ────
+const _origRenderCarriers = renderCarriers;
+function renderCarriers() {
+  setEl('carriers-title', `Carrier Network (${allCarriers.length})`);
+  const body = document.getElementById('carriers-body'); if(!body) return;
+  if(!allCarriers.length) { body.innerHTML=`<div class="empty-state"><div class="empty-icon">🚚</div><p>No carriers yet.</p></div>`; return; }
+  const today = new Date();
+  body.innerHTML = `<table class="table"><thead><tr><th>Carrier</th><th>MC #</th><th>Equipment</th><th>Onboarding</th><th>Insurance</th><th>Safety</th><th>Status</th><th></th></tr></thead><tbody>${allCarriers.map(c => {
+    let insColor='var(--text2)', insStatus='Active';
+    if(c.insurance_expiry){ const d=new Date(c.insurance_expiry),days=(d-today)/86400000; if(days<0){insColor='var(--red)';insStatus='Expired';}else if(days<=30){insColor='var(--amber)';insStatus='Exp. Soon';}}
+    const dnlBadge = c.do_not_use ? '<span class="dnl-badge">🚫 DNL</span>' : '';
+    const onboardColor = c.onboarding_status==='Active'?'badge-green':c.onboarding_status==='Agreement Signed'?'badge-blue':'badge-amber';
+    return `<tr onclick="editCarrier('${c.id}')"><td><strong>${c.name}</strong>${dnlBadge?'<br>'+dnlBadge:''}</td><td>${c.mc_number||'—'}</td><td style="font-size:12px;">${(c.equipment_types||[]).join(', ')||'—'}</td><td><span class="badge ${onboardColor}">${c.onboarding_status||'Pending'}</span></td><td style="color:${insColor}">${c.insurance_expiry?fmtDate(c.insurance_expiry):'—'}</td><td><strong>${c.safety_score||'—'}</strong></td><td>${c.do_not_use?'<span class="badge badge-red">DNL</span>':statusBadge(insStatus)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCarrier('${c.id}')">✕</button></td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
 </script>
 </body>
 </html>
