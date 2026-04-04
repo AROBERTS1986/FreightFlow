@@ -1350,7 +1350,7 @@ function renderCurrentPage(){
 }
 
 // ── MODALS ────────────────────────────────────────────────────
-function openModal(type){const el=document.getElementById('modal-'+type);if(el)el.classList.add('open');if(type==='load')setTimeout(initCityAutocomplete,100);}
+function openModal(type){if(type==='load'){accessorials=[];renderAccessorials();}const el=document.getElementById('modal-'+type);if(el)el.classList.add('open');if(type==='load')setTimeout(initCityAutocomplete,100);}
 function closeModal(type){const el=document.getElementById('modal-'+type);if(el)el.classList.remove('open');const f=document.getElementById(type+'-id');if(f)f.value='';}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay')){const id=e.target.id.replace('modal-','');closeModal(id);}});
 
@@ -1444,7 +1444,13 @@ function renderCarriers(){
   const body=document.getElementById('carriers-body');if(!body)return;
   if(!allCarriers.length){body.innerHTML=`<div class="empty-state"><div class="empty-icon">🚚</div><p>No carriers yet.</p></div>`;return;}
   const today=new Date();
-  body.innerHTML=`<table class="table"><thead><tr><th>Carrier</th><th>MC #</th><th>DOT #</th><th>Equipment</th><th>Insurance Exp.</th><th>Safety</th><th>Status</th><th></th></tr></thead><tbody>${allCarriers.map(c=>{let insColor='var(--text2)',insStatus='Active';if(c.insurance_expiry){const d=new Date(c.insurance_expiry),days=(d-today)/86400000;if(days<0){insColor='var(--red)';insStatus='Expired';}else if(days<=30){insColor='var(--amber)';insStatus='Exp. Soon';}}return`<tr onclick="editCarrier('${c.id}')"><td><strong>${c.name}</strong></td><td>${c.mc_number||'—'}</td><td>${c.dot_number||'—'}</td><td style="font-size:12px;">${(c.equipment_types||[]).join(', ')||'—'}</td><td style="color:${insColor}">${c.insurance_expiry?fmtDate(c.insurance_expiry):'—'}</td><td><strong>${c.safety_score||'—'}</strong></td><td>${statusBadge(insStatus)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCarrier('${c.id}')">✕</button></td></tr>`;}).join('')}</tbody></table>`;
+  body.innerHTML=`<table class="table"><thead><tr><th>Carrier</th><th>MC #</th><th>Equipment</th><th>Onboarding</th><th>Insurance</th><th>Safety</th><th>Status</th><th></th></tr></thead><tbody>${allCarriers.map(c=>{
+    let insColor='var(--text2)',insStatus='Active';
+    if(c.insurance_expiry){const d=new Date(c.insurance_expiry),days=(d-today)/86400000;if(days<0){insColor='var(--red)';insStatus='Expired';}else if(days<=30){insColor='var(--amber)';insStatus='Exp. Soon';}}
+    const dnlBadge=c.do_not_use?'<span class="dnl-badge" style="margin-left:6px;">🚫 DNL</span>':'';
+    const onboardColor=c.onboarding_status==='Active'?'badge-green':c.onboarding_status==='Agreement Signed'?'badge-blue':'badge-amber';
+    return`<tr onclick="editCarrier('${c.id}')"><td><div style="display:flex;align-items:center;gap:6px;"><strong>${c.name}</strong>${dnlBadge}</div></td><td>${c.mc_number||'—'}</td><td style="font-size:12px;">${(c.equipment_types||[]).join(', ')||'—'}</td><td><span class="badge ${onboardColor}">${c.onboarding_status||'Pending'}</span></td><td style="color:${insColor}">${c.insurance_expiry?fmtDate(c.insurance_expiry):'—'}</td><td><strong>${c.safety_score||'—'}</strong></td><td>${c.do_not_use?'<span class="badge badge-red">DNL</span>':statusBadge(insStatus)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCarrier('${c.id}')">✕</button></td></tr>`;
+  }).join('')}</tbody></table>`;
 }
 
 function renderCustomers(){
@@ -1603,36 +1609,108 @@ function renderReports(){
 
 // ── SAVE LOAD ─────────────────────────────────────────────────
 async function saveLoad(){
-  const id=document.getElementById('load-id')?.value,carrierId=document.getElementById('load-carrier')?.value,currentStatus=document.getElementById('load-status')?.value;
-  const payload={customer_id:document.getElementById('load-customer')?.value||null,carrier_id:carrierId||null,origin_city:document.getElementById('load-origin-city')?.value,origin_state:document.getElementById('load-origin-state')?.value?.toUpperCase(),destination_city:document.getElementById('load-dest-city')?.value,destination_state:document.getElementById('load-dest-state')?.value?.toUpperCase(),equipment_type:document.getElementById('load-equipment')?.value,weight:document.getElementById('load-weight')?.value||null,commodity:document.getElementById('load-commodity')?.value,pickup_date:document.getElementById('load-pickup')?.value||null,delivery_date:document.getElementById('load-delivery')?.value||null,customer_rate:document.getElementById('load-rate')?.value||null,carrier_pay:document.getElementById('load-carrier-pay')?.value||null,status:carrierId&&currentStatus==='Available'?'Assigned':currentStatus,reference_number:document.getElementById('load-ref')?.value};
+  const id=document.getElementById('load-id')?.value;
+  const carrierId=document.getElementById('load-carrier')?.value;
+  const currentStatus=document.getElementById('load-status')?.value;
+  const payload={
+    customer_id:document.getElementById('load-customer')?.value||null,
+    carrier_id:carrierId||null,
+    origin_city:document.getElementById('load-origin-city')?.value,
+    origin_state:document.getElementById('load-origin-state')?.value?.toUpperCase(),
+    destination_city:document.getElementById('load-dest-city')?.value,
+    destination_state:document.getElementById('load-dest-state')?.value?.toUpperCase(),
+    equipment_type:document.getElementById('load-equipment')?.value,
+    weight:document.getElementById('load-weight')?.value||null,
+    commodity:document.getElementById('load-commodity')?.value,
+    pickup_date:document.getElementById('load-pickup')?.value||null,
+    delivery_date:document.getElementById('load-delivery')?.value||null,
+    customer_rate:document.getElementById('load-rate')?.value||null,
+    carrier_pay:document.getElementById('load-carrier-pay')?.value||null,
+    status:carrierId&&currentStatus==='Available'?'Assigned':currentStatus,
+    reference_number:document.getElementById('load-ref')?.value,
+    bol_number:document.getElementById('load-bol')?.value||null,
+    pro_number:document.getElementById('load-pro')?.value||null,
+    driver_name:document.getElementById('load-driver-name')?.value||null,
+    driver_phone:document.getElementById('load-driver-phone')?.value||null,
+    truck_number:document.getElementById('load-truck-num')?.value||null,
+    trailer_number:document.getElementById('load-trailer-num')?.value||null,
+    hazmat:document.getElementById('load-hazmat')?.checked||false,
+    tsa_required:document.getElementById('load-tsa')?.checked||false,
+    temp_range:document.getElementById('load-temp')?.value||null,
+    dims:document.getElementById('load-dims')?.value||null,
+    accessorials:accessorials.length?JSON.stringify(accessorials):null,
+  };
   if(!id)payload.load_number=loadNumber();
   const{error}=id?await db.from('loads').update(payload).eq('id',id):await db.from('loads').insert(payload);
   if(error){toast('Error: '+error.message,'error');return;}
-  toast(id?'Load updated!':'Load created!','success');closeModal('load');await loadData();
+  toast(id?'Load updated!':'Load created!','success');
+  closeModal('load');await loadData();
 }
 async function editLoad(id){
   const l=allLoads.find(x=>x.id===id);if(!l)return;
-  document.getElementById('load-id').value=l.id;document.getElementById('load-modal-title').textContent=`Edit Load ${l.load_number}`;
+  document.getElementById('load-id').value=l.id;
+  document.getElementById('load-modal-title').textContent=`Edit Load ${l.load_number}`;
   const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
-  sv('load-customer',l.customer_id||'');sv('load-carrier',l.carrier_id||'');sv('load-origin-city',l.origin_city||'');sv('load-origin-state',l.origin_state||'');sv('load-dest-city',l.destination_city||'');sv('load-dest-state',l.destination_state||'');sv('load-equipment',l.equipment_type||'Dry Van');sv('load-weight',l.weight||'');sv('load-commodity',l.commodity||'');sv('load-pickup',l.pickup_date?l.pickup_date.slice(0,16):'');sv('load-delivery',l.delivery_date?l.delivery_date.slice(0,16):'');sv('load-rate',l.customer_rate||'');sv('load-carrier-pay',l.carrier_pay||'');sv('load-status',l.status||'Available');sv('load-ref',l.reference_number||'');
+  sv('load-customer',l.customer_id||'');sv('load-carrier',l.carrier_id||'');
+  sv('load-origin-city',l.origin_city||'');sv('load-origin-state',l.origin_state||'');
+  sv('load-dest-city',l.destination_city||'');sv('load-dest-state',l.destination_state||'');
+  sv('load-equipment',l.equipment_type||'Dry Van');sv('load-weight',l.weight||'');
+  sv('load-commodity',l.commodity||'');
+  sv('load-pickup',l.pickup_date?l.pickup_date.slice(0,16):'');
+  sv('load-delivery',l.delivery_date?l.delivery_date.slice(0,16):'');
+  sv('load-rate',l.customer_rate||'');sv('load-carrier-pay',l.carrier_pay||'');
+  sv('load-status',l.status||'Available');sv('load-ref',l.reference_number||'');
+  sv('load-bol',l.bol_number||'');sv('load-pro',l.pro_number||'');
+  sv('load-driver-name',l.driver_name||'');sv('load-driver-phone',l.driver_phone||'');
+  sv('load-truck-num',l.truck_number||'');sv('load-trailer-num',l.trailer_number||'');
+  sv('load-temp',l.temp_range||'');sv('load-dims',l.dims||'');
+  const hz=document.getElementById('load-hazmat');if(hz)hz.checked=!!l.hazmat;
+  const tsa=document.getElementById('load-tsa');if(tsa)tsa.checked=!!l.tsa_required;
+  if(l.accessorials){try{accessorials=JSON.parse(l.accessorials);}catch(e){accessorials=[];}}
+  else{accessorials=[];}
+  renderAccessorials();
   openModal('load');
 }
 async function deleteLoad(id){if(!confirm('Delete this load?'))return;await db.from('loads').delete().eq('id',id);toast('Load deleted','info');await loadData();}
 
 // ── SAVE CARRIER ──────────────────────────────────────────────
 async function saveCarrier(){
-  const id=document.getElementById('carrier-id')?.value,equip=document.getElementById('carrier-equipment')?.value;
-  const payload={name:document.getElementById('carrier-name')?.value,mc_number:document.getElementById('carrier-mc')?.value,dot_number:document.getElementById('carrier-dot')?.value,contact_name:document.getElementById('carrier-contact')?.value,email:document.getElementById('carrier-email')?.value,phone:document.getElementById('carrier-phone')?.value,insurance_expiry:document.getElementById('carrier-insurance')?.value||null,safety_score:document.getElementById('carrier-safety')?.value||null,equipment_types:equip?equip.split(',').map(s=>s.trim()).filter(Boolean):[],notes:document.getElementById('carrier-notes')?.value};
+  const id=document.getElementById('carrier-id')?.value;
+  const equip=document.getElementById('carrier-equipment')?.value;
+  const dnl=document.getElementById('carrier-dnl')?.checked;
+  const payload={
+    name:document.getElementById('carrier-name')?.value,
+    mc_number:document.getElementById('carrier-mc')?.value,
+    dot_number:document.getElementById('carrier-dot')?.value,
+    contact_name:document.getElementById('carrier-contact')?.value,
+    email:document.getElementById('carrier-email')?.value,
+    phone:document.getElementById('carrier-phone')?.value,
+    insurance_expiry:document.getElementById('carrier-insurance')?.value||null,
+    safety_score:document.getElementById('carrier-safety')?.value||null,
+    equipment_types:equip?equip.split(',').map(s=>s.trim()).filter(Boolean):[],
+    notes:document.getElementById('carrier-notes')?.value,
+    do_not_use:dnl||false,
+    dnl_reason:dnl?document.getElementById('carrier-dnl-reason')?.value:null,
+    onboarding_status:document.getElementById('carrier-onboard-status')?.value||'Pending',
+  };
   const{error}=id?await db.from('carriers').update(payload).eq('id',id):await db.from('carriers').insert(payload);
   if(error){toast('Error: '+error.message,'error');return;}
-  toast(id?'Carrier updated!':'Carrier added!','success');closeModal('carrier');await loadData();
+  toast(id?'Carrier updated!':'Carrier added!','success');
+  closeModal('carrier');await loadData();
 }
 async function editCarrier(id){
   const c=allCarriers.find(x=>x.id===id);if(!c)return;
-  document.getElementById('carrier-id').value=c.id;document.getElementById('carrier-modal-title').textContent=`Edit ${c.name}`;
+  document.getElementById('carrier-id').value=c.id;
+  document.getElementById('carrier-modal-title').textContent=`Edit ${c.name}`;
   const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
-  sv('carrier-name',c.name);sv('carrier-mc',c.mc_number);sv('carrier-dot',c.dot_number);sv('carrier-contact',c.contact_name);sv('carrier-email',c.email);sv('carrier-phone',c.phone);sv('carrier-insurance',c.insurance_expiry||'');sv('carrier-safety',c.safety_score||'');
-  document.getElementById('carrier-equipment').value=(c.equipment_types||[]).join(', ');document.getElementById('carrier-notes').value=c.notes||'';
+  sv('carrier-name',c.name);sv('carrier-mc',c.mc_number);sv('carrier-dot',c.dot_number);
+  sv('carrier-contact',c.contact_name);sv('carrier-email',c.email);sv('carrier-phone',c.phone);
+  sv('carrier-insurance',c.insurance_expiry||'');sv('carrier-safety',c.safety_score||'');
+  document.getElementById('carrier-equipment').value=(c.equipment_types||[]).join(', ');
+  document.getElementById('carrier-notes').value=c.notes||'';
+  const dnl=document.getElementById('carrier-dnl');if(dnl)dnl.checked=!!c.do_not_use;
+  const dr=document.getElementById('carrier-dnl-reason');if(dr)dr.value=c.dnl_reason||'';
+  const os=document.getElementById('carrier-onboard-status');if(os)os.value=c.onboarding_status||'Pending';
   openModal('carrier');
 }
 async function deleteCarrier(id){if(!confirm('Delete this carrier?'))return;await db.from('carriers').delete().eq('id',id);toast('Carrier deleted','info');await loadData();}
@@ -1681,6 +1759,7 @@ function openLoadDetail(loadId){
   const rcPrev=document.getElementById('rate-con-preview-area'),rcColl=document.getElementById('rate-con-collapsed');
   if(rcPrev)rcPrev.style.display='none';if(rcColl)rcColl.style.display='block';
   renderCheckCalls(loadId);closeCheckCallForm();openModal('detail');
+  populateNewDetailFields(loadId);
 }
 
 async function updateLoadStatus(newStatus){
@@ -2199,17 +2278,11 @@ async function executeRepower() {
   await loadData();
 }
 
-// ── LOAD MODAL — clear accessorials on open ───────────────────
-const _origOpenModal = openModal;
-function openModal(type) {
-  if(type === 'load') { accessorials = []; renderAccessorials(); }
-  _origOpenModal(type);
-}
 
-// ── UPGRADE openLoadDetail to populate new fields ─────────────
-const _origOpenLoadDetail = openLoadDetail;
-function openLoadDetail(loadId) {
-  _origOpenLoadDetail(loadId);
+// ── OPEN MODAL — reset accessorials for load modal ──────────
+
+// ── POPULATE NEW LOAD DETAIL FIELDS ──────────────────────────
+function populateNewDetailFields(loadId) {
   const l = allLoads.find(x => x.id === loadId); if(!l) return;
   setEl('d-driver-name', l.driver_name || '—');
   setEl('d-driver-phone', l.driver_phone || '—');
@@ -2218,7 +2291,6 @@ function openLoadDetail(loadId) {
   setEl('d-bol', l.bol_number || '—');
   setEl('d-pro', l.pro_number || '—');
   refreshDocStatus(loadId);
-  // Reset detention
   if(detentionInterval) { clearInterval(detentionInterval); detentionInterval = null; }
   const dt = document.getElementById('detention-time'); if(dt) dt.textContent = '00:00:00';
   const ds = document.getElementById('detention-started'); if(ds) ds.textContent = 'Not started';
@@ -2227,121 +2299,6 @@ function openLoadDetail(loadId) {
   detentionStart = null;
 }
 
-// ── UPGRADE saveLoad to include new fields ────────────────────
-const _origSaveLoad = saveLoad;
-async function saveLoad() {
-  // patch extra fields onto the payload before original save runs
-  // We override saveLoad entirely here
-  const id = document.getElementById('load-id')?.value;
-  const carrierId = document.getElementById('load-carrier')?.value;
-  const currentStatus = document.getElementById('load-status')?.value;
-  const payload = {
-    customer_id: document.getElementById('load-customer')?.value||null,
-    carrier_id: carrierId||null,
-    origin_city: document.getElementById('load-origin-city')?.value,
-    origin_state: document.getElementById('load-origin-state')?.value?.toUpperCase(),
-    destination_city: document.getElementById('load-dest-city')?.value,
-    destination_state: document.getElementById('load-dest-state')?.value?.toUpperCase(),
-    equipment_type: document.getElementById('load-equipment')?.value,
-    weight: document.getElementById('load-weight')?.value||null,
-    commodity: document.getElementById('load-commodity')?.value,
-    pickup_date: document.getElementById('load-pickup')?.value||null,
-    delivery_date: document.getElementById('load-delivery')?.value||null,
-    customer_rate: document.getElementById('load-rate')?.value||null,
-    carrier_pay: document.getElementById('load-carrier-pay')?.value||null,
-    status: carrierId && currentStatus==='Available' ? 'Assigned' : currentStatus,
-    reference_number: document.getElementById('load-ref')?.value,
-    bol_number: document.getElementById('load-bol')?.value||null,
-    pro_number: document.getElementById('load-pro')?.value||null,
-    driver_name: document.getElementById('load-driver-name')?.value||null,
-    driver_phone: document.getElementById('load-driver-phone')?.value||null,
-    truck_number: document.getElementById('load-truck-num')?.value||null,
-    trailer_number: document.getElementById('load-trailer-num')?.value||null,
-    hazmat: document.getElementById('load-hazmat')?.checked||false,
-    tsa_required: document.getElementById('load-tsa')?.checked||false,
-    temp_range: document.getElementById('load-temp')?.value||null,
-    dims: document.getElementById('load-dims')?.value||null,
-    accessorials: accessorials.length ? JSON.stringify(accessorials) : null,
-  };
-  if(!id) payload.load_number = loadNumber();
-  const {error} = id ? await db.from('loads').update(payload).eq('id',id) : await db.from('loads').insert(payload);
-  if(error) { toast('Error: '+error.message,'error'); return; }
-  toast(id ? 'Load updated!' : 'Load created!','success');
-  closeModal('load'); await loadData();
-}
-
-// ── UPGRADE editLoad to populate new fields ───────────────────
-const _origEditLoad = editLoad;
-async function editLoad(id) {
-  _origEditLoad(id);
-  const l = allLoads.find(x => x.id === id); if(!l) return;
-  setTimeout(() => {
-    const sv = (f,v) => { const el=document.getElementById(f); if(el) el.value=v||''; };
-    sv('load-bol', l.bol_number); sv('load-pro', l.pro_number);
-    sv('load-driver-name', l.driver_name); sv('load-driver-phone', l.driver_phone);
-    sv('load-truck-num', l.truck_number); sv('load-trailer-num', l.trailer_number);
-    sv('load-temp', l.temp_range); sv('load-dims', l.dims);
-    const hz = document.getElementById('load-hazmat'); if(hz) hz.checked = !!l.hazmat;
-    const tsa = document.getElementById('load-tsa'); if(tsa) tsa.checked = !!l.tsa_required;
-    if(l.accessorials) { try { accessorials = JSON.parse(l.accessorials); } catch(e) { accessorials = []; } }
-    else { accessorials = []; }
-    renderAccessorials();
-  }, 150);
-}
-
-// ── UPGRADE saveCarrier to include DNL + onboarding ──────────
-const _origSaveCarrier = saveCarrier;
-async function saveCarrier() {
-  const id = document.getElementById('carrier-id')?.value;
-  const equip = document.getElementById('carrier-equipment')?.value;
-  const dnl = document.getElementById('carrier-dnl')?.checked;
-  const payload = {
-    name: document.getElementById('carrier-name')?.value,
-    mc_number: document.getElementById('carrier-mc')?.value,
-    dot_number: document.getElementById('carrier-dot')?.value,
-    contact_name: document.getElementById('carrier-contact')?.value,
-    email: document.getElementById('carrier-email')?.value,
-    phone: document.getElementById('carrier-phone')?.value,
-    insurance_expiry: document.getElementById('carrier-insurance')?.value||null,
-    safety_score: document.getElementById('carrier-safety')?.value||null,
-    equipment_types: equip ? equip.split(',').map(s=>s.trim()).filter(Boolean) : [],
-    notes: document.getElementById('carrier-notes')?.value,
-    do_not_use: dnl||false,
-    dnl_reason: dnl ? document.getElementById('carrier-dnl-reason')?.value : null,
-    onboarding_status: document.getElementById('carrier-onboard-status')?.value||'Pending',
-  };
-  const {error} = id ? await db.from('carriers').update(payload).eq('id',id) : await db.from('carriers').insert(payload);
-  if(error) { toast('Error: '+error.message,'error'); return; }
-  toast(id ? 'Carrier updated!' : 'Carrier added!','success');
-  closeModal('carrier'); await loadData();
-}
-
-// ── UPGRADE editCarrier to populate DNL + onboarding ─────────
-const _origEditCarrier = editCarrier;
-async function editCarrier(id) {
-  _origEditCarrier(id);
-  const c = allCarriers.find(x => x.id === id); if(!c) return;
-  setTimeout(() => {
-    const dnl = document.getElementById('carrier-dnl'); if(dnl) dnl.checked = !!c.do_not_use;
-    const dr = document.getElementById('carrier-dnl-reason'); if(dr) dr.value = c.dnl_reason||'';
-    const os = document.getElementById('carrier-onboard-status'); if(os) os.value = c.onboarding_status||'Pending';
-  }, 100);
-}
-
-// ── UPGRADE renderCarriers to show DNL badge + onboarding ────
-const _origRenderCarriers = renderCarriers;
-function renderCarriers() {
-  setEl('carriers-title', `Carrier Network (${allCarriers.length})`);
-  const body = document.getElementById('carriers-body'); if(!body) return;
-  if(!allCarriers.length) { body.innerHTML=`<div class="empty-state"><div class="empty-icon">🚚</div><p>No carriers yet.</p></div>`; return; }
-  const today = new Date();
-  body.innerHTML = `<table class="table"><thead><tr><th>Carrier</th><th>MC #</th><th>Equipment</th><th>Onboarding</th><th>Insurance</th><th>Safety</th><th>Status</th><th></th></tr></thead><tbody>${allCarriers.map(c => {
-    let insColor='var(--text2)', insStatus='Active';
-    if(c.insurance_expiry){ const d=new Date(c.insurance_expiry),days=(d-today)/86400000; if(days<0){insColor='var(--red)';insStatus='Expired';}else if(days<=30){insColor='var(--amber)';insStatus='Exp. Soon';}}
-    const dnlBadge = c.do_not_use ? '<span class="dnl-badge">🚫 DNL</span>' : '';
-    const onboardColor = c.onboarding_status==='Active'?'badge-green':c.onboarding_status==='Agreement Signed'?'badge-blue':'badge-amber';
-    return `<tr onclick="editCarrier('${c.id}')"><td><strong>${c.name}</strong>${dnlBadge?'<br>'+dnlBadge:''}</td><td>${c.mc_number||'—'}</td><td style="font-size:12px;">${(c.equipment_types||[]).join(', ')||'—'}</td><td><span class="badge ${onboardColor}">${c.onboarding_status||'Pending'}</span></td><td style="color:${insColor}">${c.insurance_expiry?fmtDate(c.insurance_expiry):'—'}</td><td><strong>${c.safety_score||'—'}</strong></td><td>${c.do_not_use?'<span class="badge badge-red">DNL</span>':statusBadge(insStatus)}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteCarrier('${c.id}')">✕</button></td></tr>`;
-  }).join('')}</tbody></table>`;
 }
 
 </script>
