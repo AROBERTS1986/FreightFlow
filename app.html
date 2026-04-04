@@ -317,6 +317,10 @@ textarea{resize:vertical;min-height:80px;}
     <div class="topbar-right">
       <div class="theme-toggle" onclick="toggleTheme()"><span id="theme-icon">☀️</span><span id="theme-label" style="font-size:12px;">Light</span></div>
       <button class="btn btn-ghost btn-sm" onclick="openCustomerPortal()">👥 Portal</button>
+      <div id="topbar-user" style="display:none;align-items:center;gap:8px;padding:5px 12px 5px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;" onclick="showUserMenu()">
+        <div id="topbar-avatar" style="width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0;">?</div>
+        <div style="line-height:1.25;"><div id="topbar-username" style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;">Loading…</div><div id="topbar-role" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;"></div></div>
+      </div>
       <button class="btn btn-primary" id="primaryBtn" onclick="openModal('load')">+ New Load</button>
     </div>
     <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">☰</button>
@@ -909,6 +913,7 @@ let currentPage='dashboard',currentUser=null,currentUserRole=null,currentDetailL
 let checkCalls={},activeCrmTab='pipeline',activePermRole='dispatcher';
 let rolePerms={},savedRolePerms={},currentInvTab='queue',activeQuotesTab='pending';
 let isLightMode=localStorage.getItem('ff-theme')==='light';
+let currentPortalCustomerId=null;
 
 // ── CITIES ───────────────────────────────────────────────────
 const US_CITIES=[['Abilene','TX'],['Akron','OH'],['Albuquerque','NM'],['Alexandria','VA'],['Allentown','PA'],['Amarillo','TX'],['Anaheim','CA'],['Anchorage','AK'],['Ann Arbor','MI'],['Arlington','TX'],['Arlington','VA'],['Atlanta','GA'],['Augusta','GA'],['Aurora','CO'],['Aurora','IL'],['Austin','TX'],['Bakersfield','CA'],['Baltimore','MD'],['Baton Rouge','LA'],['Billings','MT'],['Birmingham','AL'],['Boise','ID'],['Boston','MA'],['Bridgeport','CT'],['Buffalo','NY'],['Cape Coral','FL'],['Chandler','AZ'],['Charlotte','NC'],['Chattanooga','TN'],['Chesapeake','VA'],['Chicago','IL'],['Chula Vista','CA'],['Cincinnati','OH'],['Cleveland','OH'],['Colorado Springs','CO'],['Columbia','SC'],['Columbus','GA'],['Columbus','OH'],['Corpus Christi','TX'],['Dallas','TX'],['Denver','CO'],['Des Moines','IA'],['Detroit','MI'],['Durham','NC'],['El Paso','TX'],['Eugene','OR'],['Fort Collins','CO'],['Fort Wayne','IN'],['Fort Worth','TX'],['Fremont','CA'],['Fresno','CA'],['Garland','TX'],['Gilbert','AZ'],['Glendale','AZ'],['Glendale','CA'],['Grand Prairie','TX'],['Grand Rapids','MI'],['Greensboro','NC'],['Henderson','NV'],['Hialeah','FL'],['Honolulu','HI'],['Houston','TX'],['Huntington Beach','CA'],['Huntsville','AL'],['Indianapolis','IN'],['Irvine','CA'],['Irving','TX'],['Jackson','MS'],['Jacksonville','FL'],['Jersey City','NJ'],['Kansas City','KS'],['Kansas City','MO'],['Knoxville','TN'],['Laredo','TX'],['Las Vegas','NV'],['Lexington','KY'],['Lincoln','NE'],['Little Rock','AR'],['Long Beach','CA'],['Los Angeles','CA'],['Louisville','KY'],['Lubbock','TX'],['Madison','WI'],['Memphis','TN'],['Mesa','AZ'],['Miami','FL'],['Milwaukee','WI'],['Minneapolis','MN'],['Mobile','AL'],['Modesto','CA'],['Montgomery','AL'],['Nashville','TN'],['New Orleans','LA'],['New York','NY'],['Newark','NJ'],['Norfolk','VA'],['North Las Vegas','NV'],['Oakland','CA'],['Oklahoma City','OK'],['Omaha','NE'],['Orlando','FL'],['Philadelphia','PA'],['Phoenix','AZ'],['Pittsburgh','PA'],['Plano','TX'],['Portland','OR'],['Providence','RI'],['Raleigh','NC'],['Reno','NV'],['Richmond','VA'],['Riverside','CA'],['Rochester','NY'],['Sacramento','CA'],['Salt Lake City','UT'],['San Antonio','TX'],['San Bernardino','CA'],['San Diego','CA'],['San Francisco','CA'],['San Jose','CA'],['Santa Ana','CA'],['Seattle','WA'],['Shreveport','LA'],['Spokane','WA'],['St. Louis','MO'],['St. Paul','MN'],['St. Petersburg','FL'],['Stockton','CA'],['Syracuse','NY'],['Tacoma','WA'],['Tampa','FL'],['Toledo','OH'],['Tucson','AZ'],['Tulsa','OK'],['Virginia Beach','VA'],['Washington','DC'],['Wichita','KS'],['Winston-Salem','NC'],['Yonkers','NY'],['Savannah','GA'],['Brownsville','TX'],['McAllen','TX'],['Midland','TX'],['Odessa','TX'],['Beaumont','TX'],['Waco','TX'],['Tyler','TX'],['Killeen','TX'],['Overland Park','KS'],['Topeka','KS'],['Fargo','ND'],['Bismarck','ND'],['Sioux Falls','SD'],['Rapid City','SD'],['Cheyenne','WY'],['Casper','WY'],['Missoula','MT'],['Bozeman','MT'],['Manchester','NH'],['Burlington','VT'],['Charleston','WV'],['Morgantown','WV'],['Gary','IN'],['South Bend','IN'],['Evansville','IN'],['Springfield','MO'],['Columbia','MO'],['Independence','MO'],['Gulfport','MS'],['Biloxi','MS'],['Hattiesburg','MS'],['Green Bay','WI'],['Kenosha','WI']];
@@ -942,6 +947,7 @@ function setDbStatus(status){
 
 // ── DATA LOADING ──────────────────────────────────────────────
 async function loadData(){
+  console.log('[FF] loadData() called');
   setDbStatus('connecting');
   try{
     const [l,c,cu,inv]=await Promise.all([
@@ -951,12 +957,13 @@ async function loadData(){
       db.from('invoices').select('*, customers(name), loads(load_number)').order('created_at',{ascending:false}),
     ]);
     if(l.error)throw l.error;
+    console.log('[FF] Data loaded:', l.data?.length,'loads,',c.data?.length,'carriers,',cu.data?.length,'customers,',inv.data?.length,'invoices');
     allLoads=l.data||[];allCarriers=c.data||[];allCustomers=cu.data||[];allInvoices=inv.data||[];
     setDbStatus('connected');
     await loadQuoteRequests();
     populateSelects();
     renderCurrentPage();
-  }catch(e){setDbStatus('error');toast('Database error: '+e.message,'error');}
+  }catch(e){console.error('[FF] loadData error:',e);setDbStatus('error');toast('Database error: '+e.message,'error');}
 }
 
 function populateSelects(){
@@ -1388,6 +1395,7 @@ function openCustomerPortal(customerId){
   if(!allCustomers.length){toast('No customers yet','error');return;}
   const customer=customerId?allCustomers.find(c=>c.id===customerId):allCustomers[0];
   if(!customer){toast('Customer not found','error');return;}
+  currentPortalCustomerId=customer.id;
   setEl('portal-company-name',`Welcome, ${customer.name}`);setEl('portal-user-name',customer.contact_name||customer.name);
   const custLoads=allLoads.filter(l=>l.customer_id===customer.id);
   const custInvoices=allInvoices.filter(i=>i.customer_id===customer.id);
@@ -1410,15 +1418,15 @@ function closeCustomerPortal(){document.getElementById('customer-portal').classL
 function togglePortalQuoteForm(){const f=document.getElementById('portal-quote-form');f.style.display=f.style.display==='none'?'block':'none';}
 
 async function submitQuoteRequest(){
-  if(!allCustomers.length){toast('No customers in system','error');return;}
-  const customer=allCustomers[0];
+  const customer=currentPortalCustomerId?allCustomers.find(c=>c.id===currentPortalCustomerId):allCustomers[0];
+  if(!customer){toast('No customer context — please reopen the portal','error');return;}
   const payload={customer_id:customer.id,origin_city:document.getElementById('quote-origin-city')?.value,origin_state:document.getElementById('quote-origin-state')?.value?.toUpperCase(),destination_city:document.getElementById('quote-dest-city')?.value,destination_state:document.getElementById('quote-dest-state')?.value?.toUpperCase(),equipment_type:document.getElementById('quote-equipment')?.value,pickup_date:document.getElementById('quote-pickup')?.value||null,commodity:document.getElementById('quote-commodity')?.value,weight:document.getElementById('quote-weight')?.value||null,notes:document.getElementById('quote-notes')?.value,status:'Pending',submitted_at:new Date().toISOString()};
   if(!payload.origin_city||!payload.destination_city){toast('Please enter origin and destination','error');return;}
   const{error}=await db.from('quote_requests').insert(payload);
   if(error){toast('Error: '+error.message,'error');return;}
   toast('Quote request submitted!','success');document.getElementById('portal-quote-form').style.display='none';
   ['quote-origin-city','quote-origin-state','quote-dest-city','quote-dest-state','quote-commodity','quote-weight','quote-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  await loadQuoteRequests();updateQuotesBadge();openCustomerPortal(customer.id);
+  await loadQuoteRequests();updateQuotesBadge();openCustomerPortal(currentPortalCustomerId);
 }
 
 // ── CRM ───────────────────────────────────────────────────────
@@ -1595,17 +1603,24 @@ function applyRolePermissions(){
 
 // ── AUTH ──────────────────────────────────────────────────────
 function checkAuth(){
-  db.auth.getSession().then(({data:{session}})=>{
+  console.log('[FF] checkAuth() called');
+  db.auth.getSession().then(({data:{session},error})=>{
+    console.log('[FF] getSession result:', session?.user?.email||'no session', error||'no error');
     if(session?.user){onSignedIn(session.user);}
     else{document.getElementById('auth-overlay').className='auth-overlay visible';}
+  }).catch(err=>{
+    console.error('[FF] getSession threw:', err);
+    document.getElementById('auth-overlay').className='auth-overlay visible';
   });
   db.auth.onAuthStateChange((event,session)=>{
+    console.log('[FF] onAuthStateChange:', event, session?.user?.email||'no user');
     if(event==='SIGNED_IN'&&session?.user)onSignedIn(session.user);
     else if(event==='SIGNED_OUT'){document.getElementById('auth-overlay').className='auth-overlay visible';currentUser=null;currentUserRole=null;}
   });
 }
 
 async function onSignedIn(user){
+  console.log('[FF] onSignedIn:', user.email);
   currentUser=user;
   document.getElementById('auth-overlay').className='auth-overlay';
   const{data:profile}=await db.from('user_profiles').select('*').eq('id',user.id).single();
@@ -1617,11 +1632,21 @@ async function onSignedIn(user){
 }
 
 function updateSidebarUser(profile){
-  const card=document.getElementById('sidebar-user-card');if(card)card.style.display='flex';
   const initials=((profile.full_name||profile.email||'?').charAt(0)).toUpperCase();
+  const name=profile.full_name||profile.email||'User';
+  const role=profile.role||'user';
+  const roleClasses={admin:'role-admin',dispatcher:'role-dispatcher',accounting:'role-accounting',readonly:'role-readonly',sales:'role-sales'};
+  const cls=roleClasses[role]||'role-readonly';
+  // sidebar
+  const card=document.getElementById('sidebar-user-card');if(card)card.style.display='flex';
   const avatarEl=document.getElementById('sidebar-avatar');if(avatarEl)avatarEl.textContent=initials;
-  setEl('sidebar-username',profile.full_name||profile.email||'User');
-  const roleEl=document.getElementById('sidebar-role-badge');if(roleEl){const roleClasses={admin:'role-admin',dispatcher:'role-dispatcher',accounting:'role-accounting',readonly:'role-readonly',sales:'role-sales'};roleEl.innerHTML=`<span class="user-role-badge ${roleClasses[profile.role]||'role-readonly'}">${profile.role||'user'}</span>`;}
+  setEl('sidebar-username',name);
+  const roleEl=document.getElementById('sidebar-role-badge');if(roleEl)roleEl.innerHTML=`<span class="user-role-badge ${cls}">${role}</span>`;
+  // topbar
+  const tc=document.getElementById('topbar-user');if(tc)tc.style.display='flex';
+  const ta=document.getElementById('topbar-avatar');if(ta)ta.textContent=initials;
+  setEl('topbar-username',name);
+  setEl('topbar-role',role);
 }
 
 async function signIn(){
