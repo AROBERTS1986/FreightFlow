@@ -797,7 +797,13 @@ textarea{resize:vertical;min-height:80px;}
     </div>
     <div class="modal-body" style="padding:20px;">
       <div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Load Status</div>
-        <div class="status-btn-group"><button class="status-btn s-available" onclick="updateLoadStatus('Available')">📋 Available</button><button class="status-btn s-pending" onclick="updateLoadStatus('Pending Acceptance')">⏳ Pending</button><button class="status-btn s-assigned" onclick="updateLoadStatus('Assigned')">✅ Assigned</button><button class="status-btn s-transit" onclick="updateLoadStatus('In Transit')">🚛 In Transit</button><button class="status-btn s-delivered" onclick="updateLoadStatus('Delivered')">📦 Delivered</button></div>
+        <div class="status-btn-group">
+  <button class="status-btn s-available" onclick="updateLoadStatus('Available')">📋 Available</button>
+  <button class="status-btn s-pending" onclick="updateLoadStatus('Pending Acceptance')">⏳ Pending</button>
+  <button class="status-btn s-assigned" onclick="updateLoadStatus('Assigned')" title="Carrier must accept rate con via Tender workflow" style="opacity:0.5;cursor:not-allowed;">🔒 Assigned</button>
+  <button class="status-btn s-transit" onclick="updateLoadStatus('In Transit')">🚛 In Transit</button>
+  <button class="status-btn s-delivered" onclick="updateLoadStatus('Delivered')">📦 Delivered</button>
+</div>
       </div>
       <div class="load-detail-grid">
         <div class="detail-section">
@@ -1463,6 +1469,14 @@ async function loadData(){
     console.log('[FF] Data loaded:', l.data?.length,'loads,',c.data?.length,'carriers,',cu.data?.length,'customers,',inv.data?.length,'invoices');
     allLoads=l.data||[];allCarriers=c.data||[];allCustomers=cu.data||[];allInvoices=inv.data||[];
     setDbStatus('connected');
+    // Auto-fix any loads stuck in Assigned with no carrier
+    const orphanedLoads = (l.data||[]).filter(ld => ld.status==='Assigned' && !ld.carrier_id);
+    if(orphanedLoads.length) {
+      await Promise.all(orphanedLoads.map(ld =>
+        db.from('loads').update({status:'Available'}).eq('id',ld.id)
+      ));
+      orphanedLoads.forEach(ld => { const found=allLoads.find(x=>x.id===ld.id); if(found)found.status='Available'; });
+    }
     await loadQuoteRequests();
     populateSelects();
     renderCurrentPage();
@@ -1785,7 +1799,7 @@ async function saveLoad(){
     delivery_date:document.getElementById('load-delivery')?.value||null,
     customer_rate:document.getElementById('load-rate')?.value||null,
     carrier_pay:document.getElementById('load-carrier-pay')?.value||null,
-    status:carrierId&&currentStatus==='Available'?'Assigned':currentStatus,
+    status:currentStatus||'Available',
     reference_number:document.getElementById('load-ref')?.value,
     bol_number:document.getElementById('load-bol')?.value||null,
     pro_number:document.getElementById('load-pro')?.value||null,
@@ -1919,7 +1933,7 @@ function openLoadDetail(loadId){
   if(rcPrev)rcPrev.style.display='none';if(rcColl)rcColl.style.display='block';
   openModal('detail');
   populateNewDetailFields(loadId);
-  // Show/hide tender vs remove carrier button based on load status
+  // Show/hide tender vs remove carrier button + lock/unlock status btns
   const tenderBtn = document.getElementById('tender-btn');
   const removeBtn = document.getElementById('remove-carrier-btn');
   const loadForDetail = allLoads.find(x => x.id === loadId);
@@ -1929,6 +1943,13 @@ function openLoadDetail(loadId){
     const isAssigned = ['Assigned','In Transit'].includes(loadForDetail.status);
     tenderBtn.style.display = hasCarrier ? 'none' : '';
     removeBtn.style.display = (hasCarrier && (isPending || isAssigned)) ? '' : 'none';
+
+    // Unlock In Transit button if carrier is assigned
+    const transitBtn = document.querySelector('.status-btn.s-transit');
+    if(transitBtn) {
+      if(hasCarrier) { transitBtn.style.opacity=''; transitBtn.style.cursor=''; }
+      else { transitBtn.style.opacity='0.5'; transitBtn.style.cursor='not-allowed'; }
+    }
   }
   // Reset and render milestone timeline
   resetMilestonesForLoad(loadId);
@@ -1936,6 +1957,19 @@ function openLoadDetail(loadId){
 
 async function updateLoadStatus(newStatus){
   if(!currentDetailLoadId)return;
+  const l=allLoads.find(x=>x.id===currentDetailLoadId);
+
+  // Block manual Assigned — must go through Tender workflow
+  if(newStatus==='Assigned'){
+    toast('⚠️ Use "Tender to Carrier" to assign a carrier. The carrier must accept a rate confirmation first.','error');
+    return;
+  }
+  // Block In Transit if no carrier
+  if(newStatus==='In Transit'&&(!l||!l.carrier_id)){
+    toast('⚠️ A carrier must be assigned before marking In Transit.','error');
+    return;
+  }
+
   const{error}=await db.from('loads').update({status:newStatus}).eq('id',currentDetailLoadId);
   if(error){toast('Error: '+error.message,'error');return;}
   document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
