@@ -317,6 +317,31 @@ textarea{resize:vertical;min-height:80px;}
 .repower-banner{background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
 .load-template-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:all 0.15s;}
 .load-template-item:hover{border-color:var(--accent);background:var(--accent-dim);}
+
+@keyframes detentionPulse {
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.5);}
+  50%{box-shadow:0 0 0 10px rgba(239,68,68,0);}
+}
+.detention-alert-card {
+  border:2px solid var(--red) !important;
+  animation:detentionPulse 2s infinite;
+}
+.check-call-alert-banner {
+  background:var(--red-dim);
+  border:1px solid rgba(239,68,68,0.4);
+  border-radius:10px;
+  padding:12px 14px;
+  margin-top:12px;
+  display:none;
+}
+.check-call-alert-banner.visible { display:block; }
+.check-call-quick-form {
+  display:none;
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid rgba(239,68,68,0.2);
+}
+.check-call-quick-form.visible { display:block; }
 </style>
 </head>
 <body>
@@ -888,6 +913,38 @@ textarea{resize:vertical;min-height:80px;}
           <div id="detention-display" style="display:none;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--green-dim);color:var(--green);">⏱ 0:00:00</div>
         </div>
         <div id="milestone-timeline" style="display:flex;flex-direction:column;gap:0;"></div>
+
+        <!-- DETENTION CHECK CALL ALERT -->
+        <div class="check-call-alert-banner" id="checkcall-alert">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;">🔴</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--red);" id="checkcall-alert-title">Check Call Needed</div>
+                <div style="font-size:11px;color:var(--text2);" id="checkcall-alert-sub">Driver has been at location for 2h 00m — detention is running</div>
+              </div>
+            </div>
+            <button class="btn btn-sm" style="background:var(--red);color:white;font-size:11px;" onclick="toggleCheckCallQuickForm()">📞 Log Check Call</button>
+          </div>
+          <div class="check-call-quick-form" id="checkcall-quick-form">
+            <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Quick Check Call</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <input type="text" id="qcc-contact" placeholder="Spoke with (driver/dispatcher)" style="font-size:12px;padding:7px 10px;"/>
+              <select id="qcc-status" style="font-size:12px;padding:7px 10px;">
+                <option value="On Time">✅ On Time</option>
+                <option value="Delayed">⚠️ Delayed</option>
+                <option value="Issue">🔴 Issue</option>
+              </select>
+            </div>
+            <textarea id="qcc-notes" placeholder="Notes — ETA update, issues, instructions…" style="width:100%;min-height:55px;font-size:12px;padding:7px 10px;margin-bottom:8px;border-color:rgba(239,68,68,0.3);"></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button class="btn btn-ghost btn-sm" onclick="toggleCheckCallQuickForm()">Cancel</button>
+              <button class="btn btn-sm" style="background:var(--red);color:white;" onclick="logQuickCheckCall()">Save Check Call →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MILESTONE NOTE FORM -->
         <div id="milestone-note-form" style="display:none;margin-top:12px;padding:12px;background:var(--surface3);border-radius:10px;">
           <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;" id="milestone-note-label">Notes for this milestone</div>
           <textarea id="milestone-note-input" placeholder="Optional notes…" style="width:100%;min-height:60px;font-size:12px;margin-bottom:8px;"></textarea>
@@ -2028,15 +2085,84 @@ function updateDetentionDisplay() {
   const m = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
   const s = String(elapsed%60).padStart(2,'0');
   const display = document.getElementById('detention-display');
-  if(!display) return;
-  display.textContent = `⏱ ${h}:${m}:${s}`;
-  if(elapsed >= 7200) { // 2 hours — turn red, detention is now billable
-    display.style.background = 'var(--red-dim)';
-    display.style.color = 'var(--red)';
-  } else {
-    display.style.background = 'var(--green-dim)';
-    display.style.color = 'var(--green)';
+  if(display) {
+    display.textContent = `⏱ ${h}:${m}:${s}`;
+    if(elapsed >= 7200) {
+      display.style.background = 'var(--red-dim)';
+      display.style.color = 'var(--red)';
+    } else {
+      display.style.background = 'var(--green-dim)';
+      display.style.color = 'var(--green)';
+    }
   }
+
+  // At 2 hour mark — trigger card pulse + alert banner
+  const milestoneCard = document.querySelector('#modal-detail .detention-alert-card') ||
+                        document.getElementById('milestone-timeline')?.closest('[style*="background:var(--surface2)"]');
+  const alertBanner = document.getElementById('checkcall-alert');
+  const alertTitle = document.getElementById('checkcall-alert-title');
+  const alertSub = document.getElementById('checkcall-alert-sub');
+
+  // Find the milestone section card
+  const milestoneSection = document.getElementById('milestone-timeline')?.parentElement;
+
+  const totalMins = Math.floor(elapsed / 60);
+  const overMins = Math.max(0, totalMins - 120);
+  const locationLabel = detentionPhase === 'shipper' ? 'shipper' : 'receiver';
+
+  if(elapsed >= 7200) {
+    // Add pulsing red border to milestone card
+    if(milestoneSection) milestoneSection.classList.add('detention-alert-card');
+    // Show alert banner
+    if(alertBanner) alertBanner.classList.add('visible');
+    if(alertTitle) alertTitle.textContent = `🔴 Check Call Needed — ${overMins} min${overMins!==1?'s':''} of billable detention at ${locationLabel}`;
+    if(alertSub) alertSub.textContent = `Driver has been at ${locationLabel} for ${h}h ${m}m — free time expired, detention is running at $75/hr`;
+    // Flash the load card on dispatch board too if visible
+    const loadCard = document.querySelector(`.load-card[onclick*="${currentDetailLoadId}"]`);
+    if(loadCard) loadCard.style.outline = '2px solid var(--red)';
+  } else {
+    if(milestoneSection) milestoneSection.classList.remove('detention-alert-card');
+    if(alertBanner) alertBanner.classList.remove('visible');
+    const loadCard = document.querySelector(`.load-card[onclick*="${currentDetailLoadId}"]`);
+    if(loadCard) loadCard.style.outline = '';
+  }
+}
+
+// ── QUICK CHECK CALL ──────────────────────────────────────────
+let lastCheckCallTime = null;
+
+function toggleCheckCallQuickForm() {
+  const form = document.getElementById('checkcall-quick-form');
+  if(form) form.classList.toggle('visible');
+}
+
+async function logQuickCheckCall() {
+  const contact = document.getElementById('qcc-contact')?.value?.trim();
+  const status = document.getElementById('qcc-status')?.value || 'On Time';
+  const notes = document.getElementById('qcc-notes')?.value?.trim();
+  if(!notes && !contact) { toast('Please add notes or contact name', 'error'); return; }
+  lastCheckCallTime = new Date();
+  // Save to DB
+  try {
+    await db.from('check_calls').insert({
+      load_id: currentDetailLoadId,
+      contact: contact || null,
+      status,
+      notes: notes || null,
+    });
+  } catch(e) {}
+  // Update alert to show last check call time
+  const alertSub = document.getElementById('checkcall-alert-sub');
+  if(alertSub) {
+    const locationLabel = detentionPhase === 'shipper' ? 'shipper' : 'receiver';
+    alertSub.textContent = `Last check call: ${lastCheckCallTime.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})} — detention still running`;
+  }
+  // Clear form
+  const contact_el = document.getElementById('qcc-contact'); if(contact_el) contact_el.value = '';
+  const notes_el = document.getElementById('qcc-notes'); if(notes_el) notes_el.value = '';
+  const form = document.getElementById('checkcall-quick-form');
+  if(form) form.classList.remove('visible');
+  toast('Check call logged! ✅', 'success');
 }
 
 function resetMilestonesForLoad(loadId) {
@@ -2044,6 +2170,11 @@ function resetMilestonesForLoad(loadId) {
   detentionStart = null; pendingMilestone = null;
   const display = document.getElementById('detention-display'); if(display) display.style.display = 'none';
   const form = document.getElementById('milestone-note-form'); if(form) form.style.display = 'none';
+  const alert = document.getElementById('checkcall-alert'); if(alert) alert.classList.remove('visible');
+  const qform = document.getElementById('checkcall-quick-form'); if(qform) qform.classList.remove('visible');
+  const ms = document.getElementById('milestone-timeline')?.parentElement;
+  if(ms) ms.classList.remove('detention-alert-card');
+  lastCheckCallTime = null;
   renderMilestoneTimeline(loadId);
 }
 
