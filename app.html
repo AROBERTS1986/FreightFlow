@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
 <style>
-:root{--bg:#0b0f1a;--surface:#111827;--surface2:#1a2235;--surface3:#1f2a40;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--accent:#3b82f6;--accent2:#60a5fa;--accent-dim:rgba(59,130,246,0.12);--green:#10b981;--green-dim:rgba(16,185,129,0.12);--amber:#f59e0b;--amber-dim:rgba(245,158,11,0.12);--red:#ef4444;--red-dim:rgba(239,68,68,0.12);--purple:#8b5cf6;--purple-dim:rgba(139,92,246,0.12);--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--sidebar-w:220px;--header-h:58px;}
+:root{--bg:#0b0f1a;--surface:#111827;--surface2:#1a2235;--surface3:#1f2a40;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--accent:#3b82f6;--accent2:#60a5fa;--accent-dim:rgba(59,130,246,0.12);--green:#10b981;--green-dim:rgba(16,185,129,0.12);--amber:#f59e0b;--amber-dim:rgba(245,158,11,0.12);--red:#ef4444;--red-dim:rgba(239,68,68,0.12);--purple:#8b5cf6;--purple-dim:rgba(139,92,246,0.12);--text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--sidebar-w:235px;--header-h:58px;}
 body.light-mode{--bg:#f0f4f8;--surface:#ffffff;--surface2:#f8fafc;--surface3:#eef2f7;--border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.15);--text:#0f172a;--text2:#334155;--text3:#64748b;--accent-dim:rgba(59,130,246,0.10);--green-dim:rgba(16,185,129,0.10);--amber-dim:rgba(245,158,11,0.10);--red-dim:rgba(239,68,68,0.10);--purple-dim:rgba(139,92,246,0.10);}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden;font-size:14px;}
@@ -279,6 +279,23 @@ textarea{resize:vertical;min-height:80px;}
 .mobile-menu-btn{display:none;background:transparent;border:none;color:var(--text2);cursor:pointer;font-size:22px;padding:4px;}
 .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;}
 .mobile-overlay.visible{display:block;}
+
+.admin-panel-overlay{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);}
+.admin-panel-overlay.open{display:flex;align-items:flex-start;justify-content:flex-end;padding:68px 16px 0 0;}
+.admin-panel{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.6);animation:fadeSlide 0.2s ease both;}
+.admin-panel-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.admin-panel-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);}
+.admin-section{padding:14px 20px;border-bottom:1px solid var(--border);}
+.admin-section-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+.admin-action{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:all 0.15s;}
+.admin-action:hover{background:var(--surface2);}
+.admin-action-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.admin-action-text{flex:1;}
+.admin-action-title{font-size:13px;font-weight:600;color:var(--text);}
+.admin-action-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.admin-action-arrow{color:var(--text3);font-size:14px;}
+.user-info-card{display:flex;align-items:center;gap:12px;padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.user-info-avatar{width:44px;height:44px;background:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -293,7 +310,7 @@ textarea{resize:vertical;min-height:80px;}
       <circle cx="20" cy="15" r="2.5" fill="#10B981"/>
     </svg>
     <div style="min-width:0;">
-      <div class="logo-text" style="font-size:15px;white-space:nowrap;">Freight<span>FlowHQ</span></div>
+      <div class="logo-text" style="font-size:14px;white-space:nowrap;letter-spacing:-0.5px;">Freight<span>FlowHQ</span></div>
       <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:1px;">Transport Mgmt</div>
     </div>
   </div>
@@ -905,6 +922,145 @@ textarea{resize:vertical;min-height:80px;}
         <div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="togglePortalQuoteForm()" style="background:transparent;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;color:#64748b;">Cancel</button><button onclick="submitQuoteRequest()" style="background:#2563EB;color:white;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;">Submit Request →</button></div>
       </div>
       <div id="portal-quotes-list" style="padding:16px;"><div style="text-align:center;color:#64748b;font-size:13px;padding:12px;">No quote requests yet</div></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- SUPER ADMIN PANEL -->
+<div class="admin-panel-overlay" id="admin-panel-overlay" onclick="closeAdminPanel(event)">
+  <div class="admin-panel">
+    <div class="admin-panel-header">
+      <div class="admin-panel-title">⚡ Super Admin</div>
+      <button class="modal-close" onclick="closeAdminPanel()">✕</button>
+    </div>
+    <div class="user-info-card">
+      <div class="user-info-avatar" id="admin-avatar">A</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);" id="admin-name">Loading…</div>
+        <div style="font-size:12px;color:var(--text3);" id="admin-email"></div>
+        <div style="margin-top:4px;"><span class="user-role-badge role-admin">Super Admin</span></div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-label">🏢 Tenant Management</div>
+      <div class="admin-action" onclick="openAdminModal('new-tenant')">
+        <div class="admin-action-icon" style="background:var(--accent-dim);">➕</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title">Add New Customer (Tenant)</div>
+          <div class="admin-action-sub">Onboard a new brokerage or carrier onto FreightFlowHQ</div>
+        </div>
+        <div class="admin-action-arrow">›</div>
+      </div>
+      <div class="admin-action" onclick="openAdminModal('view-tenants')">
+        <div class="admin-action-icon" style="background:var(--green-dim);">🏢</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title">View All Tenants</div>
+          <div class="admin-action-sub">See all companies using FreightFlowHQ</div>
+        </div>
+        <div class="admin-action-arrow">›</div>
+      </div>
+      <div class="admin-action" onclick="openAdminModal('billing')">
+        <div class="admin-action-icon" style="background:var(--purple-dim);">💳</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title">Billing & Subscriptions</div>
+          <div class="admin-action-sub">Manage plans, invoices and payment status</div>
+        </div>
+        <div class="admin-action-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-label">👥 User Management</div>
+      <div class="admin-action" onclick="openAdminModal('invite')">
+        <div class="admin-action-icon" style="background:var(--accent-dim);">📧</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title">Invite User</div>
+          <div class="admin-action-sub">Send an invite link to a new team member</div>
+        </div>
+        <div class="admin-action-arrow">›</div>
+      </div>
+      <div class="admin-action" onclick="switchPage('users');closeAdminPanel()">
+        <div class="admin-action-icon" style="background:var(--amber-dim);">👤</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title">Manage Users</div>
+          <div class="admin-action-sub">View, edit roles, deactivate users</div>
+        </div>
+        <div class="admin-action-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-label">⚙️ Platform</div>
+      <div class="admin-action" onclick="switchPage('settings');closeAdminPanel()">
+        <div class="admin-action-icon" style="background:var(--surface3);">🏢</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title">Company Settings</div>
+          <div class="admin-action-sub">Profile, branding, permissions</div>
+        </div>
+        <div class="admin-action-arrow">›</div>
+      </div>
+      <div class="admin-action" onclick="switchPage('integrations');closeAdminPanel()">
+        <div class="admin-action-icon" style="background:var(--surface3);">🔌</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title">Integrations</div>
+          <div class="admin-action-sub">Manage connected tools and APIs</div>
+        </div>
+        <div class="admin-action-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="admin-section" style="border-bottom:none;">
+      <div class="admin-action" onclick="signOut()" style="border:1px solid var(--red);border-radius:10px;">
+        <div class="admin-action-icon" style="background:var(--red-dim);">🚪</div>
+        <div class="admin-action-text">
+          <div class="admin-action-title" style="color:var(--red);">Sign Out</div>
+          <div class="admin-action-sub">Sign out of FreightFlowHQ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL: New Tenant -->
+<div class="modal-overlay" id="modal-new-tenant" style="z-index:800;">
+  <div class="modal" style="width:560px;">
+    <div class="modal-header"><div class="modal-title">🏢 Add New Tenant</div><button class="modal-close" onclick="closeModal('new-tenant')">✕</button></div>
+    <div class="modal-body">
+      <div style="background:var(--accent-dim);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent2);margin-bottom:16px;">This creates a new company account on FreightFlowHQ with their own data workspace.</div>
+      <div class="form-grid">
+        <div class="form-group full"><label>Company Name *</label><input type="text" id="nt-company" placeholder="Acme Freight Brokerage"/></div>
+        <div class="form-group"><label>Admin First Name</label><input type="text" id="nt-fname" placeholder="John"/></div>
+        <div class="form-group"><label>Admin Last Name</label><input type="text" id="nt-lname" placeholder="Smith"/></div>
+        <div class="form-group full"><label>Admin Email *</label><input type="email" id="nt-email" placeholder="john@acmefreight.com"/></div>
+        <div class="form-group"><label>Plan</label><select id="nt-plan"><option>Starter</option><option>Growth</option><option>Professional</option><option>Enterprise</option></select></div>
+        <div class="form-group"><label>MC Number</label><input type="text" id="nt-mc" placeholder="123456"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('new-tenant')">Cancel</button>
+      <button class="btn btn-primary" onclick="createTenant()">Create Tenant →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL: Invite User -->
+<div class="modal-overlay" id="modal-invite" style="z-index:800;">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header"><div class="modal-title">📧 Invite User</div><button class="modal-close" onclick="closeModal('invite')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full"><label>Email Address *</label><input type="email" id="inv-email-addr" placeholder="user@company.com"/></div>
+        <div class="form-group full"><label>Full Name</label><input type="text" id="inv-fullname" placeholder="Jane Smith"/></div>
+        <div class="form-group"><label>Role</label><select id="inv-role-select"><option value="dispatcher">Dispatcher</option><option value="accounting">Accounting</option><option value="sales">Sales</option><option value="readonly">Read-Only</option><option value="admin">Admin</option></select></div>
+        <div class="form-group"><label>Access Level</label><select id="inv-access"><option>Full Access</option><option>View Only</option></select></div>
+        <div class="form-group full"><label>Personal Message (optional)</label><textarea id="inv-message" placeholder="Hey! I'd like to invite you to our FreightFlowHQ account…" style="min-height:70px;"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('invite')">Cancel</button>
+      <button class="btn btn-primary" onclick="sendInvite()">Send Invite →</button>
     </div>
   </div>
 </div>
@@ -1673,7 +1829,59 @@ async function signIn(){
 }
 
 async function signOut(){const{error}=await db.auth.signOut();if(error)toast('Error signing out','error');}
-function showUserMenu(){if(confirm('Sign out of FreightFlowHQ?'))signOut();}
+function showUserMenu(){
+  if(currentUserRole==='admin'){
+    // populate admin panel with current user info
+    const name=document.getElementById('topbar-username')?.textContent||'Admin';
+    const email=currentUser?.email||'';
+    const initials=name.charAt(0).toUpperCase();
+    const av=document.getElementById('admin-avatar');if(av)av.textContent=initials;
+    const an=document.getElementById('admin-name');if(an)an.textContent=name;
+    const ae=document.getElementById('admin-email');if(ae)ae.textContent=email;
+    document.getElementById('admin-panel-overlay').classList.add('open');
+  } else {
+    if(confirm('Sign out of FreightFlowHQ?'))signOut();
+  }
+}
+function closeAdminPanel(e){
+  if(e&&e.target!==document.getElementById('admin-panel-overlay'))return;
+  document.getElementById('admin-panel-overlay').classList.remove('open');
+}
+function openAdminModal(type){
+  closeAdminPanel();
+  if(type==='new-tenant')openModal('new-tenant');
+  else if(type==='invite')openModal('invite');
+  else if(type==='view-tenants'){switchPage('users');toast('Tenant management coming in V1.1','info');}
+  else if(type==='billing'){switchPage('settings');setTimeout(()=>switchSettingsTab('subscription'),300);}
+}
+async function createTenant(){
+  const company=document.getElementById('nt-company')?.value?.trim();
+  const email=document.getElementById('nt-email')?.value?.trim();
+  const fname=document.getElementById('nt-fname')?.value?.trim();
+  const lname=document.getElementById('nt-lname')?.value?.trim();
+  const plan=document.getElementById('nt-plan')?.value;
+  const mc=document.getElementById('nt-mc')?.value?.trim();
+  if(!company||!email){toast('Company name and email are required','error');return;}
+  toast('Creating tenant account…','info');
+  // Create auth user for the tenant admin
+  const{data,error}=await db.auth.signUp({email,password:Math.random().toString(36).slice(2,10)+'A1!',options:{data:{full_name:fname+' '+lname,company}}});
+  if(error&&!error.message.includes('already')){toast('Error: '+error.message,'error');return;}
+  toast(`Tenant "${company}" created! Invite sent to ${email}`,'success');
+  closeModal('new-tenant');
+  ['nt-company','nt-fname','nt-lname','nt-email','nt-mc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+async function sendInvite(){
+  const email=document.getElementById('inv-email-addr')?.value?.trim();
+  const name=document.getElementById('inv-fullname')?.value?.trim();
+  const role=document.getElementById('inv-role-select')?.value;
+  if(!email){toast('Email is required','error');return;}
+  const{data,error}=await db.auth.signUp({email,password:Math.random().toString(36).slice(2,10)+'A1!',options:{data:{full_name:name||''}}});
+  if(error&&!error.message.includes('already')){toast('Error: '+error.message,'error');return;}
+  if(data?.user){await db.from('user_profiles').upsert({id:data.user.id,email,full_name:name||'',role,status:'Active'},{onConflict:'id'});}
+  toast(`Invite sent to ${email}!`,'success');
+  closeModal('invite');
+  ['inv-email-addr','inv-fullname','inv-message'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
 function showForgotPassword(){document.getElementById('screen-login').style.display='none';document.getElementById('screen-forgot').style.display='block';const e=document.getElementById('forgot-error'),s=document.getElementById('forgot-success');if(e)e.className='auth-error';if(s)s.className='auth-success';}
 function showLogin(){document.getElementById('screen-forgot').style.display='none';document.getElementById('screen-login').style.display='block';}
 
