@@ -453,7 +453,107 @@ textarea{resize:vertical;min-height:80px;}
 
   <!-- CARRIERS -->
   <div class="content" id="page-carriers">
-    <div class="card"><div class="card-header"><div class="card-title" id="carriers-title">Carriers</div><button class="btn btn-primary btn-sm" onclick="openModal('carrier')">+ Add Carrier</button></div><div id="carriers-body"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    <!-- VETTING PIPELINE TABS -->
+    <div style="display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content;margin-bottom:16px;">
+      <button class="inv-tab active" id="ctab-network" onclick="switchCarrierTab('network')">🚚 My Network</button>
+      <button class="inv-tab" id="ctab-vet" onclick="switchCarrierTab('vet')">🔍 Find & Vet Carrier</button>
+      <button class="inv-tab" id="ctab-onboarding" onclick="switchCarrierTab('onboarding')">📋 Onboarding Queue</button>
+    </div>
+
+    <!-- MY NETWORK -->
+    <div id="cview-network">
+      <div class="card"><div class="card-header"><div class="card-title" id="carriers-title">Carrier Network</div><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="switchCarrierTab('vet')">🔍 Find & Vet</button><button class="btn btn-primary btn-sm" onclick="openModal('carrier')">+ Add Carrier</button></div></div><div id="carriers-body"><div class="loading"><div class="spinner"></div> Loading…</div></div></div>
+    </div>
+
+    <!-- FIND & VET -->
+    <div id="cview-vet" style="display:none;">
+      <div style="display:grid;grid-template-columns:400px 1fr;gap:16px;">
+        <!-- Search Panel -->
+        <div>
+          <div class="card" style="margin-bottom:12px;">
+            <div class="card-header"><div class="card-title">🔍 Carrier Lookup</div></div>
+            <div style="padding:16px;">
+              <div class="form-group" style="margin-bottom:12px;">
+                <label>Search by MC# or DOT#</label>
+                <input type="text" id="vet-search-input" placeholder="MC123456 or DOT789012" style="font-size:13px;" onkeydown="if(event.key==='Enter')runCarrierLookup()"/>
+              </div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="runCarrierLookup()">🔍 FMCSA Lookup →</button>
+              <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:8px;">
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:6px;">3rd Party Vetting</div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">Add your client's API keys in Integrations to enable Highway or RMIS vetting.</div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="runHighwayLookup()" id="highway-btn">Highway →</button>
+                  <button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="runRMISLookup()" id="rmis-btn">RMIS →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vetting Checklist -->
+          <div class="card" id="vet-checklist" style="display:none;">
+            <div class="card-header"><div class="card-title">✅ Vetting Checklist</div></div>
+            <div style="padding:12px 16px;" id="vet-checklist-body"></div>
+            <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" style="flex:1;" onclick="addVettedCarrierToNetwork()">✅ Add to Network →</button>
+              <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="sendVettingPacket()">📧 Send Packet</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div>
+          <div id="vet-results-placeholder" class="card" style="padding:40px;text-align:center;">
+            <div style="font-size:48px;margin-bottom:12px;">🔍</div>
+            <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;">Search for a Carrier</div>
+            <div style="font-size:13px;color:var(--text3);">Enter an MC# or DOT# to pull FMCSA data and vet the carrier before adding them to your network.</div>
+          </div>
+          <div id="vet-results" style="display:none;">
+            <!-- FMCSA Results Card -->
+            <div class="card" style="margin-bottom:12px;">
+              <div class="card-header">
+                <div><div class="card-title" id="vet-carrier-name">Carrier Name</div><div style="font-size:12px;color:var(--text3);margin-top:2px;" id="vet-carrier-dba"></div></div>
+                <div id="vet-overall-badge"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--border);">
+                <div style="padding:12px 16px;border-right:1px solid var(--border);">
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Authority</div>
+                  <div style="font-size:16px;font-weight:700;" id="vet-authority">—</div>
+                </div>
+                <div style="padding:12px 16px;border-right:1px solid var(--border);">
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Safety Rating</div>
+                  <div style="font-size:16px;font-weight:700;" id="vet-safety">—</div>
+                </div>
+                <div style="padding:12px 16px;">
+                  <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">OOS %</div>
+                  <div style="font-size:16px;font-weight:700;" id="vet-oos">—</div>
+                </div>
+              </div>
+              <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="vet-details-grid"></div>
+            </div>
+
+            <!-- Highway/RMIS Results (if available) -->
+            <div id="vet-third-party" style="display:none;" class="card" style="margin-bottom:12px;">
+              <div class="card-header"><div class="card-title" id="vet-third-party-title">3rd Party Verification</div></div>
+              <div style="padding:16px;" id="vet-third-party-body"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONBOARDING QUEUE -->
+    <div id="cview-onboarding" style="display:none;">
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
+        <div class="kpi-card amber"><div class="kpi-label">Pending</div><div class="kpi-value" id="onb-pending">—</div><div class="kpi-sub">Not started</div></div>
+        <div class="kpi-card blue"><div class="kpi-label">W9 Sent</div><div class="kpi-value" id="onb-w9">—</div><div class="kpi-sub">Awaiting return</div></div>
+        <div class="kpi-card purple"><div class="kpi-label">Insurance</div><div class="kpi-value" id="onb-ins">—</div><div class="kpi-sub">Being verified</div></div>
+        <div class="kpi-card green"><div class="kpi-label">Active</div><div class="kpi-value" id="onb-active">—</div><div class="kpi-sub">Fully onboarded</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Onboarding Queue</div><button class="btn btn-ghost btn-sm" onclick="renderOnboardingQueue()">↻ Refresh</button></div>
+        <div id="onboarding-queue-body"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
   </div>
 
   <!-- CUSTOMERS -->
@@ -2309,20 +2409,6 @@ function openTenderModal() {
   openModal('tender');
 }
 
-function populateTenderCarrierInfo() {
-  const carrierId = document.getElementById('tender-carrier-select')?.value;
-  const infoBox = document.getElementById('tender-carrier-info');
-  if(!carrierId) { if(infoBox) infoBox.style.display = 'none'; return; }
-  const c = allCarriers.find(x => x.id === carrierId); if(!c) return;
-  if(infoBox) infoBox.style.display = 'block';
-  setEl('ti-mc', c.mc_number || '—');
-  setEl('ti-phone', c.phone || '—');
-  setEl('ti-email', c.email || '—');
-  setEl('ti-ins', c.insurance_expiry ? fmtDate(c.insurance_expiry) : '—');
-  // Warn if DNL or expired insurance
-  if(c.do_not_use) toast('⚠️ This carrier is on the Do Not Use list!', 'error');
-  if(c.insurance_expiry && new Date(c.insurance_expiry) < new Date()) toast('⚠️ This carrier has expired insurance!', 'error');
-}
 
 async function sendTender() {
   const carrierId = document.getElementById('tender-carrier-select')?.value;
@@ -3280,6 +3366,264 @@ async function sendFullPacket() {
 
 // ── FIX user_profiles upsert 400 error ────────────────────────
 // The error is caused by missing columns — patch onSignedIn to be safe
+
+
+// ── CARRIER VETTING PIPELINE ──────────────────────────────────
+let currentVetData = null;
+let currentCarrierTab = 'network';
+
+function switchCarrierTab(tab) {
+  currentCarrierTab = tab;
+  ['network','vet','onboarding'].forEach(t => {
+    const btn = document.getElementById('ctab-' + t);
+    const view = document.getElementById('cview-' + t);
+    if(btn) btn.className = t === tab ? 'inv-tab active' : 'inv-tab';
+    if(view) view.style.display = t === tab ? 'block' : 'none';
+  });
+  if(tab === 'onboarding') renderOnboardingQueue();
+}
+
+async function runCarrierLookup() {
+  const input = document.getElementById('vet-search-input')?.value?.trim().replace(/\D/g,'');
+  if(!input) { toast('Please enter an MC# or DOT#', 'error'); return; }
+
+  const placeholder = document.getElementById('vet-results-placeholder');
+  const results = document.getElementById('vet-results');
+  if(placeholder) placeholder.innerHTML = '<div style="padding:40px;text-align:center;"><div class="spinner" style="margin:0 auto 12px;"></div><div style="font-size:13px;color:var(--text3);">Looking up FMCSA data…</div></div>';
+  if(results) results.style.display = 'none';
+
+  try {
+    // FMCSA API — try MC first then DOT
+    const resp = await fetch(`https://mobile.fmcsa.dot.gov/qc/services/carriers/${input}?webKey=2f46cef8c4bda4b7b0d31c7573b14e74b4a6f0e7`);
+    let data = null;
+
+    if(resp.ok) {
+      const json = await resp.json();
+      data = json.content?.carrier || json.carrier || null;
+    }
+
+    // If MC lookup failed, try as DOT
+    if(!data) {
+      const resp2 = await fetch(`https://mobile.fmcsa.dot.gov/qc/services/carriers/docket-number/${input}?webKey=2f46cef8c4bda4b7b0d31c7573b14e74b4a6f0e7`);
+      if(resp2.ok) {
+        const json2 = await resp2.json();
+        data = json2.content?.carrier || json2.carrier || null;
+      }
+    }
+
+    if(!data) {
+      if(placeholder) placeholder.innerHTML = `<div style="padding:40px;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">❌</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--red);">No Results Found</div><div style="font-size:13px;color:var(--text3);margin-top:8px;">No carrier found for "${input}". Check the MC# or DOT# and try again.</div></div>`;
+      return;
+    }
+
+    currentVetData = data;
+    displayVetResults(data);
+  } catch(e) {
+    if(placeholder) placeholder.innerHTML = `<div style="padding:40px;text-align:center;"><div style="font-size:48px;margin-bottom:12px;">⚠️</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--amber);">FMCSA Lookup Failed</div><div style="font-size:13px;color:var(--text3);margin-top:8px;">${e.message}</div></div>`;
+  }
+}
+
+function displayVetResults(d) {
+  const placeholder = document.getElementById('vet-results-placeholder');
+  const results = document.getElementById('vet-results');
+  if(placeholder) placeholder.style.display = 'none';
+  if(results) results.style.display = 'block';
+
+  const name = d.legalName || d.dbaName || 'Unknown Carrier';
+  const dba = d.dbaName && d.dbaName !== d.legalName ? 'DBA: ' + d.dbaName : '';
+  setEl('vet-carrier-name', name);
+  setEl('vet-carrier-dba', dba);
+
+  // Authority
+  const hasAuth = d.carrierOperation?.carrierOperationCode === 'A' || d.commonAuthorityStatus === 'A' || d.brokerAuthorityStatus === 'A' || d.carrierAuthorityStatus === 'A';
+  const authEl = document.getElementById('vet-authority');
+  if(authEl) { authEl.textContent = hasAuth ? '✅ Active' : '❌ Inactive'; authEl.style.color = hasAuth ? 'var(--green)' : 'var(--red)'; }
+
+  // Safety rating
+  const safety = d.safetyRating || d.safetyRatingDate ? d.safetyRating : 'Unrated';
+  const safetyEl = document.getElementById('vet-safety');
+  const safetyColor = safety === 'Satisfactory' ? 'var(--green)' : safety === 'Conditional' ? 'var(--amber)' : safety === 'Unsatisfactory' ? 'var(--red)' : 'var(--text2)';
+  if(safetyEl) { safetyEl.textContent = safety || 'Unrated'; safetyEl.style.color = safetyColor; }
+
+  // OOS %
+  const oosDriver = d.oosDriverInsp ? ((d.oosDriverInsp / Math.max(d.driverInsp||1,1))*100).toFixed(1) : '—';
+  const oosVehicle = d.oosVehicleInsp ? ((d.oosVehicleInsp / Math.max(d.vehicleInsp||1,1))*100).toFixed(1) : '—';
+  const oosEl = document.getElementById('vet-oos');
+  const oosNum = parseFloat(oosVehicle) || 0;
+  const oosColor = oosNum > 20 ? 'var(--red)' : oosNum > 10 ? 'var(--amber)' : 'var(--green)';
+  if(oosEl) { oosEl.textContent = oosVehicle !== '—' ? oosVehicle + '%' : '—'; oosEl.style.color = oosColor; }
+
+  // Overall badge
+  const passes = hasAuth && safety !== 'Unsatisfactory' && oosNum < 20;
+  const badgeEl = document.getElementById('vet-overall-badge');
+  if(badgeEl) badgeEl.innerHTML = passes
+    ? '<span style="background:var(--green-dim);color:var(--green);border:1px solid var(--green);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;">✅ PASSES VETTING</span>'
+    : '<span style="background:var(--red-dim);color:var(--red);border:1px solid var(--red);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;">❌ REVIEW REQUIRED</span>';
+
+  // Details grid
+  const grid = document.getElementById('vet-details-grid');
+  if(grid) grid.innerHTML = [
+    ['MC #', d.dotNumber ? 'MC-' + (d.docketNumber||'—') : '—'],
+    ['DOT #', d.dotNumber || '—'],
+    ['Phone', d.telephone || '—'],
+    ['State', d.phyState || '—'],
+    ['City', d.phyCity || '—'],
+    ['Equipment', d.carrierOperation?.carrierOperationDesc || '—'],
+    ['Total Drivers', d.totalDrivers || '—'],
+    ['Total Trucks', d.totalTrucks || '—'],
+    ['Crashes (2yr)', d.crashTotal || '0'],
+    ['Fatalities', d.fatalCrash || '0'],
+  ].map(([label,val]) => `
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:3px;">${label}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text);">${val}</div>
+    </div>`).join('');
+
+  // Build checklist
+  buildVetChecklist(d, passes, hasAuth, safety, oosNum);
+}
+
+function buildVetChecklist(d, passes, hasAuth, safety, oosNum) {
+  const checklist = document.getElementById('vet-checklist');
+  const body = document.getElementById('vet-checklist-body');
+  if(!checklist || !body) return;
+  checklist.style.display = 'block';
+
+  const checks = [
+    { label: 'Operating Authority Active', pass: hasAuth, detail: hasAuth ? 'Authority is active' : 'No active authority found' },
+    { label: 'Safety Rating Acceptable', pass: safety !== 'Unsatisfactory', detail: `Rating: ${safety||'Unrated'}` },
+    { label: 'OOS Rate < 20%', pass: oosNum < 20, detail: oosNum > 0 ? `Vehicle OOS: ${oosNum.toFixed(1)}%` : 'No inspection data' },
+    { label: 'Not on DNL List', pass: !allCarriers.find(c => c.do_not_use && (c.mc_number === String(d.docketNumber) || c.dot_number === String(d.dotNumber))), detail: 'Checked against your DNL list' },
+    { label: 'No Fatal Crashes (2yr)', pass: !d.fatalCrash || d.fatalCrash === 0, detail: d.fatalCrash ? `${d.fatalCrash} fatal crash(es) on record` : 'No fatal crashes' },
+  ];
+
+  body.innerHTML = checks.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:16px;flex-shrink:0;">${c.pass ? '✅' : '❌'}</span>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:600;color:var(--text);">${c.label}</div>
+        <div style="font-size:11px;color:var(--text3);">${c.detail}</div>
+      </div>
+    </div>`).join('');
+}
+
+async function addVettedCarrierToNetwork() {
+  if(!currentVetData) return;
+  const d = currentVetData;
+  const name = d.legalName || d.dbaName || 'Unknown';
+  if(!confirm(`Add ${name} to your carrier network?`)) return;
+
+  const payload = {
+    name: d.legalName || d.dbaName || 'Unknown',
+    mc_number: d.docketNumber ? 'MC' + d.docketNumber : null,
+    dot_number: d.dotNumber ? String(d.dotNumber) : null,
+    phone: d.telephone || null,
+    onboarding_status: 'Pending',
+    do_not_use: false,
+    safety_score: d.safetyRating === 'Satisfactory' ? 95 : d.safetyRating === 'Conditional' ? 70 : null,
+  };
+
+  const { error } = await db.from('carriers').insert(payload);
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+  toast(`${name} added to your carrier network! ✅`, 'success');
+  await loadData();
+  switchCarrierTab('network');
+}
+
+async function sendVettingPacket() {
+  if(!currentVetData) return;
+  const email = prompt('Enter carrier contact email to send onboarding packet:');
+  if(!email) return;
+
+  const d = currentVetData;
+  const { data: settings } = await db.from('company_settings').select('*').limit(1);
+  const s = settings?.[0] || {};
+
+  const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f0f4f8;padding:20px;">
+    <div style="max-width:560px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;">
+      <div style="background:#1B2A4A;padding:20px 24px;">
+        <div style="font-size:20px;font-weight:900;color:white;">Freight<span style="color:#60A5FA;">FlowHQ</span></div>
+        <div style="font-size:13px;color:#94a3b8;margin-top:4px;">Carrier Onboarding Packet</div>
+      </div>
+      <div style="padding:24px;">
+        <p style="font-size:15px;color:#1B2A4A;margin-bottom:16px;">Hi <strong>${d.legalName || 'there'}</strong>,</p>
+        <p style="font-size:13px;color:#475569;margin-bottom:20px;">We'd like to add your company to our carrier network. Please provide the following to complete onboarding with <strong>${s.company_name||'us'}</strong>:</p>
+        <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;">
+          <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #e2e8f0;"><span>📄</span><div><div style="font-weight:600;color:#1B2A4A;">W9 / Tax Form</div><div style="font-size:12px;color:#64748b;">Required for payment</div></div></div>
+          <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #e2e8f0;"><span>🛡️</span><div><div style="font-weight:600;color:#1B2A4A;">Certificate of Insurance</div><div style="font-size:12px;color:#64748b;">Min $1M auto, $100K cargo — name ${s.company_name||'broker'} as additional insured</div></div></div>
+          <div style="display:flex;gap:10px;padding:10px 0;"><span>📝</span><div><div style="font-weight:600;color:#1B2A4A;">Broker-Carrier Agreement</div><div style="font-size:12px;color:#64748b;">Standard operating agreement</div></div></div>
+        </div>
+        <p style="font-size:12px;color:#64748b;">Reply to this email with your documents. Questions? Call ${s.phone||'your dispatcher'}.</p>
+      </div>
+    </div></body></html>`;
+
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    body: JSON.stringify({ to: email, subject: `Carrier Onboarding — ${s.company_name||'FreightFlowHQ'}`, html })
+  });
+  const result = await resp.json();
+  if(!resp.ok || result.error) { toast('Email failed: ' + result.error, 'error'); return; }
+  toast(`Onboarding packet sent to ${email}! ✅`, 'success');
+}
+
+function runHighwayLookup() {
+  const input = document.getElementById('vet-search-input')?.value?.trim();
+  if(!input) { toast('Enter an MC# or DOT# first', 'error'); return; }
+  // Check if Highway API key is configured
+  const highwayKey = null; // Will come from company_settings.highway_api_key
+  if(!highwayKey) {
+    toast('Highway API key not configured — add it in Integrations settings', 'info');
+    switchPage('integrations');
+    return;
+  }
+}
+
+function runRMISLookup() {
+  const input = document.getElementById('vet-search-input')?.value?.trim();
+  if(!input) { toast('Enter an MC# or DOT# first', 'error'); return; }
+  const rmisKey = null; // Will come from company_settings.rmis_api_key
+  if(!rmisKey) {
+    toast('RMIS API key not configured — add it in Integrations settings', 'info');
+    switchPage('integrations');
+    return;
+  }
+}
+
+function renderOnboardingQueue() {
+  const body = document.getElementById('onboarding-queue-body');
+  if(!body) return;
+  const statuses = { 'Pending': 0, 'W9 Received': 0, 'Insurance Verified': 0, 'Active': 0 };
+  allCarriers.forEach(c => { const s = c.onboarding_status || 'Pending'; if(s in statuses) statuses[s]++; });
+  setEl('onb-pending', statuses['Pending']);
+  setEl('onb-w9', statuses['W9 Received']);
+  setEl('onb-ins', statuses['Insurance Verified']);
+  setEl('onb-active', statuses['Active']);
+
+  const queue = allCarriers.filter(c => c.onboarding_status !== 'Active');
+  if(!queue.length) { body.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>All carriers fully onboarded!</p></div>'; return; }
+
+  const steps = ['Pending', 'W9 Received', 'Insurance Verified', 'Agreement Signed', 'Active'];
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);">
+      <span>Carrier</span><span>MC #</span><span>Onboarding Status</span><span>Insurance</span><span></span>
+    </div>
+    ${queue.map(c => {
+      const stepIdx = steps.indexOf(c.onboarding_status || 'Pending');
+      const progress = Math.round((stepIdx / (steps.length-1)) * 100);
+      const statusColor = c.onboarding_status === 'Agreement Signed' ? 'var(--green)' : c.onboarding_status === 'Insurance Verified' ? 'var(--accent)' : c.onboarding_status === 'W9 Received' ? 'var(--purple)' : 'var(--amber)';
+      return `<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${c.name}</div>
+          <div style="height:3px;background:var(--surface3);border-radius:3px;margin-top:4px;overflow:hidden;"><div style="width:${progress}%;height:100%;background:${statusColor};border-radius:3px;"></div></div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);">${c.mc_number||'—'}</div>
+        <div><span class="badge ${c.onboarding_status==='Agreement Signed'?'badge-green':c.onboarding_status==='Insurance Verified'?'badge-blue':c.onboarding_status==='W9 Received'?'badge-purple':'badge-amber'}">${c.onboarding_status||'Pending'}</span></div>
+        <div style="font-size:12px;color:${c.insurance_expiry&&new Date(c.insurance_expiry)<new Date()?'var(--red)':'var(--text2)'};">${c.insurance_expiry?fmtDate(c.insurance_expiry):'—'}</div>
+        <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="editCarrier('${c.id}')">Edit →</button>
+      </div>`;
+    }).join('')}`;
+}
 
 </script>
 </body>
