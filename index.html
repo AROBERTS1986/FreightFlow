@@ -3906,18 +3906,8 @@ renderCurrentPage = function() {
   _ffOrigRenderCurrentPage();
 };
 
-// ── WIRE UP switchPage ────────────────────────
-const _ffOrigSwitchPage = switchPage;
-switchPage = function(id) {
-  _ffOrigSwitchPage(id);
-  if (id === 'quotes') {
-    document.getElementById('pageTitle').textContent = 'Quote Requests';
-    document.getElementById('pageSub').textContent = 'Manage customer quote requests';
-    document.getElementById('primaryBtn').style.display = 'none';
-  } else {
-    document.getElementById('primaryBtn').style.display = '';
-  }
-};
+
+
 
 // ── SHOW INVITE BUTTON WHEN EDITING EXISTING CUSTOMER ──
 const _ffOrigEditCustomer = typeof editCustomer === 'function' ? editCustomer : null;
@@ -3929,14 +3919,8 @@ if (_ffOrigEditCustomer) {
   };
 }
 
-// ── WIRE UP openCustomerPortal ────────────────
-const _ffOrigOpenPortal = openCustomerPortal;
-openCustomerPortal = function(customerId) {
-  _ffOrigOpenPortal(customerId);
-  if (!customerId && !portalSession) {
-    showPortalLogin();
-  }
-};
+
+
 
 // ── LOG LOAD EVENTS (if table missing, silently skip) ──
 async function logLoadEvent(loadId, eventType, description) {
