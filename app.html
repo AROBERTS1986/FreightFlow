@@ -2269,8 +2269,6 @@ async function editLoad(id){
   const hotCb=document.getElementById('load-hot');if(hotCb)hotCb.checked=!!l.hot_load;
   const apptCb=document.getElementById('load-appt-required');if(apptCb){apptCb.checked=!!l.appointment_required;const apptRow=document.getElementById('appt-details-row');if(apptRow)apptRow.style.display=l.appointment_required?'block':'none';}
   sv('load-appt-notes',l.appointment_notes);
-  const hotCb=document.getElementById('load-hot');if(hotCb)hotCb.checked=!!l.hot_load;
-  const apptCb=document.getElementById('load-appt-required');if(apptCb){apptCb.checked=!!l.appointment_required;document.getElementById('appt-details-row').style.display=l.appointment_required?'block':'none';}
   sv('load-appt-notes',l.appointment_notes);
   sv('load-delivery',l.delivery_date?l.delivery_date.slice(0,16):'');
   sv('load-rate',l.customer_rate||'');sv('load-carrier-pay',l.carrier_pay||'');
