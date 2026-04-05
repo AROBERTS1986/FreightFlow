@@ -354,8 +354,8 @@ textarea{resize:vertical;min-height:80px;}
 .aging-row:last-child{border-bottom:none;}
 .aging-row:hover{background:var(--surface2);}
 
-.address-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
-.address-dropdown.open{display:block;}
+.address-dropdown{position:absolute;top:calc(100% + 2px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.2);z-index:99999;max-height:220px;overflow-y:auto;display:none;}
+.address-dropdown.open{display:block !important;}
 .address-suggestion{padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;}
 .address-suggestion:last-child{border-bottom:none;}
 .address-suggestion:hover{background:var(--surface2);}
@@ -812,7 +812,7 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Pickup Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;"/>
+            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('origin-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},200)"/>
             <div id="origin-suggestions" class="address-dropdown"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
@@ -824,7 +824,7 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Delivery Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;"/>
+            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('dest-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},200)"/>
             <div id="dest-suggestions" class="address-dropdown"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
@@ -835,39 +835,17 @@ function loadGooglePlaces(apiKey){
         </div>
         <div class="form-group"><label>Pickup Date</label><input type="datetime-local" id="load-pickup"/></div>
         <div class="form-group"><label>Delivery Date</label><input type="datetime-local" id="load-delivery"/></div>
-        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;">
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:8px 14px;background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:700;color:var(--red);">
             <input type="checkbox" id="load-hot" style="width:16px;height:16px;accent-color:var(--red);cursor:pointer;"/>
-            🔥 Hot Load — Priority
+            🔥 Hot Load
           </label>
-          <span style="font-size:11px;color:var(--text3);">Flags this load as urgent on the dispatch board</span>
-        </div>
-        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:600;color:var(--text);">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:600;color:var(--text);margin-left:16px;">
             <input type="checkbox" id="load-appt-required" style="width:16px;height:16px;cursor:pointer;" onchange="document.getElementById('appt-details-row').style.display=this.checked?'block':'none'"/>
             📅 Appointment Required
           </label>
-          <span style="font-size:11px;color:var(--text3);">Shipper and/or receiver requires scheduled appointment</span>
         </div>
-        <div class="form-group full" id="appt-details-row" style="display:none;grid-column:1/-1;">
-          <label>Appointment Notes</label>
-          <input type="text" id="load-appt-notes" placeholder="e.g. Call 24hrs ahead, dock 3 only, 8am-4pm window…"/>
-        </div>
-        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:700;color:var(--red);">
-            <input type="checkbox" id="load-hot" style="width:16px;height:16px;accent-color:var(--red);cursor:pointer;"/>
-            🔥 Hot Load — Priority
-          </label>
-          <span style="font-size:11px;color:var(--text3);">Flags this load as urgent on the dispatch board</span>
-        </div>
-        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:600;color:var(--text);">
-            <input type="checkbox" id="load-appt-required" style="width:16px;height:16px;cursor:pointer;"/>
-            📅 Appointment Required
-          </label>
-          <span style="font-size:11px;color:var(--text3);">Shipper and/or receiver requires scheduled appointment</span>
-        </div>
-        <div class="form-group" id="appt-details-row" style="display:none;grid-column:1/-1;">
+        <div class="form-group full" id="appt-details-row" style="display:none;">
           <label>Appointment Notes</label>
           <input type="text" id="load-appt-notes" placeholder="e.g. Call 24hrs ahead, dock 3 only, 8am-4pm window…"/>
         </div>
@@ -2227,7 +2205,6 @@ async function saveLoad(){
     hot_load:document.getElementById('load-hot')?.checked||false,
     appointment_required:document.getElementById('load-appt-required')?.checked||false,
     appointment_notes:document.getElementById('load-appt-notes')?.value||null,
-    hot_load:document.getElementById('load-hot')?.checked||false,
     appointment_required:document.getElementById('load-appt-required')?.checked||false,
     appointment_notes:document.getElementById('load-appt-notes')?.value||null,
     pickup_date:document.getElementById('load-pickup')?.value||null,
@@ -3574,7 +3551,6 @@ async function duplicateLoad() {
     hot_load: l.hot_load || false,
     appointment_required: l.appointment_required || false,
     appointment_notes: l.appointment_notes || null,
-    hot_load: false,
     appointment_required: l.appointment_required || false,
     appointment_notes: l.appointment_notes || null,
     status: 'Available',
@@ -4591,6 +4567,16 @@ function handleAddressInput(input, type) {
 
 function showGoogleSuggestions(predictions, drop, type) {
   if (!drop) return;
+  const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
+  const input = document.getElementById(inputId);
+  if (input) {
+    const rect = input.getBoundingClientRect();
+    drop.style.position = 'fixed';
+    drop.style.top = (rect.bottom + 2) + 'px';
+    drop.style.left = rect.left + 'px';
+    drop.style.width = rect.width + 'px';
+    drop.style.zIndex = '99999';
+  }
   drop.innerHTML = predictions.slice(0, 6).map(p => `
     <div class="address-suggestion" onclick="selectGooglePlace('${p.place_id}','${type}',this)">
       <span class="sug-icon">📍</span>
@@ -4675,8 +4661,19 @@ function showFallbackSuggestions(val, drop, type) {
     return;
   }
 
+  // Position dropdown using fixed positioning to escape modal overflow clipping
+  const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
+  const input = document.getElementById(inputId);
+  if (input) {
+    const rect = input.getBoundingClientRect();
+    drop.style.position = 'fixed';
+    drop.style.top = (rect.bottom + 2) + 'px';
+    drop.style.left = rect.left + 'px';
+    drop.style.width = rect.width + 'px';
+    drop.style.zIndex = '99999';
+  }
+
   drop.innerHTML = matches.map(c => {
-    const [city, state] = c.split(', ');
     return `<div class="address-suggestion" onclick="selectFallbackCity('${c}','${type}',this)">
       <span class="sug-icon">🏙️</span>
       <div>
