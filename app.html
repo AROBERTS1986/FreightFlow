@@ -2983,16 +2983,16 @@ async function onSignedIn(user){
   console.log('[FF] company_id:', currentCompanyId, 'role:', profile?.role);
   const{data:fullProfile}=await db.from('user_profiles').select('*').eq('id',user.id).single();
   currentUserRole=fullProfile?.role||'admin';
-  await db.from('user_profiles').upsert({id:user.id,email:user.email,full_name:fullProfile?.full_name||user.email.split('@')[0],role:currentUserRole,status:'Active',last_login_at:new Date().toISOString()},{onConflict:'id'});
+  try{await db.from('user_profiles').upsert({id:user.id,email:user.email,updated_at:new Date().toISOString()},{onConflict:'id',ignoreDuplicates:false});}catch(e){console.warn('[FF] profile upsert:',e.message);}
   updateSidebarUser(profile||{email:user.email,role:currentUserRole});
   initRolePerms();applyRolePermissions();
   await loadData();
 }
 
 function updateSidebarUser(fullProfile){
-  const initials=((profile.full_name||profile.email||'?').charAt(0)).toUpperCase();
-  const name=profile.full_name||profile.email||'User';
-  const role=profile.role||'user';
+  const initials=((fullProfile.full_name||fullProfile.email||'?').charAt(0)).toUpperCase();
+  const name=fullProfile.full_name||fullProfile.email||'User';
+  const role=fullProfile.role||'user';
   const roleClasses={admin:'role-admin',dispatcher:'role-dispatcher',accounting:'role-accounting',readonly:'role-readonly',sales:'role-sales'};
   const cls=roleClasses[role]||'role-readonly';
   // sidebar
