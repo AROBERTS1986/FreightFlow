@@ -2977,14 +2977,17 @@ async function onSignedIn(user){
   console.log('[FF] onSignedIn:', user.email);
   currentUser=user;
   document.getElementById('auth-overlay').className='auth-overlay';
-  // Load company_id for this user — used for multi-tenant RLS
-  let profile=null;try{const{data:pd}=await db.from('user_profiles').select('company_id,role,full_name').eq('id',user.id).single();profile=pd;}catch(e){console.warn('[FF] profile fetch error:',e.message);}
-  currentCompanyId=profile?.company_id||null;
-  console.log('[FF] company_id:', currentCompanyId, 'role:', profile?.role);
-  const{data:fullProfile}=await db.from('user_profiles').select('*').eq('id',user.id).single();
-  currentUserRole=fullProfile?.role||'admin';
-  try{await db.from('user_profiles').upsert({id:user.id,email:user.email,updated_at:new Date().toISOString()},{onConflict:'id',ignoreDuplicates:false});}catch(e){console.warn('[FF] profile upsert:',e.message);}
-  updateSidebarUser(profile||{email:user.email,role:currentUserRole});
+   // Load company_id for this user — used for multi-tenant RLS
+   let userProfile = null;
+   try {
+     const { data: pd } = await db.from('user_profiles').select('*').eq('id', user.id).single();
+     userProfile = pd;
+   } catch(e) { console.warn('[FF] profile fetch:', e.message); }
+   currentCompanyId = userProfile?.company_id || null;
+   currentUserRole = userProfile?.role || 'admin';
+   console.log('[FF] company_id:', currentCompanyId, 'role:', currentUserRole);
+   try { await db.from('user_profiles').upsert({id:user.id, email:user.email, updated_at:new Date().toISOString()},{onConflict:'id',ignoreDuplicates:false}); } catch(e) { console.warn('[FF] upsert:', e.message); }
+   updateSidebarUser(userProfile || {email: user.email, role: currentUserRole});
   initRolePerms();applyRolePermissions();
   await loadData();
 }
