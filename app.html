@@ -2978,9 +2978,9 @@ async function onSignedIn(user){
   currentUser=user;
   document.getElementById('auth-overlay').className='auth-overlay';
   // Load company_id for this user — used for multi-tenant RLS
-  const{data:profile}=await db.from('user_profiles').select('company_id,role,full_name').eq('id',user.id).single().catch(()=>({data:null}));
+  let profile=null;try{const{data:pd}=await db.from('user_profiles').select('company_id,role,full_name').eq('id',user.id).single();profile=pd;}catch(e){console.warn('[FF] profile fetch error:',e.message);}
   currentCompanyId=profile?.company_id||null;
-  console.log('[FF] company_id:', currentCompanyId);
+  console.log('[FF] company_id:', currentCompanyId, 'role:', profile?.role);
   const{data:fullProfile}=await db.from('user_profiles').select('*').eq('id',user.id).single();
   currentUserRole=fullProfile?.role||'admin';
   await db.from('user_profiles').upsert({id:user.id,email:user.email,full_name:fullProfile?.full_name||user.email.split('@')[0],role:currentUserRole,status:'Active',last_login_at:new Date().toISOString()},{onConflict:'id'});
