@@ -4739,42 +4739,91 @@ async function showFallbackSuggestions(val, drop, type) {
   if (val.length < 3) { drop.innerHTML = ''; drop.classList.remove('open'); return; }
 
   try {
-    const resp = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&countrycodes=us&format=json&addressdetails=1&limit=6`,
-      { headers: { 'Accept-Language': 'en', 'User-Agent': 'FreightFlowHQ/1.0' } }
-    );
-    if (!resp.ok) throw new Error('Nominatim error');
+    // Use structured query to get street-level results
+    // Try to detect if input has a number (likely a street address)
+    const hasNumber = /\d/.test(val);
+    
+    // Build URL — use structured search for better street-level matching
+    const baseUrl = 'https://nominatim.openstreetmap.org/search';
+    const url = `${baseUrl}?q=${encodeURIComponent(val)}&countrycodes=us&format=json&addressdetails=1&limit=10&dedupe=1`;
+
+    const resp = await fetch(url, {
+      headers: { 'Accept-Language': 'en-US,en', 'User-Agent': 'FreightFlowHQ/1.0' }
+    });
+    if (!resp.ok) throw new Error('Nominatim error ' + resp.status);
     const results = await resp.json();
 
+    positionDrop(drop, type);
+
     if (!results.length) {
-      drop.innerHTML = '<div class="address-suggestion"><span class="sug-icon">🔍</span><div><div class="sug-main">No results found</div><div class="sug-sub">Try a different address or city</div></div></div>';
-      positionDrop(drop, type);
+      drop.innerHTML = `<div class="address-suggestion" style="pointer-events:none;">
+        <span class="sug-icon">🔍</span>
+        <div><div class="sug-main">No results — try adding city or state</div>
+        <div class="sug-sub">e.g. "123 Main St, Tulsa OK"</div></div>
+      </div>`;
       drop.classList.add('open');
       return;
     }
 
-    positionDrop(drop, type);
-    drop.innerHTML = results.map(r => {
-      const addr = r.address;
-      const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
-      const city = addr.city || addr.town || addr.village || addr.county || '';
-      const state = addr.state || '';
+    // Sort: prefer results with house_number (full street addresses) first
+    results.sort((a, b) => {
+      const aHas = a.address?.house_number ? 1 : 0;
+      const bHas = b.address?.house_number ? 1 : 0;
+      return bHas - aHas;
+    });
+
+    // Dedupe by display name
+    const seen = new Set();
+    const unique = results.filter(r => {
+      const key = r.display_name.split(',').slice(0,3).join(',');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 6);
+
+    drop.innerHTML = unique.map(r => {
+      const addr = r.address || {};
+      const houseNum = addr.house_number || '';
+      const road = addr.road || addr.street || addr.pedestrian || addr.path || '';
+      const street = [houseNum, road].filter(Boolean).join(' ');
+      const city = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county || '';
+      const stateRaw = addr.state || '';
+      const stateAbbr = getStateAbbr(stateRaw);
       const zip = addr.postcode || '';
-      const mainText = street || r.display_name.split(',')[0];
-      const subText = [city, state, zip].filter(Boolean).join(', ');
-      return `<div class="address-suggestion" onclick="selectNominatimResult(${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}',this)">
-        <span class="sug-icon">📍</span>
+
+      // Best display text
+      const mainText = street
+        ? street
+        : r.display_name.split(',').slice(0, 2).join(', ').trim();
+      const subText = [city, stateAbbr, zip].filter(Boolean).join(', ')
+        || r.display_name.split(',').slice(2, 4).join(',').trim();
+
+      const data = JSON.stringify({
+        street, houseNum, road, city,
+        state: stateAbbr, zip,
+        display: r.display_name,
+      }).replace(/"/g, '&quot;');
+
+      const icon = houseNum ? '🏠' : road ? '📍' : '🏙️';
+      return `<div class="address-suggestion" onclick="selectNominatimResult('${data}','${type}',this)">
+        <span class="sug-icon">${icon}</span>
         <div>
-          <div class="sug-main">${mainText}</div>
-          <div class="sug-sub">${subText}</div>
+          <div class="sug-main" style="font-weight:600;color:var(--text);">${mainText}</div>
+          <div class="sug-sub" style="color:var(--text3);">${subText}</div>
         </div>
       </div>`;
     }).join('');
     drop.classList.add('open');
+
   } catch(e) {
     console.warn('[FF] Nominatim error:', e.message);
-    drop.innerHTML = '';
-    drop.classList.remove('open');
+    drop.innerHTML = `<div class="address-suggestion" style="pointer-events:none;">
+      <span class="sug-icon">⚠️</span>
+      <div><div class="sug-main">Address lookup unavailable</div>
+      <div class="sug-sub">Type city and state manually below</div></div>
+    </div>`;
+    positionDrop(drop, type);
+    drop.classList.add('open');
   }
 }
 
@@ -4791,25 +4840,41 @@ function positionDrop(drop, type) {
   }
 }
 
-function selectNominatimResult(r, type, el) {
+function selectNominatimResult(dataStr, type, el) {
   const drop = el.closest('.address-dropdown');
   if (drop) { drop.innerHTML = ''; drop.classList.remove('open'); }
-  const addr = r.address || {};
-  const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
-  const city = addr.city || addr.town || addr.village || addr.county || '';
-  const state = addr.state || '';
-  const zip = addr.postcode || '';
+  
+  // Parse the pre-processed data object
+  let d = {};
+  try {
+    // dataStr may be HTML-decoded
+    const decoded = dataStr.replace(/&quot;/g, '"');
+    d = JSON.parse(decoded);
+  } catch(e) {
+    console.warn('[FF] selectNominatim parse error:', e.message);
+    return;
+  }
+
+  const street = d.street || d.display?.split(',')[0] || '';
+  const city = d.city || '';
+  const state = d.state || '';
+  const zip = d.zip || '';
 
   if (type === 'origin') {
-    setVal('load-origin-address', street || r.display_name.split(',')[0]);
+    setVal('load-origin-address', street);
     setVal('load-origin-city', city);
-    setVal('load-origin-state', getStateAbbr(state));
+    setVal('load-origin-state', state);
     setVal('load-origin-zip', zip);
+    // Update the address input to show the full street
+    const addrEl = document.getElementById('load-origin-address');
+    if (addrEl && street) addrEl.value = street;
   } else {
-    setVal('load-dest-address', street || r.display_name.split(',')[0]);
+    setVal('load-dest-address', street);
     setVal('load-dest-city', city);
-    setVal('load-dest-state', getStateAbbr(state));
+    setVal('load-dest-state', state);
     setVal('load-dest-zip', zip);
+    const addrEl = document.getElementById('load-dest-address');
+    if (addrEl && street) addrEl.value = street;
   }
 }
 
