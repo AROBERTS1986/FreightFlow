@@ -757,6 +757,91 @@ function loadGooglePlaces(apiKey){
     <div class="card" style="padding:24px;text-align:center;"><div style="font-size:24px;margin-bottom:10px;">💡</div><div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px;">Don't see what you need?</div><div style="font-size:13px;color:var(--text2);max-width:500px;margin:0 auto 16px;">We prioritize integrations based on customer demand.</div><button class="btn btn-primary" onclick="toast('Request submitted!','success')">Request an Integration →</button></div>
   </div>
 
+  <!-- LANE INTELLIGENCE -->
+  <div class="content" id="page-lane-intel" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text);">🧠 Lane Intelligence Engine</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:4px;">AI-powered lane analytics — learns your network over time</div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <select id="li-period" onchange="renderLaneIntel()" style="font-size:12px;padding:6px 10px;">
+          <option value="30">Last 30 days</option>
+          <option value="90" selected>Last 90 days</option>
+          <option value="180">Last 180 days</option>
+          <option value="365">Last 12 months</option>
+          <option value="all">All time</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="renderLaneIntel()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px;" id="li-kpis">
+      <div class="kpi-card blue"><div class="kpi-label">Active Lanes</div><div class="kpi-value" id="li-lanes">—</div><div class="kpi-sub">Unique origin→dest</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Avg GP%</div><div class="kpi-value" id="li-avg-gp">—</div><div class="kpi-sub">Across all lanes</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Best Lane</div><div class="kpi-value" id="li-best-lane" style="font-size:13px;">—</div><div class="kpi-sub">Highest margin</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">At Risk</div><div class="kpi-value" id="li-risk">—</div><div class="kpi-sub">GP% below 10%</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Top Carrier</div><div class="kpi-value" id="li-top-carrier" style="font-size:13px;">—</div><div class="kpi-sub">Most reliable</div></div>
+    </div>
+
+    <!-- Alerts -->
+    <div id="li-alerts" style="margin-bottom:16px;"></div>
+
+    <!-- Lane table -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div class="card-title">🗺️ Lane Performance</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="li-search" placeholder="Search lanes…" style="font-size:12px;padding:5px 10px;width:160px;" oninput="renderLaneIntel()"/>
+          <select id="li-sort" onchange="renderLaneIntel()" style="font-size:12px;padding:5px 8px;">
+            <option value="gp">Sort: Best Margin</option>
+            <option value="volume">Sort: Most Loads</option>
+            <option value="rate">Sort: Highest Rate</option>
+            <option value="trend">Sort: Trending Up</option>
+          </select>
+        </div>
+      </div>
+      <div id="li-lane-table"></div>
+    </div>
+
+    <!-- Carrier performance by lane -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🚚 Best Carrier Per Lane</div></div>
+        <div id="li-carrier-lane" style="padding:16px;"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📈 Market Trend Alerts</div></div>
+        <div id="li-trends" style="padding:16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANE INTELLIGENCE -->
+  <div class="content" id="page-lane-intel" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div><div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text);">🧠 Lane Intelligence Engine</div><div style="font-size:13px;color:var(--text3);margin-top:4px;">AI-powered lane analytics — learns your network over time</div></div>
+      <div style="display:flex;gap:8px;"><select id="li-period" onchange="renderLaneIntel()" style="font-size:12px;padding:6px 10px;"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last 12 months</option><option value="all">All time</option></select><button class="btn btn-primary btn-sm" onclick="renderLaneIntel()">↻ Refresh</button></div>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px;">
+      <div class="kpi-card blue"><div class="kpi-label">Active Lanes</div><div class="kpi-value" id="li-lanes">—</div><div class="kpi-sub">Unique origin→dest</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Avg GP%</div><div class="kpi-value" id="li-avg-gp">—</div><div class="kpi-sub">Across all lanes</div></div>
+      <div class="kpi-card purple"><div class="kpi-label">Best Lane</div><div class="kpi-value" id="li-best-lane" style="font-size:11px;line-height:1.3;">—</div><div class="kpi-sub">Highest margin</div></div>
+      <div class="kpi-card amber"><div class="kpi-label">At Risk</div><div class="kpi-value" id="li-risk">—</div><div class="kpi-sub">GP% below 10%</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Top Carrier</div><div class="kpi-value" id="li-top-carrier" style="font-size:11px;line-height:1.3;">—</div><div class="kpi-sub">Most reliable</div></div>
+    </div>
+    <div id="li-alerts" style="margin-bottom:16px;"></div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><div class="card-title">🗺️ Lane Performance</div><div style="display:flex;gap:8px;"><input type="text" id="li-search" placeholder="Search lanes…" style="font-size:12px;padding:5px 10px;width:160px;" oninput="renderLaneIntel()"/><select id="li-sort" onchange="renderLaneIntel()" style="font-size:12px;padding:5px 8px;"><option value="gp">Best Margin</option><option value="volume">Most Loads</option><option value="rate">Highest Rate</option></select></div></div>
+      <div id="li-lane-table"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card"><div class="card-header"><div class="card-title">🚚 Best Carrier Per Lane</div></div><div id="li-carrier-lane" style="padding:16px;"></div></div>
+      <div class="card"><div class="card-header"><div class="card-title">📈 Market Trend Alerts</div></div><div id="li-trends" style="padding:16px;"></div></div>
+    </div>
+  </div>
+
   <!-- REPORTS -->
   <div class="content" id="page-reports">
     <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr);">
@@ -1921,7 +2006,7 @@ function switchPage(id){
 }
 
 function renderCurrentPage(){
-  const renderers={dashboard:renderDashboard,dispatch:renderDispatch,loads:renderLoads,carriers:renderCarriers,customers:renderCustomers,invoices:renderInvoices,quotes:renderQuotesPage,reports:renderReports,users:renderUsersPage,settings:renderSettings,crm:renderCRM,integrations:()=>{}};
+  const renderers={dashboard:renderDashboard,dispatch:renderDispatch,loads:renderLoads,carriers:renderCarriers,customers:renderCustomers,invoices:renderInvoices,quotes:renderQuotesPage,reports:renderReports,'lane-intel':renderLaneIntel,users:renderUsersPage,settings:renderSettings,crm:renderCRM,integrations:()=>{}};
   if(renderers[currentPage])renderers[currentPage]();
 }
 
@@ -4752,6 +4837,304 @@ async function saveCompanySettings() {
   }
   await _origSaveSettings();
   if (gKey) loadGooglePlaces(gKey);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// OPTION A SPRINT — Check Call Log + Lane Intelligence Engine
+// ══════════════════════════════════════════════════════════════
+
+// ── DETAIL PANEL TABS ─────────────────────────────────────────
+function showDetailTab(tab) {
+  ['events','checkcalls','notes'].forEach(t => {
+    const v = document.getElementById('dtab-view-' + t);
+    const b = document.getElementById('dtab-' + t);
+    if(v) v.style.display = t === tab ? 'block' : 'none';
+    if(b) b.style.fontWeight = t === tab ? '700' : '400';
+    if(b) b.style.color = t === tab ? 'var(--accent2)' : '';
+  });
+  if(tab === 'checkcalls') renderDetailCheckCalls();
+  if(tab === 'notes') renderDetailNotes();
+}
+
+function renderDetailNotes() {
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  if(!l) return;
+  const notes = (JSON.parse(localStorage.getItem('ff-load-notes') || '{}'))[l.id] || [];
+  const el = document.getElementById('detail-notes-log');
+  if(!el) return;
+  if(!notes.length) { el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px;">No notes yet.</div>'; return; }
+  el.innerHTML = notes.slice().reverse().map(n => `
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--accent);">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px;">
+        <span>${n.author||'You'}</span><span>${new Date(n.ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text);">${n.text}</div>
+    </div>`).join('');
+}
+
+// ── CHECK CALL LOG ────────────────────────────────────────────
+async function renderDetailCheckCalls() {
+  const el = document.getElementById('detail-checkcall-log');
+  if(!el || !currentDetailLoadId) return;
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const { data: calls, error } = await db
+    .from('check_calls')
+    .select('*')
+    .eq('load_id', currentDetailLoadId)
+    .order('created_at', { ascending: false });
+
+  if(error || !calls?.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:16px;">No check calls logged yet.<br/>Use the milestone timeline above to log check calls automatically.</div>';
+    return;
+  }
+
+  el.innerHTML = calls.map(c => {
+    const statusColors = { 'On Time':'var(--green)','Delayed':'var(--amber)','Issue':'var(--red)','Delivered':'var(--accent)' };
+    const color = statusColors[c.status] || 'var(--text3)';
+    return `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid ${color};">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:11px;font-weight:700;color:${color};">${c.status||'Check Call'}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);">${new Date(c.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span>
+      </div>
+      ${c.contact?`<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;">📞 ${c.contact}</div>`:''}
+      ${c.notes?`<div style="font-size:12px;color:var(--text2);">${c.notes}</div>`:''}
+      ${c.location?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">📍 ${c.location}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openDetailCheckCall() {
+  // Scroll to checkcall quick form in the milestone section
+  const form = document.getElementById('checkcall-quick-form');
+  if(form) {
+    form.classList.add('visible');
+    showDetailTab('events');
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// Overdue check call alert system
+function startCheckCallMonitor() {
+  // Check every 5 minutes if any In Transit loads are overdue for check calls
+  setInterval(async () => {
+    const inTransit = allLoads.filter(l => l.status === 'In Transit');
+    if(!inTransit.length) return;
+
+    for(const load of inTransit) {
+      const { data: calls } = await db
+        .from('check_calls')
+        .select('created_at')
+        .eq('load_id', load.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const lastCall = calls?.[0]?.created_at ? new Date(calls[0].created_at) : null;
+      const hoursAgo = lastCall ? (new Date() - lastCall) / 3600000 : 999;
+
+      // Default: alert if no check call in 2 hours
+      if(hoursAgo > 2) {
+        toast(`⚠️ ${load.load_number} overdue for check call (${hoursAgo.toFixed(0)}hrs)`, 'error');
+      }
+    }
+  }, 300000); // Every 5 minutes
+}
+
+// ══════════════════════════════════════════════════════════════
+// LANE INTELLIGENCE ENGINE
+// ══════════════════════════════════════════════════════════════
+function renderLaneIntel() {
+  if(currentPage !== 'lane-intel') return;
+
+  const period = document.getElementById('li-period')?.value || '90';
+  const search = (document.getElementById('li-search')?.value || '').toLowerCase();
+  const sort = document.getElementById('li-sort')?.value || 'gp';
+
+  // Filter loads by period
+  const cutoff = period === 'all' ? null : new Date(Date.now() - Number(period) * 86400000);
+  const loads = allLoads.filter(l => {
+    if(!l.customer_rate || !l.carrier_pay) return false;
+    if(cutoff && l.pickup_date && new Date(l.pickup_date) < cutoff) return false;
+    return true;
+  });
+
+  // Build lane data
+  const lanes = {};
+  loads.forEach(l => {
+    if(!l.origin_city || !l.destination_city) return;
+    const key = `${l.origin_city}, ${l.origin_state||''} → ${l.destination_city}, ${l.destination_state||''}`;
+    if(!lanes[key]) lanes[key] = {
+      key, loads: [], carriers: {}, revenue: 0, carrierPay: 0,
+      origin_city: l.origin_city, origin_state: l.origin_state,
+      dest_city: l.destination_city, dest_state: l.destination_state,
+      equipment: {},
+    };
+    lanes[key].loads.push(l);
+    lanes[key].revenue += Number(l.customer_rate)||0;
+    lanes[key].carrierPay += Number(l.carrier_pay)||0;
+    const eq = l.equipment_type||'Dry Van';
+    lanes[key].equipment[eq] = (lanes[key].equipment[eq]||0) + 1;
+    if(l.carrier_id) {
+      const cname = allCarriers.find(c=>c.id===l.carrier_id)?.name || l.carrier_id;
+      if(!lanes[key].carriers[cname]) lanes[key].carriers[cname] = { loads:0, delivered:0 };
+      lanes[key].carriers[cname].loads++;
+      if(l.status==='Delivered') lanes[key].carriers[cname].delivered++;
+    }
+  });
+
+  let laneArr = Object.values(lanes).filter(l => {
+    if(!search) return true;
+    return l.key.toLowerCase().includes(search);
+  });
+
+  // Sort
+  if(sort === 'gp') laneArr.sort((a,b) => (b.revenue-b.carrierPay)/b.revenue - (a.revenue-a.carrierPay)/a.revenue);
+  else if(sort === 'volume') laneArr.sort((a,b) => b.loads.length - a.loads.length);
+  else if(sort === 'rate') laneArr.sort((a,b) => b.revenue/b.loads.length - a.revenue/a.loads.length);
+
+  // KPIs
+  const totalGP = laneArr.reduce((s,l) => s + (l.revenue-l.carrierPay), 0);
+  const totalRev = laneArr.reduce((s,l) => s + l.revenue, 0);
+  const avgGP = totalRev > 0 ? (totalGP/totalRev*100).toFixed(1) : '—';
+  const atRisk = laneArr.filter(l => l.revenue>0 && (l.revenue-l.carrierPay)/l.revenue < 0.10).length;
+  const bestLane = laneArr[0];
+  
+  // Top carrier by loads
+  const carrierLoads = {};
+  loads.forEach(l => {
+    if(!l.carrier_id) return;
+    const c = allCarriers.find(x=>x.id===l.carrier_id);
+    if(!c) return;
+    if(!carrierLoads[c.name]) carrierLoads[c.name] = { total:0, delivered:0 };
+    carrierLoads[c.name].total++;
+    if(l.status==='Delivered') carrierLoads[c.name].delivered++;
+  });
+  const topCarrier = Object.entries(carrierLoads)
+    .sort((a,b) => (b[1].delivered/Math.max(b[1].total,1)) - (a[1].delivered/Math.max(a[1].total,1)))[0];
+
+  setEl('li-lanes', laneArr.length);
+  setEl('li-avg-gp', avgGP + '%');
+  setEl('li-best-lane', bestLane ? bestLane.origin_city + ' → ' + bestLane.dest_city : '—');
+  setEl('li-risk', atRisk);
+  setEl('li-top-carrier', topCarrier ? topCarrier[0] : '—');
+
+  // Alerts
+  const alertsEl = document.getElementById('li-alerts');
+  if(alertsEl) {
+    const alerts = [];
+    laneArr.forEach(l => {
+      const gp = l.revenue > 0 ? (l.revenue-l.carrierPay)/l.revenue*100 : 0;
+      if(gp < 10 && l.loads.length >= 2) alerts.push({ type:'danger', msg:`⚠️ ${l.key} — GP% is only ${gp.toFixed(1)}% across ${l.loads.length} loads. Consider raising rates.` });
+      if(l.loads.length >= 5) alerts.push({ type:'success', msg:`🔥 ${l.key} — High volume lane (${l.loads.length} loads). Consider dedicated carrier agreement.` });
+    });
+    if(!alerts.length && loads.length > 0) alerts.push({ type:'info', msg:'✅ All lanes look healthy. Keep building volume to unlock deeper insights.' });
+    if(loads.length < 5) alerts.push({ type:'info', msg:'📊 Add more loads to unlock full Lane Intelligence. Insights improve with volume.' });
+    alertsEl.innerHTML = alerts.slice(0,3).map(a => `
+      <div style="padding:10px 14px;border-radius:8px;margin-bottom:6px;font-size:13px;font-weight:500;
+        background:${a.type==='danger'?'var(--red-dim)':a.type==='success'?'var(--green-dim)':'var(--surface2)'};
+        border:1px solid ${a.type==='danger'?'rgba(239,68,68,0.3)':a.type==='success'?'rgba(16,185,129,0.3)':'var(--border)'};
+        color:${a.type==='danger'?'var(--red)':a.type==='success'?'var(--green)':'var(--text2)'};">
+        ${a.msg}
+      </div>`).join('');
+  }
+
+  // Lane table
+  const tableEl = document.getElementById('li-lane-table');
+  if(tableEl) {
+    if(!laneArr.length) {
+      tableEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🗺️</div><p>No lane data yet.<br/>Complete loads to unlock Lane Intelligence.</p></div>';
+    } else {
+      const maxLoads = Math.max(...laneArr.map(l=>l.loads.length));
+      tableEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:2fr 60px 90px 90px 80px 80px 80px;gap:8px;padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);">
+          <span>Lane</span><span style="text-align:center;">Loads</span><span style="text-align:right;">Revenue</span><span style="text-align:right;">Carrier Pay</span><span style="text-align:right;">GP$</span><span style="text-align:right;">GP%</span><span style="text-align:center;">Trend</span>
+        </div>
+        ${laneArr.map(l => {
+          const gp = l.revenue - l.carrierPay;
+          const gpPct = l.revenue > 0 ? (gp/l.revenue*100) : 0;
+          const gpColor = gpPct >= 18 ? 'var(--green)' : gpPct >= 10 ? 'var(--amber)' : 'var(--red)';
+          const barW = Math.max(4, (l.loads.length/maxLoads*100)).toFixed(0);
+          const avgRate = (l.revenue/l.loads.length).toFixed(0);
+          const topEquip = Object.entries(l.equipment).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+          // Trend: compare first half vs second half GP%
+          const sorted = [...l.loads].sort((a,b)=>new Date(a.pickup_date)-new Date(b.pickup_date));
+          const mid = Math.floor(sorted.length/2);
+          const firstHalf = sorted.slice(0,mid);
+          const secondHalf = sorted.slice(mid);
+          const gpFirst = firstHalf.reduce((s,x)=>(s+(Number(x.customer_rate)-Number(x.carrier_pay))),0) / Math.max(firstHalf.length,1);
+          const gpSecond = secondHalf.reduce((s,x)=>(s+(Number(x.customer_rate)-Number(x.carrier_pay))),0) / Math.max(secondHalf.length,1);
+          const trend = sorted.length < 2 ? '—' : gpSecond > gpFirst ? '📈' : gpSecond < gpFirst ? '📉' : '➡️';
+          return `<div style="display:grid;grid-template-columns:2fr 60px 90px 90px 80px 80px 80px;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">${l.key}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                <div style="height:3px;width:${barW}%;max-width:120px;background:${gpColor};border-radius:3px;"></div>
+                <span style="font-size:10px;color:var(--text3);">${topEquip} · $${avgRate}/load avg</span>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:13px;font-weight:600;">${l.loads.length}</div>
+            <div style="text-align:right;font-size:13px;">${fmt$(l.revenue)}</div>
+            <div style="text-align:right;font-size:13px;color:var(--text3);">${fmt$(l.carrierPay)}</div>
+            <div style="text-align:right;font-size:13px;font-weight:700;color:${gpColor};">${fmt$(gp)}</div>
+            <div style="text-align:right;font-size:12px;font-weight:700;color:${gpColor};font-family:'JetBrains Mono',monospace;">${gpPct.toFixed(1)}%</div>
+            <div style="text-align:center;font-size:16px;">${trend}</div>
+          </div>`;
+        }).join('')}`;
+    }
+  }
+
+  // Best carrier per lane
+  const carrierLaneEl = document.getElementById('li-carrier-lane');
+  if(carrierLaneEl) {
+    const top5 = laneArr.slice(0,5);
+    if(!top5.length) { carrierLaneEl.innerHTML = '<div class="empty-state"><p>No data yet</p></div>'; }
+    else {
+      carrierLaneEl.innerHTML = top5.map(l => {
+        const bestCarrier = Object.entries(l.carriers)
+          .sort((a,b) => (b[1].delivered/Math.max(b[1].total,1)) - (a[1].delivered/Math.max(a[1].total,1)))[0];
+        const rate = bestCarrier ? (bestCarrier[1].delivered/Math.max(bestCarrier[1].total,1)*100).toFixed(0) : null;
+        return `<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:600;color:var(--text);">${l.origin_city} → ${l.dest_city}</div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:11px;color:var(--text3);">${bestCarrier?bestCarrier[0]:'No carrier data'}</span>
+            ${rate?`<span style="font-size:11px;font-weight:700;color:${Number(rate)>=90?'var(--green)':Number(rate)>=75?'var(--amber)':'var(--red)'};">${rate}% on-time</span>`:''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Market trend alerts
+  const trendsEl = document.getElementById('li-trends');
+  if(trendsEl) {
+    const trendAlerts = [];
+    laneArr.forEach(l => {
+      const sorted = [...l.loads].sort((a,b)=>new Date(a.pickup_date)-new Date(b.pickup_date));
+      if(sorted.length < 3) return;
+      const recent = sorted.slice(-3);
+      const older = sorted.slice(0,-3);
+      const recentAvgRate = recent.reduce((s,x)=>s+(Number(x.customer_rate)||0),0)/recent.length;
+      const olderAvgRate = older.length ? older.reduce((s,x)=>s+(Number(x.customer_rate)||0),0)/older.length : recentAvgRate;
+      const change = olderAvgRate > 0 ? ((recentAvgRate-olderAvgRate)/olderAvgRate*100) : 0;
+      if(Math.abs(change) > 10) {
+        trendAlerts.push({
+          lane: `${l.origin_city} → ${l.dest_city}`,
+          change: change.toFixed(1),
+          up: change > 0,
+        });
+      }
+    });
+    if(!trendAlerts.length) {
+      trendsEl.innerHTML = `<div style="text-align:center;color:var(--text3);font-size:13px;padding:16px;">Rate trends will appear here as you build volume on each lane.<br/><span style="font-size:11px;">Requires 4+ loads per lane.</span></div>`;
+    } else {
+      trendsEl.innerHTML = trendAlerts.slice(0,5).map(t => `
+        <div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:12px;font-weight:600;color:var(--text);">${t.lane}</div>
+          <div style="font-size:13px;font-weight:700;color:${t.up?'var(--green)':'var(--red)'};">${t.up?'📈 +':'📉 '}${t.change}%</div>
+        </div>`).join('');
+    }
+  }
 }
 
 </script>
