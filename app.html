@@ -354,7 +354,29 @@ textarea{resize:vertical;min-height:80px;}
 .aging-row:last-child{border-bottom:none;}
 .aging-row:hover{background:var(--surface2);}
 .factoring-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--purple-dim);color:var(--purple);border:1px solid rgba(139,92,246,0.3);}
+
+.address-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
+.address-dropdown.open{display:block;}
+.address-suggestion{padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;}
+.address-suggestion:last-child{border-bottom:none;}
+.address-suggestion:hover{background:var(--surface2);}
+.address-suggestion .sug-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
+.address-suggestion .sug-main{font-weight:600;color:var(--text);}
+.address-suggestion .sug-sub{font-size:11px;color:var(--text3);margin-top:1px;}
 </style>
+<script>
+// Google Places loaded dynamically when API key is available
+</script>
+<script>
+function loadGooglePlaces(apiKey){
+  if(document.getElementById("google-places-script"))return;
+  const s=document.createElement("script");
+  s.id="google-places-script";
+  s.src=`https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initPlacesAutocomplete`;
+  s.async=true;
+  document.head.appendChild(s);
+}
+</script>
 </head>
 <body>
 <aside class="sidebar">
@@ -785,10 +807,30 @@ textarea{resize:vertical;min-height:80px;}
       <div class="form-grid" style="margin-bottom:16px;">
         <div class="form-group"><label>Customer</label><select id="load-customer"><option value="">Select customer…</option></select></div>
         <div class="form-group"><label>Equipment Type</label><select id="load-equipment"><option>Dry Van</option><option>Reefer</option><option>Flatbed</option><option>LTL</option><option>Step Deck</option><option>Tanker</option></select></div>
-        <div class="form-group autocomplete-wrap"><label>Origin City</label><input type="text" id="load-origin-city" placeholder="Dallas" autocomplete="off"/></div>
-        <div class="form-group"><label>Origin State</label><input type="text" id="load-origin-state" placeholder="TX" maxlength="2"/></div>
-        <div class="form-group autocomplete-wrap"><label>Destination City</label><input type="text" id="load-dest-city" placeholder="Chicago" autocomplete="off"/></div>
-        <div class="form-group"><label>Destination State</label><input type="text" id="load-dest-state" placeholder="IL" maxlength="2"/></div>
+        <div class="form-group full" style="grid-column:1/-1;">
+          <label>Pickup Address</label>
+          <div style="position:relative;">
+            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;"/>
+            <div id="origin-suggestions" class="address-dropdown"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
+            <input type="text" id="load-origin-city" placeholder="City" autocomplete="off"/>
+            <input type="text" id="load-origin-state" placeholder="ST" maxlength="2" style="text-transform:uppercase;"/>
+            <input type="text" id="load-origin-zip" placeholder="ZIP" maxlength="10"/>
+          </div>
+        </div>
+        <div class="form-group full" style="grid-column:1/-1;">
+          <label>Delivery Address</label>
+          <div style="position:relative;">
+            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;"/>
+            <div id="dest-suggestions" class="address-dropdown"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
+            <input type="text" id="load-dest-city" placeholder="City" autocomplete="off"/>
+            <input type="text" id="load-dest-state" placeholder="ST" maxlength="2" style="text-transform:uppercase;"/>
+            <input type="text" id="load-dest-zip" placeholder="ZIP" maxlength="10"/>
+          </div>
+        </div>
         <div class="form-group"><label>Pickup Date</label><input type="datetime-local" id="load-pickup"/></div>
         <div class="form-group"><label>Delivery Date</label><input type="datetime-local" id="load-delivery"/></div>
         <div class="form-group"><label>Weight (lbs)</label><input type="number" id="load-weight" placeholder="42000"/></div>
@@ -1868,6 +1910,7 @@ function switchPage(id){
   if(cfg){setEl('pageTitle',cfg.title);setEl('pageSub',cfg.sub);const btn=document.getElementById('primaryBtn');if(btn){btn.textContent=cfg.btn;btn.setAttribute('onclick',cfg.btnAction);}}
   renderCurrentPage();
   checkOverdueLoads();
+  tryLoadGooglePlaces();
 }
 
 function renderCurrentPage(){
@@ -2139,8 +2182,11 @@ async function saveLoad(){
   const payload={
     customer_id:document.getElementById('load-customer')?.value||null,
     carrier_id:carrierId||null,
+    origin_address:document.getElementById('load-origin-address')?.value,
     origin_city:document.getElementById('load-origin-city')?.value,
     origin_state:document.getElementById('load-origin-state')?.value?.toUpperCase(),
+    origin_zip:document.getElementById('load-origin-zip')?.value,
+    destination_address:document.getElementById('load-dest-address')?.value,
     destination_city:document.getElementById('load-dest-city')?.value,
     destination_state:document.getElementById('load-dest-state')?.value?.toUpperCase(),
     equipment_type:document.getElementById('load-equipment')?.value,
@@ -3062,19 +3108,15 @@ function renderSettings(){
   db.from('company_settings').select('*').limit(1).then(({data})=>{if(data?.length)window._companySettings=data[0];
     if(!data?.length)return;const s=data[0];
     const sv=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
-    sv('s-company-name',s.company_name);sv('s-mc',s.mc_number);sv('s-dot',s.dot_number);sv('s-email',s.dispatch_email);sv('s-phone',s.phone);sv('s-city',s.city);sv('s-state',s.state);sv('s-zip',s.zip);sv('s-terms',s.rate_con_terms);
+    sv('s-google-places',s.google_places_key);
+  sv('s-company-name',s.company_name);sv('s-mc',s.mc_number);sv('s-dot',s.dot_number);sv('s-email',s.dispatch_email);sv('s-phone',s.phone);sv('s-city',s.city);sv('s-state',s.state);sv('s-zip',s.zip);sv('s-terms',s.rate_con_terms);
   });
 }
 function switchSettingsTab(tab){
   ['profile','branding','permissions','subscription'].forEach(t=>{const el=document.getElementById('stab-'+t);if(el)el.style.display=t===tab?'block':'none';document.querySelectorAll('.settings-tab').forEach((btn,i)=>btn.classList.toggle('active',['profile','branding','permissions','subscription'][i]===tab));});
   if(tab==='permissions'){initRolePerms();renderPermMatrix();}
 }
-async function saveCompanySettings(){
-  const payload={company_name:document.getElementById('s-company-name')?.value,mc_number:document.getElementById('s-mc')?.value,dot_number:document.getElementById('s-dot')?.value,dispatch_email:document.getElementById('s-email')?.value,phone:document.getElementById('s-phone')?.value,city:document.getElementById('s-city')?.value,state:document.getElementById('s-state')?.value?.toUpperCase(),zip:document.getElementById('s-zip')?.value,rate_con_terms:document.getElementById('s-terms')?.value};
-  const{data:existing}=await db.from('company_settings').select('id').limit(1);
-  const{error}=existing?.length?await db.from('company_settings').update(payload).eq('id',existing[0].id):await db.from('company_settings').insert(payload);
-  if(error){toast('Error: '+error.message,'error');return;}toast('Settings saved!','success');
-}
+// saveCompanySettings — see enhanced version below
 
 // ── PERMISSIONS ───────────────────────────────────────────────
 const PERM_MODULES=[{id:'dashboard',name:'Dashboard',icon:'⬛',desc:'Overview KPIs and alerts'},{id:'dispatch',name:'Dispatch Board',icon:'📋',desc:'Visual load status board'},{id:'loads',name:'Load Management',icon:'📦',desc:'Create, edit, delete loads'},{id:'carriers',name:'Carrier Network',icon:'🚚',desc:'Carrier database'},{id:'customers',name:'Customers',icon:'🏢',desc:'Shipper accounts'},{id:'quotes',name:'Quotes',icon:'📋',desc:'Customer quote requests'},{id:'invoices',name:'Invoicing',icon:'🧾',desc:'Invoice management'},{id:'crm',name:'CRM',icon:'🎯',desc:'Pipeline and prospects'},{id:'reports',name:'Reports',icon:'📊',desc:'Analytics'},{id:'integrations',name:'Integrations',icon:'🔌',desc:'Third-party connections'}];
@@ -4447,6 +4489,211 @@ async function runScout() {
   if (results) results.style.display = 'block';
   if (detail) detail.textContent = `${sent} email${sent!==1?'s':''} sent successfully${failed > 0 ? `, ${failed} failed` : ''}. Carriers will reply directly to your dispatch email.`;
   toast(`Scout sent ${sent} capacity emails! 🤖`, 'success');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// ADDRESS AUTOCOMPLETE — Google Places + Fallback
+// ══════════════════════════════════════════════════════════════
+
+let placesService = null;
+let autocompleteService = null;
+let sessionToken = null;
+
+// Called by Google Places script after loading
+function initPlacesAutocomplete() {
+  if (window.google && window.google.maps && window.google.maps.places) {
+    autocompleteService = new google.maps.places.AutocompleteService();
+    placesService = new google.maps.places.PlacesService(document.createElement('div'));
+    sessionToken = new google.maps.places.AutocompleteSessionToken();
+    console.log('[FF] Google Places loaded ✅');
+  }
+}
+
+// Main input handler — uses Google if available, falls back to basic city match
+let addressDebounce = null;
+function handleAddressInput(input, type) {
+  clearTimeout(addressDebounce);
+  const val = input.value.trim();
+  const dropId = type === 'origin' ? 'origin-suggestions' : 'dest-suggestions';
+  const drop = document.getElementById(dropId);
+
+  if (val.length < 3) {
+    if (drop) { drop.innerHTML = ''; drop.classList.remove('open'); }
+    return;
+  }
+
+  addressDebounce = setTimeout(() => {
+    if (autocompleteService && sessionToken) {
+      // Google Places autocomplete
+      autocompleteService.getPlacePredictions({
+        input: val,
+        sessionToken,
+        componentRestrictions: { country: 'us' },
+        types: ['establishment', 'geocode'],
+      }, (predictions, status) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+          showFallbackSuggestions(val, drop, type);
+          return;
+        }
+        showGoogleSuggestions(predictions, drop, type);
+      });
+    } else {
+      // Fallback: basic US city/state suggestions
+      showFallbackSuggestions(val, drop, type);
+    }
+  }, 250);
+}
+
+function showGoogleSuggestions(predictions, drop, type) {
+  if (!drop) return;
+  drop.innerHTML = predictions.slice(0, 6).map(p => `
+    <div class="address-suggestion" onclick="selectGooglePlace('${p.place_id}','${type}',this)">
+      <span class="sug-icon">📍</span>
+      <div>
+        <div class="sug-main">${p.structured_formatting?.main_text || p.description}</div>
+        <div class="sug-sub">${p.structured_formatting?.secondary_text || ''}</div>
+      </div>
+    </div>`).join('');
+  drop.classList.add('open');
+}
+
+function selectGooglePlace(placeId, type, el) {
+  const drop = el.closest('.address-dropdown');
+  if (drop) { drop.innerHTML = ''; drop.classList.remove('open'); }
+
+  // Reset session token after selection
+  if (window.google) sessionToken = new google.maps.places.AutocompleteSessionToken();
+
+  placesService.getDetails({
+    placeId,
+    fields: ['formatted_address', 'address_components', 'name', 'geometry'],
+    sessionToken,
+  }, (place, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !place) return;
+
+    let streetNumber = '', route = '', city = '', state = '', zip = '';
+    place.address_components.forEach(c => {
+      if (c.types.includes('street_number')) streetNumber = c.long_name;
+      if (c.types.includes('route')) route = c.long_name;
+      if (c.types.includes('locality')) city = c.long_name;
+      if (c.types.includes('administrative_area_level_1')) state = c.short_name;
+      if (c.types.includes('postal_code')) zip = c.long_name;
+    });
+
+    const street = [streetNumber, route].filter(Boolean).join(' ');
+    const fullAddress = place.formatted_address || street;
+
+    if (type === 'origin') {
+      setVal('load-origin-address', street || fullAddress);
+      setVal('load-origin-city', city);
+      setVal('load-origin-state', state);
+      setVal('load-origin-zip', zip);
+    } else {
+      setVal('load-dest-address', street || fullAddress);
+      setVal('load-dest-city', city);
+      setVal('load-dest-state', state);
+      setVal('load-dest-zip', zip);
+    }
+  });
+}
+
+// Fallback: simple US city list for when Google isn't configured
+const TOP_CITIES = [
+  'Dallas, TX','Houston, TX','San Antonio, TX','Austin, TX','Fort Worth, TX',
+  'Chicago, IL','Jacksonville, FL','Columbus, OH','Indianapolis, IN','Charlotte, NC',
+  'San Francisco, CA','Seattle, WA','Denver, CO','Nashville, TN','Atlanta, GA',
+  'Los Angeles, CA','Phoenix, AZ','Philadelphia, PA','New York, NY','San Diego, CA',
+  'Memphis, TN','Louisville, KY','Baltimore, MD','Milwaukee, WI','Albuquerque, NM',
+  'Tucson, AZ','Fresno, CA','Sacramento, CA','Long Beach, CA','Kansas City, MO',
+  'Mesa, AZ','Virginia Beach, VA','Raleigh, NC','Colorado Springs, CO','Omaha, NE',
+  'Miami, FL','Oakland, CA','Minneapolis, MN','Tulsa, OK','Tampa, FL',
+  'Arlington, TX','New Orleans, LA','Wichita, KS','Cleveland, OH','Bakersfield, CA',
+  'Aurora, CO','Anaheim, CA','Santa Ana, CA','Corpus Christi, TX','Riverside, CA',
+  'Lexington, KY','St. Louis, MO','Pittsburgh, PA','Anchorage, AK','Stockton, CA',
+  'Cincinnati, OH','St. Paul, MN','Greensboro, NC','Toledo, OH','Newark, NJ',
+  'Plano, TX','Henderson, NV','Orlando, FL','Lincoln, NE','Jersey City, NJ',
+  'Detroit, MI','Buffalo, NY','Fort Wayne, IN','Madison, WI','Laredo, TX',
+  'El Paso, TX','Portland, OR','Las Vegas, NV','Boston, MA','Memphis, TN',
+  'Oklahoma City, OK','Louisville, KY','Las Vegas, NV','Birmingham, AL',
+];
+
+function showFallbackSuggestions(val, drop, type) {
+  if (!drop) return;
+  const q = val.toLowerCase();
+  const matches = TOP_CITIES
+    .filter(c => c.toLowerCase().includes(q))
+    .slice(0, 6);
+
+  if (!matches.length) {
+    drop.innerHTML = '';
+    drop.classList.remove('open');
+    return;
+  }
+
+  drop.innerHTML = matches.map(c => {
+    const [city, state] = c.split(', ');
+    return `<div class="address-suggestion" onclick="selectFallbackCity('${c}','${type}',this)">
+      <span class="sug-icon">🏙️</span>
+      <div>
+        <div class="sug-main">${c}</div>
+        <div class="sug-sub">City · Add street address above</div>
+      </div>
+    </div>`;
+  }).join('');
+  drop.classList.add('open');
+}
+
+function selectFallbackCity(cityState, type, el) {
+  const drop = el.closest('.address-dropdown');
+  if (drop) { drop.innerHTML = ''; drop.classList.remove('open'); }
+  const [city, state] = cityState.split(', ');
+  if (type === 'origin') {
+    setVal('load-origin-city', city);
+    setVal('load-origin-state', state);
+    const addr = document.getElementById('load-origin-address');
+    if (addr && !addr.value.includes(city)) addr.value = city + ', ' + state;
+  } else {
+    setVal('load-dest-city', city);
+    setVal('load-dest-state', state);
+    const addr = document.getElementById('load-dest-address');
+    if (addr && !addr.value.includes(city)) addr.value = city + ', ' + state;
+  }
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val || '';
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.address-dropdown') && !e.target.closest('input[id*="address"]')) {
+    document.querySelectorAll('.address-dropdown').forEach(d => {
+      d.innerHTML = '';
+      d.classList.remove('open');
+    });
+  }
+});
+
+// Load Google Places if API key is configured in settings
+async function tryLoadGooglePlaces() {
+  const s = window._companySettings;
+  if (s?.google_places_key) {
+    loadGooglePlaces(s.google_places_key);
+  }
+}
+
+// Also add Google Places key to Company Settings save/load
+const _origSaveSettings = saveCompanySettings;
+async function saveCompanySettings() {
+  // Grab the Google key before calling original
+  const gKey = document.getElementById('s-google-places')?.value;
+  if (gKey && window._companySettings) {
+    window._companySettings.google_places_key = gKey;
+  }
+  await _origSaveSettings();
+  if (gKey) loadGooglePlaces(gKey);
 }
 
 </script>
