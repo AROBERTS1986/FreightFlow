@@ -1601,6 +1601,7 @@ let currentPage='dashboard',currentUser=null,currentUserRole=null,currentDetailL
 let checkCalls={},activeCrmTab='pipeline',activePermRole='dispatcher';
 let rolePerms={},savedRolePerms={},currentInvTab='queue',activeQuotesTab='pending';
 let isLightMode=localStorage.getItem('ff-theme')==='light';
+let currentCompanyId=null; // set after auth — used for multi-tenant RLS
 let currentPortalCustomerId=null;
 
 // ── CITIES ───────────────────────────────────────────────────
@@ -1997,6 +1998,7 @@ async function saveLoad(){
     accessorials:accessorials.length?JSON.stringify(accessorials):null,
     factoring:document.getElementById('load-factoring')?.value||'no',
     fuel_surcharge:document.getElementById('load-fsc')?.value||null,
+    company_id:currentCompanyId||undefined,
   };
   if(!id)payload.load_number=loadNumber();
   const{error}=id?await db.from('loads').update(payload).eq('id',id):await db.from('loads').insert(payload);
@@ -2050,6 +2052,7 @@ async function saveCarrier(){
     do_not_use:dnl||false,
     dnl_reason:dnl?document.getElementById('carrier-dnl-reason')?.value:null,
     onboarding_status:document.getElementById('carrier-onboard-status')?.value||'Pending',
+    company_id:currentCompanyId||undefined,
   };
   const{error}=id?await db.from('carriers').update(payload).eq('id',id):await db.from('carriers').insert(payload);
   if(error){toast('Error: '+error.message,'error');return;}
@@ -2974,15 +2977,19 @@ async function onSignedIn(user){
   console.log('[FF] onSignedIn:', user.email);
   currentUser=user;
   document.getElementById('auth-overlay').className='auth-overlay';
-  const{data:profile}=await db.from('user_profiles').select('*').eq('id',user.id).single();
-  currentUserRole=profile?.role||'admin';
-  await db.from('user_profiles').upsert({id:user.id,email:user.email,full_name:profile?.full_name||user.email.split('@')[0],role:currentUserRole,status:'Active',last_login_at:new Date().toISOString()},{onConflict:'id'});
+  // Load company_id for this user — used for multi-tenant RLS
+  const{data:profile}=await db.from('user_profiles').select('company_id,role,full_name').eq('id',user.id).single().catch(()=>({data:null}));
+  currentCompanyId=profile?.company_id||null;
+  console.log('[FF] company_id:', currentCompanyId);
+  const{data:fullProfile}=await db.from('user_profiles').select('*').eq('id',user.id).single();
+  currentUserRole=fullProfile?.role||'admin';
+  await db.from('user_profiles').upsert({id:user.id,email:user.email,full_name:fullProfile?.full_name||user.email.split('@')[0],role:currentUserRole,status:'Active',last_login_at:new Date().toISOString()},{onConflict:'id'});
   updateSidebarUser(profile||{email:user.email,role:currentUserRole});
   initRolePerms();applyRolePermissions();
   await loadData();
 }
 
-function updateSidebarUser(profile){
+function updateSidebarUser(fullProfile){
   const initials=((profile.full_name||profile.email||'?').charAt(0)).toUpperCase();
   const name=profile.full_name||profile.email||'User';
   const role=profile.role||'user';
