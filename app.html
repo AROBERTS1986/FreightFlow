@@ -440,10 +440,14 @@ textarea{resize:vertical;min-height:80px;}
     <div class="card">
       <div class="card-header">
         <div class="card-title">All Loads</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <input type="text" id="load-search" placeholder="Search loads…" style="font-size:12px;padding:6px 10px;width:180px;" oninput="filterLoads()"/>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="text" id="load-search" placeholder="Search loads…" style="font-size:12px;padding:6px 10px;width:160px;" oninput="filterLoads()"/>
           <select id="load-filter-status" style="font-size:12px;padding:6px 8px;" onchange="filterLoads()"><option value="">All Statuses</option><option>Available</option><option>Pending Acceptance</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select>
+          <input type="date" id="load-filter-date-from" style="font-size:12px;padding:5px 8px;" onchange="filterLoads()" title="Pickup from"/>
+          <input type="date" id="load-filter-date-to" style="font-size:12px;padding:5px 8px;" onchange="filterLoads()" title="Pickup to"/>
           <button class="btn btn-ghost btn-sm" onclick="openModal('load-templates')">📋 Templates</button>
+          <button class="btn btn-ghost btn-sm" onclick="openBulkStatusModal()" id="bulk-btn" style="display:none;">✏️ Bulk Update</button>
+          <button class="btn btn-ghost btn-sm" style="background:linear-gradient(135deg,var(--purple),var(--accent));color:white;border:none;" onclick="openScoutModal()">🤖 Scout</button>
           <button class="btn btn-primary btn-sm" onclick="openModal('load')">+ New Load</button>
         </div>
       </div>
@@ -933,7 +937,14 @@ textarea{resize:vertical;min-height:80px;}
         <button class="btn btn-primary btn-sm" id="tender-btn" onclick="openTenderModal()" style="background:var(--purple);">📤 Tender to Carrier</button>
         <button class="btn btn-danger btn-sm" id="remove-carrier-btn" onclick="openRemoveCarrierModal()" style="display:none;">🚫 Remove Carrier</button>
         <button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button>
-        <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">⧉ Duplicate</button>
+        <button class="btn btn-ghost btn-sm" onclick="openLoadNotes()">📝 Notes</button>
+        <button class="btn btn-ghost btn-sm" onclick="openQuickPay()">⚡ Quick Pay</button>
+        <button class="btn btn-ghost btn-sm" onclick="openBOL()">📄 BOL</button>
+        <button class="btn btn-ghost btn-sm" style="background:linear-gradient(135deg,var(--purple),var(--accent));color:white;border:none;" onclick="openScoutFromDetail()">🤖 Scout</button>
+        <button class="btn btn-ghost btn-sm" onclick="openLoadNotes()">📝 Notes</button>
+        <button class="btn btn-ghost btn-sm" onclick="openQuickPay()">⚡ Quick Pay</button>
+        <button class="btn btn-ghost btn-sm" onclick="openBOL()">📄 BOL</button>
+        <button class="btn btn-ghost btn-sm" style="background:linear-gradient(135deg,var(--purple),var(--accent));color:white;border:none;" onclick="openScoutFromDetail()">🤖 Scout</button>
         <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">⧉ Duplicate</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
         <button class="modal-close" onclick="closeModal('detail')">✕</button>
@@ -1584,6 +1595,165 @@ textarea{resize:vertical;min-height:80px;}
   </div>
 </div>
 
+
+<!-- MODAL: FreightFlow Scout -->
+<div class="modal-overlay" id="modal-scout" style="z-index:700;">
+  <div class="modal" style="width:640px;">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1B2A4A,#2563EB);">
+      <div>
+        <div class="modal-title" style="color:white;">🤖 FreightFlow Scout</div>
+        <div style="font-size:12px;color:#93c5fd;margin-top:2px;">AI capacity sourcing — finds carriers while you focus on other things</div>
+      </div>
+      <button class="modal-close" style="color:white;" onclick="closeModal('scout')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+      <div id="scout-load-info" style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px;border:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Load Being Covered</div>
+        <div id="scout-load-details" style="font-size:13px;color:var(--text);"></div>
+      </div>
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label>Target Carrier Pay ($)</label>
+          <input type="number" id="scout-pay" placeholder="e.g. 850" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label>Max Carriers to Contact</label>
+          <select id="scout-max">
+            <option value="5">5 carriers</option>
+            <option value="10" selected>10 carriers</option>
+            <option value="20">20 carriers</option>
+            <option value="50">All matching carriers</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Custom Message (optional)</label>
+        <textarea id="scout-message" placeholder="Leave blank to use the default capacity solicitation message…" style="min-height:80px;"></textarea>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;margin-bottom:16px;border:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Matching Carriers in Network</div>
+        <div id="scout-carrier-list" style="max-height:180px;overflow-y:auto;"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" style="flex:1;justify-content:center;background:linear-gradient(135deg,var(--purple),var(--accent));" onclick="runScout()">🤖 Send Capacity Blast →</button>
+        <button class="btn btn-ghost" onclick="closeModal('scout')">Cancel</button>
+      </div>
+      <div id="scout-results" style="display:none;margin-top:16px;padding:14px;background:var(--green-dim);border:1px solid var(--green);border-radius:10px;">
+        <div style="font-size:13px;font-weight:700;color:var(--green);">✅ Capacity blast sent!</div>
+        <div id="scout-results-detail" style="font-size:12px;color:var(--text2);margin-top:4px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Bulk Status Update -->
+<div class="modal-overlay" id="modal-bulk-status" style="z-index:700;">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Bulk Status Update</div>
+      <button class="modal-close" onclick="closeModal('bulk-status')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Update status for all selected loads at once.</div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>New Status</label>
+        <select id="bulk-status-val">
+          <option>Available</option>
+          <option>Assigned</option>
+          <option>In Transit</option>
+          <option>Delivered</option>
+        </select>
+      </div>
+      <div id="bulk-load-list" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;max-height:200px;overflow-y:auto;font-size:12px;color:var(--text2);"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="applyBulkStatus()">Apply to Selected Loads</button>
+        <button class="btn btn-ghost" onclick="closeModal('bulk-status')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Print BOL -->
+<div class="modal-overlay" id="modal-bol" style="z-index:700;">
+  <div class="modal" style="width:700px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-header">
+      <div class="modal-title">📄 Bill of Lading</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="printBOL()">🖨️ Print / Save PDF</button>
+        <button class="modal-close" onclick="closeModal('bol')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:20px;background:white;">
+      <div id="bol-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Load Notes -->
+<div class="modal-overlay" id="modal-load-notes" style="z-index:700;">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📝 Load Notes</div>
+      <button class="modal-close" onclick="closeModal('load-notes')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+      <div id="load-notes-list" style="margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Add Note</label>
+        <textarea id="load-note-input" placeholder="Internal note — visible to your team only…" style="min-height:80px;"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="saveLoadNote()">Add Note</button>
+        <button class="btn btn-ghost" onclick="closeModal('load-notes')">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Quick Pay / Fuel Advance -->
+<div class="modal-overlay" id="modal-quick-pay" style="z-index:700;">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">⚡ Quick Pay / Fuel Advance</div>
+      <button class="modal-close" onclick="closeModal('quick-pay')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+      <div id="quick-pay-load-info" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);"></div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Type</label>
+          <select id="qp-type">
+            <option>Fuel Advance</option>
+            <option>Quick Pay</option>
+            <option>Comcheck</option>
+            <option>EFS</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount ($)</label>
+          <input type="number" id="qp-amount" placeholder="0.00" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label>Fee ($)</label>
+          <input type="number" id="qp-fee" placeholder="0.00" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label>Reference #</label>
+          <input type="text" id="qp-ref" placeholder="Comcheck or EFS #"/>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Notes</label>
+        <input type="text" id="qp-notes" placeholder="Any additional details…"/>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="saveQuickPay()">Record Payment</button>
+        <button class="btn btn-ghost" onclick="closeModal('quick-pay')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
 <iframe id="print-frame" style="display:none;"></iframe>
@@ -1697,6 +1867,7 @@ function switchPage(id){
   const cfg=pageConfig[id];
   if(cfg){setEl('pageTitle',cfg.title);setEl('pageSub',cfg.sub);const btn=document.getElementById('primaryBtn');if(btn){btn.textContent=cfg.btn;btn.setAttribute('onclick',cfg.btnAction);}}
   renderCurrentPage();
+  checkOverdueLoads();
 }
 
 function renderCurrentPage(){
@@ -2845,7 +3016,7 @@ function openCrmCompanyDetail(companyId){
   const tasks=allCrmTasks.filter(t=>t.company_id===companyId&&t.status!=='Done').slice(0,5);
   const stageColors={'New Lead':'var(--text3)','Contacted':'var(--accent)','Qualified':'var(--amber)','Proposal Sent':'var(--purple)','Won':'var(--green)','Lost':'var(--red)'};
   const detail=document.getElementById('crm-company-detail');if(!detail)return;
-  detail.innerHTML=`<div style="padding:20px;"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);">${c.name}</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span style="width:10px;height:10px;border-radius:50%;background:${stageColors[c.stage]||'var(--text3)'};display:inline-block;"></span><span style="font-size:13px;color:var(--text2);">${c.stage}</span></div></div><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="editCrmCompany('${c.id}')">✏️ Edit</button><button class="btn btn-primary btn-sm" onclick="document.getElementById('cact-company-id').value='${c.id}';openModal('crm-activity')">+ Log Activity</button></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;"><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Deal Value</div><div style="font-size:18px;font-weight:700;color:var(--green);">${fmt$(c.deal_value)}</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Probability</div><div style="font-size:18px;font-weight:700;color:var(--accent);">${c.probability||'—'}%</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Loads/Month</div><div style="font-size:18px;font-weight:700;color:var(--text);">${c.estimated_loads||'—'}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Contact Info</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.phone||'No phone'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.email||'No email'}</div><div style="font-size:13px;color:var(--text2);">${c.city?c.city+', '+c.state:'No location'}</div></div><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Details</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Industry: ${c.industry||'—'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Source: ${c.lead_source||'—'}</div><div style="font-size:13px;color:var(--text2);">Follow-up: ${c.next_followup?fmtDate(c.next_followup):'—'}</div></div></div>${c.notes?`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6;font-style:italic;">"${c.notes}"</div>`:''}<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Recent Activity</div>${!activities.length?'<div style="font-size:13px;color:var(--text3);padding:12px;background:var(--surface2);border-radius:8px;text-align:center;">No activity logged yet</div>':activities.map(a=>`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent);"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;"><span>${a.type||'Note'}</span><span>${fmtDate(a.created_at)}</span></div><div style="font-size:13px;font-weight:600;color:var(--text);">${a.subject||'—'}</div>${a.body?`<div style="font-size:12px;color:var(--text2);margin-top:4px;">${a.body}</div>`:''}</div>`).join('')}</div>`;
+  detail.innerHTML=`<div style="padding:20px;"><div id="load-profit-box" style="margin-bottom:16px;"></div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);">${c.name}</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span style="width:10px;height:10px;border-radius:50%;background:${stageColors[c.stage]||'var(--text3)'};display:inline-block;"></span><span style="font-size:13px;color:var(--text2);">${c.stage}</span></div></div><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="editCrmCompany('${c.id}')">✏️ Edit</button><button class="btn btn-primary btn-sm" onclick="document.getElementById('cact-company-id').value='${c.id}';openModal('crm-activity')">+ Log Activity</button></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;"><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Deal Value</div><div style="font-size:18px;font-weight:700;color:var(--green);">${fmt$(c.deal_value)}</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Probability</div><div style="font-size:18px;font-weight:700;color:var(--accent);">${c.probability||'—'}%</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Loads/Month</div><div style="font-size:18px;font-weight:700;color:var(--text);">${c.estimated_loads||'—'}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Contact Info</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.phone||'No phone'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.email||'No email'}</div><div style="font-size:13px;color:var(--text2);">${c.city?c.city+', '+c.state:'No location'}</div></div><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Details</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Industry: ${c.industry||'—'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Source: ${c.lead_source||'—'}</div><div style="font-size:13px;color:var(--text2);">Follow-up: ${c.next_followup?fmtDate(c.next_followup):'—'}</div></div></div>${c.notes?`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6;font-style:italic;">"${c.notes}"</div>`:''}<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Recent Activity</div>${!activities.length?'<div style="font-size:13px;color:var(--text3);padding:12px;background:var(--surface2);border-radius:8px;text-align:center;">No activity logged yet</div>':activities.map(a=>`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent);"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;"><span>${a.type||'Note'}</span><span>${fmtDate(a.created_at)}</span></div><div style="font-size:13px;font-weight:600;color:var(--text);">${a.subject||'—'}</div>${a.body?`<div style="font-size:12px;color:var(--text2);margin-top:4px;">${a.body}</div>`:''}</div>`).join('')}</div>`;
 }
 
 function editCrmCompany(id){const c=allCompanies.find(x=>x.id===id);if(!c)return;document.getElementById('crm-company-id').value=c.id;document.getElementById('crm-company-modal-title').textContent='Edit '+c.name;const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};sv('cc-name',c.name);sv('cc-industry',c.industry);sv('cc-phone',c.phone);sv('cc-email',c.email);sv('cc-city',c.city);sv('cc-state',c.state);sv('cc-stage',c.stage);sv('cc-deal-value',c.deal_value);sv('cc-probability',c.probability);sv('cc-loads',c.estimated_loads);sv('cc-source',c.lead_source);sv('cc-priority',c.priority||'Medium');sv('cc-assigned',c.assigned_to);sv('cc-followup',c.next_followup||'');sv('cc-notes',c.notes);openModal('crm-company');}
@@ -3814,6 +3985,477 @@ function renderOnboardingQueue() {
     }).join('')}`;
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// OPERATIONS SPRINT — Load Notes, Quick Pay, BOL, Scout, Bulk, Filters
+// ══════════════════════════════════════════════════════════════
+
+// ── ENHANCED FILTER (date range) ─────────────────────────────
+const _origFilterLoads = filterLoads;
+filterLoads = function() {
+  const q = (document.getElementById('load-search')?.value || '').toLowerCase();
+  const s = document.getElementById('load-filter-status')?.value || '';
+  const dateFrom = document.getElementById('load-filter-date-from')?.value || '';
+  const dateTo = document.getElementById('load-filter-date-to')?.value || '';
+  const body = document.getElementById('loads-body');
+  if (!body) return;
+
+  let filtered = allLoads.filter(l => {
+    const matchQ = !q || (l.load_number||'').toLowerCase().includes(q) ||
+      (l.origin_city||'').toLowerCase().includes(q) ||
+      (l.destination_city||'').toLowerCase().includes(q) ||
+      (l.carriers?.name||'').toLowerCase().includes(q) ||
+      (l.customers?.name||'').toLowerCase().includes(q);
+    const matchS = !s || l.status === s;
+    const matchFrom = !dateFrom || (l.pickup_date && l.pickup_date >= dateFrom);
+    const matchTo = !dateTo || (l.pickup_date && l.pickup_date <= dateTo);
+    return matchQ && matchS && matchFrom && matchTo;
+  });
+
+  // Show bulk button if filtered > 0
+  const bulkBtn = document.getElementById('bulk-btn');
+  if (bulkBtn) bulkBtn.style.display = filtered.length > 0 ? 'flex' : 'none';
+
+  // Check overdue
+  const now = new Date();
+  filtered.forEach(l => {
+    if (l.delivery_date && new Date(l.delivery_date) < now && !['Delivered','Available'].includes(l.status)) {
+      l._overdue = true;
+    }
+  });
+
+  if (!filtered.length) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>No loads match your filters.</p></div>';
+    return;
+  }
+  renderLoadRows(filtered, body);
+};
+
+function renderLoadRows(loads, body) {
+  const customer = id => allCustomers.find(c => c.id === id);
+  const carrier = id => allCarriers.find(c => c.id === id);
+  body.innerHTML = loads.map(l => {
+    const cust = customer(l.customer_id);
+    const carr = carrier(l.carrier_id);
+    const gp = (Number(l.customer_rate)||0) - (Number(l.carrier_pay)||0);
+    const gpPct = l.customer_rate > 0 ? (gp/Number(l.customer_rate)*100).toFixed(1) : '—';
+    const gpColor = gp > 0 ? 'var(--green)' : 'var(--red)';
+    const overdueFlag = l._overdue ? '<span style="background:var(--red);color:white;font-size:9px;padding:1px 5px;border-radius:4px;margin-left:4px;">OVERDUE</span>' : '';
+    return `<div class="load-row" onclick="openLoadDetail('${l.id}')" style="display:grid;grid-template-columns:100px 1fr 1fr 1fr 80px 90px 90px 60px;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;align-items:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--accent2);">${l.load_number}</span>
+      <span style="font-size:12px;color:var(--text2);">${cust?.name||'—'}</span>
+      <span style="font-size:12px;">${l.origin_city||'—'}, ${l.origin_state||''} → ${l.destination_city||'—'}, ${l.destination_state||''}</span>
+      <span style="font-size:12px;color:var(--text2);">${carr?.name||'Unassigned'}</span>
+      <span style="font-size:11px;color:var(--text2);">${l.pickup_date?fmtDate(l.pickup_date):'—'}</span>
+      <span>${statusBadge(l.status)}${overdueFlag}</span>
+      <span style="font-size:12px;font-weight:700;color:var(--green);">${fmt$(l.customer_rate)}</span>
+      <span style="font-size:11px;font-weight:700;color:${gpColor};">${gp>0?'+':''}${gpPct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ── OVERDUE ALERTS ────────────────────────────────────────────
+function checkOverdueLoads() {
+  const now = new Date();
+  const overdue = allLoads.filter(l =>
+    l.delivery_date &&
+    new Date(l.delivery_date) < now &&
+    !['Delivered', 'Available'].includes(l.status)
+  );
+  if (overdue.length > 0) {
+    const badge = document.getElementById('overdue-badge');
+    if (!badge) {
+      const loadNav = document.querySelector('[onclick="switchPage('loads')"]');
+      if (loadNav) {
+        const b = document.createElement('span');
+        b.id = 'overdue-badge';
+        b.style.cssText = 'background:var(--red);color:white;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;';
+        b.textContent = overdue.length;
+        loadNav.appendChild(b);
+      }
+    } else {
+      badge.textContent = overdue.length;
+    }
+  }
+}
+
+// ── LOAD NOTES ────────────────────────────────────────────────
+let loadNotes = JSON.parse(localStorage.getItem('ff-load-notes') || '{}');
+
+function openLoadNotes() {
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  if (!l) return;
+  openModal('load-notes');
+  renderLoadNotesList(l);
+}
+
+function renderLoadNotesList(l) {
+  const notes = loadNotes[l.id] || [];
+  const list = document.getElementById('load-notes-list');
+  if (!list) return;
+  if (!notes.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px;">No notes yet.</div>';
+    return;
+  }
+  list.innerHTML = notes.slice().reverse().map(n => `
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--accent);">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px;">
+        <span>${n.author||'You'}</span>
+        <span>${new Date(n.ts).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</span>
+      </div>
+      <div style="font-size:13px;color:var(--text);">${n.text}</div>
+    </div>`).join('');
+}
+
+function saveLoadNote() {
+  const text = document.getElementById('load-note-input')?.value?.trim();
+  if (!text) return;
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  if (!l) return;
+  if (!loadNotes[l.id]) loadNotes[l.id] = [];
+  loadNotes[l.id].push({ text, ts: new Date().toISOString(), author: currentUser?.email?.split('@')[0] || 'You' });
+  localStorage.setItem('ff-load-notes', JSON.stringify(loadNotes));
+  document.getElementById('load-note-input').value = '';
+  renderLoadNotesList(l);
+  toast('Note saved ✅', 'success');
+}
+
+// ── QUICK PAY / FUEL ADVANCE ──────────────────────────────────
+let fuelAdvances = JSON.parse(localStorage.getItem('ff-fuel-advances') || '{}');
+
+function openQuickPay() {
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  if (!l) return;
+  const carrier = allCarriers.find(c => c.id === l.carrier_id);
+  const info = document.getElementById('quick-pay-load-info');
+  if (info) info.innerHTML = `
+    <div style="font-weight:600;color:var(--text);">${l.load_number} — ${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}</div>
+    <div style="margin-top:4px;">Carrier: ${carrier?.name||'—'} · Total Pay: ${fmt$(l.carrier_pay)}</div>
+    ${fuelAdvances[l.id]?.length ? `<div style="margin-top:6px;color:var(--amber);font-size:11px;">Previous advances: ${fuelAdvances[l.id].map(a=>`${a.type} ${fmt$(a.amount)}`).join(', ')}</div>` : ''}`;
+  openModal('quick-pay');
+}
+
+function saveQuickPay() {
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  if (!l) return;
+  const type = document.getElementById('qp-type')?.value;
+  const amount = document.getElementById('qp-amount')?.value;
+  const fee = document.getElementById('qp-fee')?.value;
+  const ref = document.getElementById('qp-ref')?.value;
+  const notes = document.getElementById('qp-notes')?.value;
+  if (!amount) { toast('Enter an amount', 'error'); return; }
+  if (!fuelAdvances[l.id]) fuelAdvances[l.id] = [];
+  fuelAdvances[l.id].push({ type, amount: Number(amount), fee: Number(fee)||0, ref, notes, ts: new Date().toISOString() });
+  localStorage.setItem('ff-fuel-advances', JSON.stringify(fuelAdvances));
+  toast(`${type} of ${fmt$(amount)} recorded ✅`, 'success');
+  closeModal('quick-pay');
+  ['qp-amount','qp-fee','qp-ref','qp-notes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+}
+
+// ── PRINT BOL ─────────────────────────────────────────────────
+function openBOL() {
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+  if (!l) return;
+  buildBOL(l);
+  openModal('bol');
+}
+
+function buildBOL(l) {
+  const carrier = allCarriers.find(c => c.id === l.carrier_id);
+  const customer = allCustomers.find(c => c.id === l.customer_id);
+  const s = window._companySettings || {};
+  const el = document.getElementById('bol-content');
+  if (!el) return;
+
+  el.innerHTML = `
+<div style="font-family:Arial,sans-serif;color:#1a1a1a;max-width:720px;margin:0 auto;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1B2A4A;padding-bottom:16px;margin-bottom:20px;">
+    <div>
+      <div style="font-size:22px;font-weight:900;color:#1B2A4A;">Freight<span style="color:#2563EB;">FlowHQ</span></div>
+      <div style="font-size:11px;color:#64748b;">MC# ${s.mc_number||'—'} · DOT# ${s.dot_number||'—'}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:20px;font-weight:900;color:#1B2A4A;text-transform:uppercase;">Bill of Lading</div>
+      <div style="font-size:13px;font-weight:700;color:#2563EB;">BOL #${l.bol_number||l.load_number}</div>
+      <div style="font-size:11px;color:#64748b;">Date: ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Shipper (Pickup)</div>
+      <div style="font-size:13px;font-weight:600;">${customer?.name||'—'}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">${l.origin_city||'—'}, ${l.origin_state||''}</div>
+      <div style="font-size:12px;color:#64748b;">Pickup: ${l.pickup_date?new Date(l.pickup_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'—'}</div>
+    </div>
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Consignee (Delivery)</div>
+      <div style="font-size:13px;font-weight:600;">${customer?.name||'—'}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">${l.destination_city||'—'}, ${l.destination_state||''}</div>
+      <div style="font-size:12px;color:#64748b;">Delivery: ${l.delivery_date?new Date(l.delivery_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'—'}</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Carrier Information</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div><div style="font-size:9px;color:#94a3b8;">Carrier</div><div style="font-size:12px;font-weight:600;">${carrier?.name||'—'}</div></div>
+      <div><div style="font-size:9px;color:#94a3b8;">MC #</div><div style="font-size:12px;font-weight:600;">${carrier?.mc_number||'—'}</div></div>
+      <div><div style="font-size:9px;color:#94a3b8;">Driver</div><div style="font-size:12px;font-weight:600;">${l.driver_name||'—'}</div></div>
+      <div><div style="font-size:9px;color:#94a3b8;">Truck / Trailer</div><div style="font-size:12px;font-weight:600;">${l.truck_number||'—'} / ${l.trailer_number||'—'}</div></div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:16px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Commodity Description</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div><div style="font-size:9px;color:#94a3b8;">Description</div><div style="font-size:12px;font-weight:600;">${l.commodity||'General Freight'}</div></div>
+      <div><div style="font-size:9px;color:#94a3b8;">Weight</div><div style="font-size:12px;font-weight:600;">${l.weight?Number(l.weight).toLocaleString()+' lbs':'—'}</div></div>
+      <div><div style="font-size:9px;color:#94a3b8;">Equipment</div><div style="font-size:12px;font-weight:600;">${l.equipment_type||'Dry Van'}</div></div>
+      <div><div style="font-size:9px;color:#94a3b8;">Hazmat</div><div style="font-size:12px;font-weight:600;${l.hazmat?'color:#dc2626;':''}">${l.hazmat?'⚠️ YES':'No'}</div></div>
+    </div>
+  </div>
+
+  <div style="background:#1B2A4A;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div style="color:#94a3b8;font-size:12px;">Load # <span style="color:white;font-weight:700;">${l.load_number}</span> · PRO# <span style="color:white;font-weight:700;">${l.pro_number||'—'}</span></div>
+    <div style="color:#60A5FA;font-size:11px;">This BOL constitutes a contract of carriage under 49 U.S.C. § 14706</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Shipper Signature</div>
+      <div style="border-bottom:2px solid #1a1a1a;height:40px;margin-bottom:4px;"></div>
+      <div style="font-size:9px;color:#94a3b8;">Signature · Date</div>
+    </div>
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Driver Signature</div>
+      <div style="border-bottom:2px solid #1a1a1a;height:40px;margin-bottom:4px;"></div>
+      <div style="font-size:9px;color:#94a3b8;">Signature · Date</div>
+    </div>
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Consignee Signature</div>
+      <div style="border-bottom:2px solid #1a1a1a;height:40px;margin-bottom:4px;"></div>
+      <div style="font-size:9px;color:#94a3b8;">Signature · Date</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;border-top:1px solid #e2e8f0;padding-top:10px;font-size:9px;color:#94a3b8;">
+    The carrier shall not make delivery of this shipment without payment of freight and all other lawful charges. ${s.company_name||'FreightFlowHQ'} · MC# ${s.mc_number||'—'}
+  </div>
+</div>`;
+}
+
+function printBOL() {
+  const content = document.getElementById('bol-content')?.innerHTML || '';
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Bill of Lading</title><style>body{margin:20px;font-family:Arial,sans-serif;}@media print{body{margin:0;}}</style></head><body>${content}</body></html>`);
+  w.document.close();
+  w.print();
+}
+
+// ── LOAD PROFITABILITY in detail panel ────────────────────────
+function renderLoadProfit(l) {
+  const gp = (Number(l.customer_rate)||0) - (Number(l.carrier_pay)||0);
+  const gpPct = l.customer_rate > 0 ? (gp/Number(l.customer_rate)*100).toFixed(1) : 0;
+  const gpColor = gp > 0 ? 'var(--green)' : 'var(--red)';
+  const fsc = Number(l.fuel_surcharge)||0;
+  const el = document.getElementById('load-profit-box');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:9px;text-transform:uppercase;color:var(--text3);margin-bottom:3px;">Customer Rate</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">${fmt$(l.customer_rate)}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:9px;text-transform:uppercase;color:var(--text3);margin-bottom:3px;">Carrier Pay</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">${fmt$(l.carrier_pay)}</div>
+      </div>
+      ${fsc > 0 ? `<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:9px;text-transform:uppercase;color:var(--text3);margin-bottom:3px;">Fuel Surcharge</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">${fmt$(fsc)}</div>
+      </div>` : ''}
+      <div style="background:var(--green-dim);border:1px solid var(--green);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:9px;text-transform:uppercase;color:var(--text3);margin-bottom:3px;">Gross Profit</div>
+        <div style="font-size:16px;font-weight:700;color:${gpColor};">${fmt$(gp)}</div>
+        <div style="font-size:10px;color:${gpColor};">${gpPct}% margin</div>
+      </div>
+    </div>`;
+}
+
+// ── BULK STATUS UPDATE ────────────────────────────────────────
+let selectedLoadIds = [];
+
+function openBulkStatusModal() {
+  selectedLoadIds = allLoads
+    .filter(l => l.status !== 'Delivered')
+    .slice(0, 20)
+    .map(l => l.id);
+  const list = document.getElementById('bulk-load-list');
+  if (list) {
+    list.innerHTML = allLoads
+      .filter(l => selectedLoadIds.includes(l.id))
+      .map(l => `<div>• ${l.load_number} — ${l.origin_city} → ${l.destination_city} (${l.status})</div>`)
+      .join('') || 'No loads available.';
+  }
+  openModal('bulk-status');
+}
+
+async function applyBulkStatus() {
+  const newStatus = document.getElementById('bulk-status-val')?.value;
+  if (!newStatus || !selectedLoadIds.length) return;
+  const { error } = await db.from('loads').update({ status: newStatus }).in('id', selectedLoadIds);
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  toast(`Updated ${selectedLoadIds.length} loads to ${newStatus} ✅`, 'success');
+  closeModal('bulk-status');
+  await loadData();
+}
+
+// ── FREIGHTFLOW SCOUT ─────────────────────────────────────────
+function openScoutModal() {
+  const load = allLoads.find(l => l.status === 'Available');
+  if (!load) { toast('No available loads to cover', 'info'); return; }
+  openScoutForLoad(load);
+}
+
+function openScoutFromDetail() {
+  const load = allLoads.find(x => x.id === currentDetailLoadId);
+  if (!load) return;
+  closeModal('detail');
+  setTimeout(() => openScoutForLoad(load), 200);
+}
+
+function openScoutForLoad(load) {
+  const carrier = allCarriers.find(c => c.id === load.carrier_id);
+  const customer = allCustomers.find(c => c.id === load.customer_id);
+  const details = document.getElementById('scout-load-details');
+  if (details) {
+    details.innerHTML = `
+      <div style="font-weight:700;color:var(--text);font-size:14px;">${load.load_number} — ${load.origin_city}, ${load.origin_state} → ${load.destination_city}, ${load.destination_state}</div>
+      <div style="margin-top:6px;display:flex;gap:16px;font-size:12px;color:var(--text2);">
+        <span>📅 Pickup: ${fmtDate(load.pickup_date)}</span>
+        <span>🚛 ${load.equipment_type||'Dry Van'}</span>
+        <span>⚖️ ${load.weight?Number(load.weight).toLocaleString()+' lbs':'—'}</span>
+      </div>`;
+  }
+  // Pre-fill pay
+  const payEl = document.getElementById('scout-pay');
+  if (payEl) payEl.value = load.carrier_pay || '';
+
+  // Find matching carriers
+  const matching = allCarriers.filter(c =>
+    !c.do_not_use &&
+    c.email &&
+    c.onboarding_status === 'Active'
+  ).slice(0, 50);
+
+  const list = document.getElementById('scout-carrier-list');
+  if (list) {
+    if (!matching.length) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px;">No active carriers with email on file. Add carrier emails in your network to use Scout.</div>';
+    } else {
+      list.innerHTML = matching.map(c => `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <input type="checkbox" checked id="scout-c-${c.id}" value="${c.id}"/>
+          <label for="scout-c-${c.id}" style="font-size:12px;color:var(--text);cursor:pointer;flex:1;">${c.name}</label>
+          <span style="font-size:11px;color:var(--text3);">${c.email}</span>
+        </div>`).join('');
+    }
+  }
+
+  // Hide results
+  const results = document.getElementById('scout-results');
+  if (results) results.style.display = 'none';
+
+  // Store load ref
+  window._scoutLoad = load;
+  openModal('scout');
+}
+
+async function runScout() {
+  const load = window._scoutLoad;
+  if (!load) return;
+
+  const pay = document.getElementById('scout-pay')?.value;
+  const maxCount = Number(document.getElementById('scout-max')?.value) || 10;
+  const customMsg = document.getElementById('scout-message')?.value?.trim();
+  const s = window._companySettings || {};
+
+  // Get selected carriers
+  const checkboxes = document.querySelectorAll('[id^="scout-c-"]:checked');
+  const selectedCarriers = Array.from(checkboxes)
+    .map(cb => allCarriers.find(c => c.id === cb.value))
+    .filter(Boolean)
+    .slice(0, maxCount);
+
+  if (!selectedCarriers.length) { toast('No carriers selected', 'error'); return; }
+
+  const btn = document.querySelector('[onclick="runScout()"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;margin-right:8px;"></div> Sending…'; }
+
+  let sent = 0;
+  let failed = 0;
+
+  for (const carrier of selectedCarriers) {
+    const msg = customMsg || `We have a load available that matches your lanes. Please reply or call if you have capacity.`;
+    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f0f4f8;padding:20px;">
+      <div style="max-width:520px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;">
+        <div style="background:#1B2A4A;padding:20px 24px;">
+          <div style="font-size:20px;font-weight:900;color:white;">Freight<span style="color:#60A5FA;">FlowHQ</span></div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">Capacity Solicitation — ${s.company_name||'FreightFlowHQ'}</div>
+        </div>
+        <div style="padding:24px;">
+          <p style="font-size:15px;color:#1B2A4A;margin-bottom:16px;">Hi <b>${carrier.contact_name||carrier.name}</b>,</p>
+          <p style="font-size:13px;color:#475569;margin-bottom:20px;">${msg}</p>
+          <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;border:1px solid #e2e8f0;">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:10px;">Load Details</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+              <div><span style="color:#94a3b8;">Load #</span><br/><b>${load.load_number}</b></div>
+              <div><span style="color:#94a3b8;">Equipment</span><br/><b>${load.equipment_type||'Dry Van'}</b></div>
+              <div><span style="color:#94a3b8;">Origin</span><br/><b>${load.origin_city}, ${load.origin_state}</b></div>
+              <div><span style="color:#94a3b8;">Destination</span><br/><b>${load.destination_city}, ${load.destination_state}</b></div>
+              <div><span style="color:#94a3b8;">Pickup</span><br/><b>${fmtDate(load.pickup_date)}</b></div>
+              <div><span style="color:#94a3b8;">Weight</span><br/><b>${load.weight?Number(load.weight).toLocaleString()+' lbs':'—'}</b></div>
+            </div>
+            ${pay ? `<div style="background:#1B2A4A;border-radius:8px;padding:12px;margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="color:#94a3b8;font-size:12px;">All-In Carrier Pay</span>
+              <span style="color:#60A5FA;font-size:22px;font-weight:900;">$${Number(pay).toLocaleString()}</span>
+            </div>` : ''}
+          </div>
+          <p style="font-size:13px;color:#475569;margin-bottom:16px;">Reply to this email or call <b>${s.phone||'your dispatcher'}</b> to claim this load.</p>
+          <p style="font-size:11px;color:#94a3b8;">This capacity solicitation was sent by ${s.company_name||'FreightFlowHQ'}. If you are not interested, please disregard.</p>
+        </div>
+      </div></body></html>`;
+
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+        body: JSON.stringify({
+          to: carrier.email,
+          subject: `🚛 Load Available: ${load.origin_city}, ${load.origin_state} → ${load.destination_city}, ${load.destination_state} — ${load.equipment_type||'Dry Van'}`,
+          html,
+          from: s.dispatch_email ? `${s.company_name||'FreightFlowHQ'} <${s.dispatch_email}>` : 'FreightFlowHQ <onboarding@resend.dev>',
+        })
+      });
+      const result = await resp.json();
+      if (result.error) failed++;
+      else sent++;
+    } catch(e) { failed++; }
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = '🤖 Send Capacity Blast →'; }
+
+  const results = document.getElementById('scout-results');
+  const detail = document.getElementById('scout-results-detail');
+  if (results) results.style.display = 'block';
+  if (detail) detail.textContent = `${sent} email${sent!==1?'s':''} sent successfully${failed > 0 ? `, ${failed} failed` : ''}. Carriers will reply directly to your dispatch email.`;
+  toast(`Scout sent ${sent} capacity emails! 🤖`, 'success');
+}
+
 </script>
 </body>
 </html>
+<script>
+// ── PATCH: inject all new operations JS before </script> ──
+</script>
