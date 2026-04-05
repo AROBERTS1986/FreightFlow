@@ -4639,17 +4639,16 @@ function initPlacesAutocomplete() {
   }
 }
 
-// Main input handler — uses Google if available, falls back to basic city match
+// Main input handler — uses Google if available, falls back to Radar.io
 const addressDebounces = {};
 function handleAddressInput(input, type) {
   clearTimeout(addressDebounces[type]);
   const val = input.value.trim();
   const dropId = type === 'origin' ? 'origin-suggestions' : 'dest-suggestions';
   const drop = document.getElementById(dropId);
-
   if (!drop) return;
 
-  if (val.length < 2) {
+  if (val.length < 4) {
     drop.innerHTML = '';
     drop.classList.remove('open');
     return;
@@ -4657,26 +4656,89 @@ function handleAddressInput(input, type) {
 
   addressDebounces[type] = setTimeout(() => {
     if (autocompleteService && sessionToken) {
+      // Google Places — best option
       try {
         autocompleteService.getPlacePredictions({
           input: val,
           sessionToken,
           componentRestrictions: { country: 'us' },
-          types: ['geocode'],
+          types: ['address'],
         }, (predictions, status) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || !predictions.length) {
-            showFallbackSuggestions(val, drop, type);
+          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions?.length) {
+            useRadarFallback(val, drop, type);
             return;
           }
           showGoogleSuggestions(predictions, drop, type);
         });
       } catch(e) {
-        showFallbackSuggestions(val, drop, type);
+        useRadarFallback(val, drop, type);
       }
     } else {
-      showFallbackSuggestions(val, drop, type);
+      useRadarFallback(val, drop, type);
     }
-  }, 200);
+  }, 300);
+}
+
+// Radar.io free geocoding — much better than Nominatim for US addresses
+async function useRadarFallback(val, drop, type) {
+  try {
+    positionDrop(drop, type);
+    drop.innerHTML = '<div class="address-suggestion" style="pointer-events:none;"><span class="sug-icon">⏳</span><div><div class="sug-main">Searching addresses…</div></div></div>';
+    drop.classList.add('open');
+
+    const resp = await fetch(
+      `https://api.radar.io/v1/search/autocomplete?query=${encodeURIComponent(val)}&country=US&limit=6`,
+      { headers: { 'Authorization': 'prj_live_pk_2e5b8c1f4a8b2d9e0c3f7a1b5e8d2c4f6a9b3e7d' } }
+    );
+
+    if (!resp.ok) throw new Error('Radar error');
+    const data = await resp.json();
+    const results = data.addresses || [];
+
+    if (!results.length) {
+      showAddressNotFound(drop, type, val);
+      return;
+    }
+
+    positionDrop(drop, type);
+    drop.innerHTML = results.map(r => {
+      const street = [r.number, r.street].filter(Boolean).join(' ');
+      const city = r.city || r.county || '';
+      const state = r.stateCode || r.state || '';
+      const zip = r.postalCode || '';
+      const mainText = street || r.formattedAddress?.split(',')[0] || '';
+      const subText = [city, state, zip].filter(Boolean).join(', ');
+
+      const d = JSON.stringify({ street, city, state, zip, display: r.formattedAddress }).replace(/"/g, '&quot;');
+      return `<div class="address-suggestion" onclick="selectNominatimResult('${d}','${type}',this)">
+        <span class="sug-icon">${street ? '🏠' : '🏙️'}</span>
+        <div>
+          <div class="sug-main">${mainText || r.formattedAddress}</div>
+          <div class="sug-sub">${subText}</div>
+        </div>
+      </div>`;
+    }).join('');
+    drop.classList.add('open');
+
+  } catch(e) {
+    // Last resort — show manual entry prompt
+    showAddressNotFound(drop, type, val);
+  }
+}
+
+function showAddressNotFound(drop, type, val) {
+  positionDrop(drop, type);
+  drop.innerHTML = `
+    <div class="address-suggestion" style="pointer-events:none;">
+      <span class="sug-icon">💡</span>
+      <div>
+        <div class="sug-main" style="color:var(--amber);">No suggestions found</div>
+        <div class="sug-sub">Type city & state in the fields below, or add a Google Places key in Settings for full address search</div>
+      </div>
+    </div>`;
+  drop.classList.add('open');
+  // Auto-hide after 3 seconds
+  setTimeout(() => { if(drop) { drop.innerHTML=''; drop.classList.remove('open'); } }, 3000);
 }
 
 function showGoogleSuggestions(predictions, drop, type) {
@@ -4735,96 +4797,7 @@ function selectGooglePlace(placeId, type, el) {
 
 // Fallback: Nominatim (OpenStreetMap) — real street addresses, no API key needed
 async function showFallbackSuggestions(val, drop, type) {
-  if (!drop) return;
-  if (val.length < 3) { drop.innerHTML = ''; drop.classList.remove('open'); return; }
-
-  try {
-    // Use structured query to get street-level results
-    // Try to detect if input has a number (likely a street address)
-    const hasNumber = /\d/.test(val);
-    
-    // Build URL — use structured search for better street-level matching
-    const baseUrl = 'https://nominatim.openstreetmap.org/search';
-    const url = `${baseUrl}?q=${encodeURIComponent(val)}&countrycodes=us&format=json&addressdetails=1&limit=10&dedupe=1`;
-
-    const resp = await fetch(url, {
-      headers: { 'Accept-Language': 'en-US,en', 'User-Agent': 'FreightFlowHQ/1.0' }
-    });
-    if (!resp.ok) throw new Error('Nominatim error ' + resp.status);
-    const results = await resp.json();
-
-    positionDrop(drop, type);
-
-    if (!results.length) {
-      drop.innerHTML = `<div class="address-suggestion" style="pointer-events:none;">
-        <span class="sug-icon">🔍</span>
-        <div><div class="sug-main">No results — try adding city or state</div>
-        <div class="sug-sub">e.g. "123 Main St, Tulsa OK"</div></div>
-      </div>`;
-      drop.classList.add('open');
-      return;
-    }
-
-    // Sort: prefer results with house_number (full street addresses) first
-    results.sort((a, b) => {
-      const aHas = a.address?.house_number ? 1 : 0;
-      const bHas = b.address?.house_number ? 1 : 0;
-      return bHas - aHas;
-    });
-
-    // Dedupe by display name
-    const seen = new Set();
-    const unique = results.filter(r => {
-      const key = r.display_name.split(',').slice(0,3).join(',');
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    }).slice(0, 6);
-
-    drop.innerHTML = unique.map(r => {
-      const addr = r.address || {};
-      const houseNum = addr.house_number || '';
-      const road = addr.road || addr.street || addr.pedestrian || addr.path || '';
-      const street = [houseNum, road].filter(Boolean).join(' ');
-      const city = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county || '';
-      const stateRaw = addr.state || '';
-      const stateAbbr = getStateAbbr(stateRaw);
-      const zip = addr.postcode || '';
-
-      // Best display text
-      const mainText = street
-        ? street
-        : r.display_name.split(',').slice(0, 2).join(', ').trim();
-      const subText = [city, stateAbbr, zip].filter(Boolean).join(', ')
-        || r.display_name.split(',').slice(2, 4).join(',').trim();
-
-      const data = JSON.stringify({
-        street, houseNum, road, city,
-        state: stateAbbr, zip,
-        display: r.display_name,
-      }).replace(/"/g, '&quot;');
-
-      const icon = houseNum ? '🏠' : road ? '📍' : '🏙️';
-      return `<div class="address-suggestion" onclick="selectNominatimResult('${data}','${type}',this)">
-        <span class="sug-icon">${icon}</span>
-        <div>
-          <div class="sug-main" style="font-weight:600;color:var(--text);">${mainText}</div>
-          <div class="sug-sub" style="color:var(--text3);">${subText}</div>
-        </div>
-      </div>`;
-    }).join('');
-    drop.classList.add('open');
-
-  } catch(e) {
-    console.warn('[FF] Nominatim error:', e.message);
-    drop.innerHTML = `<div class="address-suggestion" style="pointer-events:none;">
-      <span class="sug-icon">⚠️</span>
-      <div><div class="sug-main">Address lookup unavailable</div>
-      <div class="sug-sub">Type city and state manually below</div></div>
-    </div>`;
-    positionDrop(drop, type);
-    drop.classList.add('open');
-  }
+  await useRadarFallback(val, drop, type);
 }
 
 function positionDrop(drop, type) {
