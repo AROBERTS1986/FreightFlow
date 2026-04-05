@@ -761,7 +761,7 @@ function loadGooglePlaces(apiKey){
 
   <!-- LANE INTELLIGENCE -->
   <!-- ACADEMY -->
-  <div class="content" id="page-academy" style="display:none;padding:0;">
+  <div class="content" id="page-academy" style="padding:0;">
     <div id="academy-home">
       <!-- Header -->
       <div style="background:linear-gradient(135deg,#1B2A4A 0%,#2563EB 100%);padding:32px;border-radius:0 0 24px 24px;margin-bottom:24px;">
@@ -835,7 +835,7 @@ function loadGooglePlaces(apiKey){
 
 
   <!-- LANE INTELLIGENCE -->
-  <div class="content" id="page-lane-intel" style="display:none;">
+  <div class="content" id="page-lane-intel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div><div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text);">🧠 Lane Intelligence Engine</div><div style="font-size:13px;color:var(--text3);margin-top:4px;">AI-powered lane analytics — learns your network over time</div></div>
       <div style="display:flex;gap:8px;"><select id="li-period" onchange="renderLaneIntel()" style="font-size:12px;padding:6px 10px;"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last 12 months</option><option value="all">All time</option></select><button class="btn btn-primary btn-sm" onclick="renderLaneIntel()">↻ Refresh</button></div>
