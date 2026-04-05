@@ -410,6 +410,8 @@ function loadGooglePlaces(apiKey){
   <div class="nav-item" onclick="switchPage('invoices')"><span class="nav-icon">🧾</span> Invoicing</div>
   <div class="sidebar-section">Insights</div>
   <div class="nav-item" onclick="switchPage('reports')"><span class="nav-icon">📊</span> Reports</div>
+   <div class="nav-item" onclick="switchPage('lane-intel')"><span class="nav-icon">🧠</span> Lane Intelligence</div>
+   <div class="nav-item" onclick="switchPage('academy')" style="background:linear-gradient(135deg,rgba(245,158,11,0.1),rgba(239,68,68,0.05));"><span class="nav-icon">🎓</span> Academy</div>
   <div class="sidebar-section">Settings</div>
   <div class="nav-item admin-only" onclick="switchPage('users')"><span class="nav-icon">👥</span> Users</div>
   <div class="nav-item admin-only" onclick="switchPage('settings')"><span class="nav-icon">⚙️</span> Company</div>
@@ -831,65 +833,6 @@ function loadGooglePlaces(apiKey){
   </div>
 
 
-  <div class="content" id="page-lane-intel" style="display:none;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div>
-        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text);">🧠 Lane Intelligence Engine</div>
-        <div style="font-size:13px;color:var(--text3);margin-top:4px;">AI-powered lane analytics — learns your network over time</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <select id="li-period" onchange="renderLaneIntel()" style="font-size:12px;padding:6px 10px;">
-          <option value="30">Last 30 days</option>
-          <option value="90" selected>Last 90 days</option>
-          <option value="180">Last 180 days</option>
-          <option value="365">Last 12 months</option>
-          <option value="all">All time</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="renderLaneIntel()">↻ Refresh</button>
-      </div>
-    </div>
-
-    <!-- KPI row -->
-    <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px;" id="li-kpis">
-      <div class="kpi-card blue"><div class="kpi-label">Active Lanes</div><div class="kpi-value" id="li-lanes">—</div><div class="kpi-sub">Unique origin→dest</div></div>
-      <div class="kpi-card green"><div class="kpi-label">Avg GP%</div><div class="kpi-value" id="li-avg-gp">—</div><div class="kpi-sub">Across all lanes</div></div>
-      <div class="kpi-card purple"><div class="kpi-label">Best Lane</div><div class="kpi-value" id="li-best-lane" style="font-size:13px;">—</div><div class="kpi-sub">Highest margin</div></div>
-      <div class="kpi-card amber"><div class="kpi-label">At Risk</div><div class="kpi-value" id="li-risk">—</div><div class="kpi-sub">GP% below 10%</div></div>
-      <div class="kpi-card green"><div class="kpi-label">Top Carrier</div><div class="kpi-value" id="li-top-carrier" style="font-size:13px;">—</div><div class="kpi-sub">Most reliable</div></div>
-    </div>
-
-    <!-- Alerts -->
-    <div id="li-alerts" style="margin-bottom:16px;"></div>
-
-    <!-- Lane table -->
-    <div class="card" style="margin-bottom:16px;">
-      <div class="card-header">
-        <div class="card-title">🗺️ Lane Performance</div>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="li-search" placeholder="Search lanes…" style="font-size:12px;padding:5px 10px;width:160px;" oninput="renderLaneIntel()"/>
-          <select id="li-sort" onchange="renderLaneIntel()" style="font-size:12px;padding:5px 8px;">
-            <option value="gp">Sort: Best Margin</option>
-            <option value="volume">Sort: Most Loads</option>
-            <option value="rate">Sort: Highest Rate</option>
-            <option value="trend">Sort: Trending Up</option>
-          </select>
-        </div>
-      </div>
-      <div id="li-lane-table"></div>
-    </div>
-
-    <!-- Carrier performance by lane -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div class="card">
-        <div class="card-header"><div class="card-title">🚚 Best Carrier Per Lane</div></div>
-        <div id="li-carrier-lane" style="padding:16px;"></div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">📈 Market Trend Alerts</div></div>
-        <div id="li-trends" style="padding:16px;"></div>
-      </div>
-    </div>
-  </div>
 
   <!-- LANE INTELLIGENCE -->
   <div class="content" id="page-lane-intel" style="display:none;">
