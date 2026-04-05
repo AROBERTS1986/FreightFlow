@@ -991,14 +991,11 @@ function loadGooglePlaces(apiKey){
         <button class="btn btn-primary btn-sm" id="tender-btn" onclick="openTenderModal()" style="background:var(--purple);">📤 Tender to Carrier</button>
         <button class="btn btn-danger btn-sm" id="remove-carrier-btn" onclick="openRemoveCarrierModal()" style="display:none;">🚫 Remove Carrier</button>
         <button class="btn btn-ghost btn-sm" onclick="printRateCon()">🖨️ Rate Con</button>
-        <button class="btn btn-ghost btn-sm" onclick="openLoadNotes()">📝 Notes</button>
-        <button class="btn btn-ghost btn-sm" onclick="openQuickPay()">⚡ Quick Pay</button>
-        <button class="btn btn-ghost btn-sm" onclick="openBOL()">📄 BOL</button>
-        <button class="btn btn-ghost btn-sm" style="background:linear-gradient(135deg,var(--purple),var(--accent));color:white;border:none;" onclick="openScoutFromDetail()">🤖 Scout</button>
-        <button class="btn btn-ghost btn-sm" onclick="openLoadNotes()">📝 Notes</button>
-        <button class="btn btn-ghost btn-sm" onclick="openQuickPay()">⚡ Quick Pay</button>
-        <button class="btn btn-ghost btn-sm" onclick="openBOL()">📄 BOL</button>
-        <button class="btn btn-ghost btn-sm" style="background:linear-gradient(135deg,var(--purple),var(--accent));color:white;border:none;" onclick="openScoutFromDetail()">🤖 Scout</button>
+         <button class="btn btn-ghost btn-sm" onclick="openLoadNotes()">📝 Notes</button>
+         <button class="btn btn-ghost btn-sm" onclick="openBOL()">📄 BOL</button>
+         <button class="btn btn-ghost btn-sm" style="background:linear-gradient(135deg,var(--purple),var(--accent));color:white;border:none;" onclick="openScoutFromDetail()">🤖 Scout</button>
+         <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">⧉ Duplicate</button>
+         <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
         <button class="btn btn-ghost btn-sm" onclick="duplicateLoad()">⧉ Duplicate</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditFromDetail()">✏️ Edit Load</button>
         <button class="modal-close" onclick="closeModal('detail')">✕</button>
@@ -4531,52 +4528,48 @@ function initPlacesAutocomplete() {
 }
 
 // Main input handler — uses Google if available, falls back to basic city match
-let addressDebounce = null;
+const addressDebounces = {};
 function handleAddressInput(input, type) {
-  clearTimeout(addressDebounce);
+  clearTimeout(addressDebounces[type]);
   const val = input.value.trim();
   const dropId = type === 'origin' ? 'origin-suggestions' : 'dest-suggestions';
   const drop = document.getElementById(dropId);
 
-  if (val.length < 3) {
-    if (drop) { drop.innerHTML = ''; drop.classList.remove('open'); }
+  if (!drop) return;
+
+  if (val.length < 2) {
+    drop.innerHTML = '';
+    drop.classList.remove('open');
     return;
   }
 
-  addressDebounce = setTimeout(() => {
+  addressDebounces[type] = setTimeout(() => {
     if (autocompleteService && sessionToken) {
-      // Google Places autocomplete
-      autocompleteService.getPlacePredictions({
-        input: val,
-        sessionToken,
-        componentRestrictions: { country: 'us' },
-        types: ['establishment', 'geocode'],
-      }, (predictions, status) => {
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
-          showFallbackSuggestions(val, drop, type);
-          return;
-        }
-        showGoogleSuggestions(predictions, drop, type);
-      });
+      try {
+        autocompleteService.getPlacePredictions({
+          input: val,
+          sessionToken,
+          componentRestrictions: { country: 'us' },
+          types: ['geocode'],
+        }, (predictions, status) => {
+          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions || !predictions.length) {
+            showFallbackSuggestions(val, drop, type);
+            return;
+          }
+          showGoogleSuggestions(predictions, drop, type);
+        });
+      } catch(e) {
+        showFallbackSuggestions(val, drop, type);
+      }
     } else {
-      // Fallback: basic US city/state suggestions
       showFallbackSuggestions(val, drop, type);
     }
-  }, 250);
+  }, 200);
 }
 
 function showGoogleSuggestions(predictions, drop, type) {
   if (!drop) return;
-  const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
-  const input = document.getElementById(inputId);
-  if (input) {
-    const rect = input.getBoundingClientRect();
-    drop.style.position = 'fixed';
-    drop.style.top = (rect.bottom + 2) + 'px';
-    drop.style.left = rect.left + 'px';
-    drop.style.width = rect.width + 'px';
-    drop.style.zIndex = '99999';
-  }
+  positionDrop(drop, type);
   drop.innerHTML = predictions.slice(0, 6).map(p => `
     <div class="address-suggestion" onclick="selectGooglePlace('${p.place_id}','${type}',this)">
       <span class="sug-icon">📍</span>
@@ -4628,40 +4621,52 @@ function selectGooglePlace(placeId, type, el) {
   });
 }
 
-// Fallback: simple US city list for when Google isn't configured
-const TOP_CITIES = [
-  'Dallas, TX','Houston, TX','San Antonio, TX','Austin, TX','Fort Worth, TX',
-  'Chicago, IL','Jacksonville, FL','Columbus, OH','Indianapolis, IN','Charlotte, NC',
-  'San Francisco, CA','Seattle, WA','Denver, CO','Nashville, TN','Atlanta, GA',
-  'Los Angeles, CA','Phoenix, AZ','Philadelphia, PA','New York, NY','San Diego, CA',
-  'Memphis, TN','Louisville, KY','Baltimore, MD','Milwaukee, WI','Albuquerque, NM',
-  'Tucson, AZ','Fresno, CA','Sacramento, CA','Long Beach, CA','Kansas City, MO',
-  'Mesa, AZ','Virginia Beach, VA','Raleigh, NC','Colorado Springs, CO','Omaha, NE',
-  'Miami, FL','Oakland, CA','Minneapolis, MN','Tulsa, OK','Tampa, FL',
-  'Arlington, TX','New Orleans, LA','Wichita, KS','Cleveland, OH','Bakersfield, CA',
-  'Aurora, CO','Anaheim, CA','Santa Ana, CA','Corpus Christi, TX','Riverside, CA',
-  'Lexington, KY','St. Louis, MO','Pittsburgh, PA','Anchorage, AK','Stockton, CA',
-  'Cincinnati, OH','St. Paul, MN','Greensboro, NC','Toledo, OH','Newark, NJ',
-  'Plano, TX','Henderson, NV','Orlando, FL','Lincoln, NE','Jersey City, NJ',
-  'Detroit, MI','Buffalo, NY','Fort Wayne, IN','Madison, WI','Laredo, TX',
-  'El Paso, TX','Portland, OR','Las Vegas, NV','Boston, MA','Memphis, TN',
-  'Oklahoma City, OK','Louisville, KY','Las Vegas, NV','Birmingham, AL',
-];
-
-function showFallbackSuggestions(val, drop, type) {
+// Fallback: Nominatim (OpenStreetMap) — real street addresses, no API key needed
+async function showFallbackSuggestions(val, drop, type) {
   if (!drop) return;
-  const q = val.toLowerCase();
-  const matches = TOP_CITIES
-    .filter(c => c.toLowerCase().includes(q))
-    .slice(0, 6);
+  if (val.length < 3) { drop.innerHTML = ''; drop.classList.remove('open'); return; }
 
-  if (!matches.length) {
+  try {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&countrycodes=us&format=json&addressdetails=1&limit=6`,
+      { headers: { 'Accept-Language': 'en', 'User-Agent': 'FreightFlowHQ/1.0' } }
+    );
+    if (!resp.ok) throw new Error('Nominatim error');
+    const results = await resp.json();
+
+    if (!results.length) {
+      drop.innerHTML = '<div class="address-suggestion"><span class="sug-icon">🔍</span><div><div class="sug-main">No results found</div><div class="sug-sub">Try a different address or city</div></div></div>';
+      positionDrop(drop, type);
+      drop.classList.add('open');
+      return;
+    }
+
+    positionDrop(drop, type);
+    drop.innerHTML = results.map(r => {
+      const addr = r.address;
+      const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+      const city = addr.city || addr.town || addr.village || addr.county || '';
+      const state = addr.state || '';
+      const zip = addr.postcode || '';
+      const mainText = street || r.display_name.split(',')[0];
+      const subText = [city, state, zip].filter(Boolean).join(', ');
+      return `<div class="address-suggestion" onclick="selectNominatimResult(${JSON.stringify(r).replace(/"/g,'&quot;')},'${type}',this)">
+        <span class="sug-icon">📍</span>
+        <div>
+          <div class="sug-main">${mainText}</div>
+          <div class="sug-sub">${subText}</div>
+        </div>
+      </div>`;
+    }).join('');
+    drop.classList.add('open');
+  } catch(e) {
+    console.warn('[FF] Nominatim error:', e.message);
     drop.innerHTML = '';
     drop.classList.remove('open');
-    return;
   }
+}
 
-  // Position dropdown using fixed positioning to escape modal overflow clipping
+function positionDrop(drop, type) {
   const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
   const input = document.getElementById(inputId);
   if (input) {
@@ -4672,34 +4677,46 @@ function showFallbackSuggestions(val, drop, type) {
     drop.style.width = rect.width + 'px';
     drop.style.zIndex = '99999';
   }
-
-  drop.innerHTML = matches.map(c => {
-    return `<div class="address-suggestion" onclick="selectFallbackCity('${c}','${type}',this)">
-      <span class="sug-icon">🏙️</span>
-      <div>
-        <div class="sug-main">${c}</div>
-        <div class="sug-sub">City · Add street address above</div>
-      </div>
-    </div>`;
-  }).join('');
-  drop.classList.add('open');
 }
 
-function selectFallbackCity(cityState, type, el) {
+function selectNominatimResult(r, type, el) {
   const drop = el.closest('.address-dropdown');
   if (drop) { drop.innerHTML = ''; drop.classList.remove('open'); }
-  const [city, state] = cityState.split(', ');
+  const addr = r.address || {};
+  const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+  const city = addr.city || addr.town || addr.village || addr.county || '';
+  const state = addr.state || '';
+  const zip = addr.postcode || '';
+
   if (type === 'origin') {
+    setVal('load-origin-address', street || r.display_name.split(',')[0]);
     setVal('load-origin-city', city);
-    setVal('load-origin-state', state);
-    const addr = document.getElementById('load-origin-address');
-    if (addr && !addr.value.includes(city)) addr.value = city + ', ' + state;
+    setVal('load-origin-state', getStateAbbr(state));
+    setVal('load-origin-zip', zip);
   } else {
+    setVal('load-dest-address', street || r.display_name.split(',')[0]);
     setVal('load-dest-city', city);
-    setVal('load-dest-state', state);
-    const addr = document.getElementById('load-dest-address');
-    if (addr && !addr.value.includes(city)) addr.value = city + ', ' + state;
+    setVal('load-dest-state', getStateAbbr(state));
+    setVal('load-dest-zip', zip);
   }
+}
+
+// State name to abbreviation lookup
+const STATE_ABBR = {
+  'Alabama':'AL','Alaska':'AK','Arizona':'AZ','Arkansas':'AR','California':'CA',
+  'Colorado':'CO','Connecticut':'CT','Delaware':'DE','Florida':'FL','Georgia':'GA',
+  'Hawaii':'HI','Idaho':'ID','Illinois':'IL','Indiana':'IN','Iowa':'IA',
+  'Kansas':'KS','Kentucky':'KY','Louisiana':'LA','Maine':'ME','Maryland':'MD',
+  'Massachusetts':'MA','Michigan':'MI','Minnesota':'MN','Mississippi':'MS',
+  'Missouri':'MO','Montana':'MT','Nebraska':'NE','Nevada':'NV','New Hampshire':'NH',
+  'New Jersey':'NJ','New Mexico':'NM','New York':'NY','North Carolina':'NC',
+  'North Dakota':'ND','Ohio':'OH','Oklahoma':'OK','Oregon':'OR','Pennsylvania':'PA',
+  'Rhode Island':'RI','South Carolina':'SC','South Dakota':'SD','Tennessee':'TN',
+  'Texas':'TX','Utah':'UT','Vermont':'VT','Virginia':'VA','Washington':'WA',
+  'West Virginia':'WV','Wisconsin':'WI','Wyoming':'WY',
+};
+function getStateAbbr(name) {
+  return STATE_ABBR[name] || name.substring(0,2).toUpperCase();
 }
 
 function setVal(id, val) {
