@@ -353,7 +353,6 @@ textarea{resize:vertical;min-height:80px;}
 .aging-row{display:grid;grid-template-columns:1fr 1.5fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
 .aging-row:last-child{border-bottom:none;}
 .aging-row:hover{background:var(--surface2);}
-.factoring-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;background:var(--purple-dim);color:var(--purple);border:1px solid rgba(139,92,246,0.3);}
 
 .address-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;max-height:220px;overflow-y:auto;display:none;}
 .address-dropdown.open{display:block;}
@@ -363,6 +362,9 @@ textarea{resize:vertical;min-height:80px;}
 .address-suggestion .sug-icon{font-size:14px;flex-shrink:0;margin-top:1px;}
 .address-suggestion .sug-main{font-weight:600;color:var(--text);}
 .address-suggestion .sug-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+
+.load-card.hot-load{border:2px solid #ef4444 !important;box-shadow:0 0 12px rgba(239,68,68,0.25);}
+.load-card.hot-load .load-id{color:var(--red);}
 </style>
 <script>
 // Google Places loaded dynamically when API key is available
@@ -833,6 +835,42 @@ function loadGooglePlaces(apiKey){
         </div>
         <div class="form-group"><label>Pickup Date</label><input type="datetime-local" id="load-pickup"/></div>
         <div class="form-group"><label>Delivery Date</label><input type="datetime-local" id="load-delivery"/></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:700;color:var(--red);">
+            <input type="checkbox" id="load-hot" style="width:16px;height:16px;accent-color:var(--red);cursor:pointer;"/>
+            🔥 Hot Load — Priority
+          </label>
+          <span style="font-size:11px;color:var(--text3);">Flags this load as urgent on the dispatch board</span>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:600;color:var(--text);">
+            <input type="checkbox" id="load-appt-required" style="width:16px;height:16px;cursor:pointer;" onchange="document.getElementById('appt-details-row').style.display=this.checked?'block':'none'"/>
+            📅 Appointment Required
+          </label>
+          <span style="font-size:11px;color:var(--text3);">Shipper and/or receiver requires scheduled appointment</span>
+        </div>
+        <div class="form-group full" id="appt-details-row" style="display:none;grid-column:1/-1;">
+          <label>Appointment Notes</label>
+          <input type="text" id="load-appt-notes" placeholder="e.g. Call 24hrs ahead, dock 3 only, 8am-4pm window…"/>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:700;color:var(--red);">
+            <input type="checkbox" id="load-hot" style="width:16px;height:16px;accent-color:var(--red);cursor:pointer;"/>
+            🔥 Hot Load — Priority
+          </label>
+          <span style="font-size:11px;color:var(--text3);">Flags this load as urgent on the dispatch board</span>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:600;color:var(--text);">
+            <input type="checkbox" id="load-appt-required" style="width:16px;height:16px;cursor:pointer;"/>
+            📅 Appointment Required
+          </label>
+          <span style="font-size:11px;color:var(--text3);">Shipper and/or receiver requires scheduled appointment</span>
+        </div>
+        <div class="form-group" id="appt-details-row" style="display:none;grid-column:1/-1;">
+          <label>Appointment Notes</label>
+          <input type="text" id="load-appt-notes" placeholder="e.g. Call 24hrs ahead, dock 3 only, 8am-4pm window…"/>
+        </div>
         <div class="form-group"><label>Weight (lbs)</label><input type="number" id="load-weight" placeholder="42000"/></div>
         <div class="form-group"><label>Commodity</label><input type="text" id="load-commodity" placeholder="General Freight"/></div>
       </div>
@@ -843,10 +881,6 @@ function loadGooglePlaces(apiKey){
         <div class="form-group"><label>BOL Number</label><input type="text" id="load-bol" placeholder="BOL-123456"/></div>
         <div class="form-group"><label>PRO Number</label><input type="text" id="load-pro" placeholder="PRO-789012"/></div>
         <div class="form-group full"><label>Customer PO / Reference #</label><input type="text" id="load-ref" placeholder="Customer PO or reference number"/></div>
-        <div class="form-group"><label>Factoring</label><select id="load-factoring"><option value="no">No — Direct Pay</option><option value="yes">Yes — Factored Load</option></select></div>
-        <div class="form-group"><label>Fuel Surcharge ($)</label><input type="number" id="load-fsc" placeholder="0.00" step="0.01"/></div>
-        <div class="form-group"><label>Factoring</label><select id="load-factoring"><option value="no">No — Direct Pay</option><option value="yes">Yes — Factored Load</option></select></div>
-        <div class="form-group"><label>Fuel Surcharge ($)</label><input type="number" id="load-fsc" placeholder="0.00" step="0.01"/></div>
         <div class="form-group full" style="display:none;"><label>Status</label><select id="load-status"><option>Available</option><option>Pending Acceptance</option><option>Assigned</option><option>In Transit</option><option>Delivered</option></select></div>
         <input type="hidden" id="load-carrier" value=""/>
       </div>
@@ -1544,8 +1578,6 @@ function loadGooglePlaces(apiKey){
         <div class="form-group"><label>Driver Phone</label><input type="tel" id="tender-driver-phone" placeholder="(555) 000-0000"/></div>
         <div class="form-group"><label>Truck #</label><input type="text" id="tender-truck" placeholder="T-4421"/></div>
         <div class="form-group full"><label>Special Instructions for Carrier</label><textarea id="tender-notes" placeholder="Any special pickup/delivery instructions…" style="min-height:60px;"></textarea></div>
-        <div class="form-group"><label>Factoring?</label><select id="tender-factoring"><option value="no">No — Direct Pay</option><option value="yes">Yes — Factored Load</option></select></div>
-        <div class="form-group"><label>Fuel Surcharge ($)</label><input type="number" id="tender-fsc" placeholder="0.00" step="0.01"/></div>
       </div>
 
       <!-- CARRIER PACKET -->
@@ -1991,7 +2023,7 @@ function renderDashboardQuoteQueue(){
 function renderDispatch(){
   const statuses=['Available','Pending Acceptance','Assigned','In Transit','Delivered'];
   const colors={'Available':'var(--accent)','Pending Acceptance':'var(--purple)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'};
-  const cols=statuses.map(status=>{const loads=allLoads.filter(l=>l.status===status);const cards=!loads.length?`<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No ${status.toLowerCase()} loads</div>`:loads.map(l=>`<div class="load-card ${l.status}" onclick="openLoadDetail('${l.id}')"><div class="load-id">${l.load_number} · ${l.equipment_type||'Dry Van'}</div><div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div><div class="load-meta-row"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div><div class="load-meta-row"><span>Rate</span><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></div><div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div></div>`).join('');return`<div class="dispatch-col"><div class="dispatch-col-header" style="border-top:3px solid ${colors[status]}">${status} <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span></div>${cards}</div>`;}).join('');
+  const cols=statuses.map(status=>{const loads=allLoads.filter(l=>l.status===status);const cards=!loads.length?`<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No ${status.toLowerCase()} loads</div>`:loads.map(l=>`<div class="load-card ${l.status}" onclick="openLoadDetail('${l.id}')"><div class="load-id">${l.load_number} · ${l.equipment_type||'Dry Van'}${l.hot_load?' <span style="background:#ef4444;color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.5px;">🔥 HOT</span>':''}</div><div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}${l.appointment_required?' <span style="font-size:9px;color:var(--amber);font-weight:700;">📅 APPT</span>':''}</div><div class="load-meta-row"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div><div class="load-meta-row"><span>Rate</span><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></div><div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div></div>`).join('');return`<div class="dispatch-col"><div class="dispatch-col-header" style="border-top:3px solid ${colors[status]}">${status} <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span></div>${cards}</div>`;}).join('');
   const board=document.getElementById('dispatch-board');if(board)board.innerHTML=`<div class="dispatch-grid">${cols}</div>`;
 }
 
@@ -2001,7 +2033,7 @@ function renderLoadsTable(loads){
   const body=document.getElementById('loads-body');if(!body)return;
   if(!loads.length){body.innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><p>No loads match your filters.</p></div>`;return;}
   const invIds=new Set(allInvoices.map(i=>i.load_id).filter(Boolean));
-  body.innerHTML=`<table class="table"><thead><tr><th>Load #</th><th>Customer</th><th>Origin</th><th>Destination</th><th>Equipment</th><th>Pickup</th><th>Carrier</th><th>Rate</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>${loads.map(l=>{const needsInv=l.status==='Delivered'&&!invIds.has(l.id);return`<tr onclick="openLoadDetail('${l.id}')"><td><strong>${l.load_number}</strong></td><td>${l.customers?.name||'—'}</td><td>${l.origin_city||'—'}, ${l.origin_state||''}</td><td>${l.destination_city||'—'}, ${l.destination_state||''}</td><td>${l.equipment_type||'—'}</td><td>${fmtDate(l.pickup_date)}</td><td>${l.carriers?.name||'<span style="color:var(--text3)">—</span>'}</td><td><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></td><td style="color:${marginColor(l.customer_rate,l.carrier_pay)}">${margin(l.customer_rate,l.carrier_pay)}</td><td>${statusBadge(l.status)}${needsInv?' <span style="font-size:10px;font-weight:700;color:var(--red);background:var(--red-dim);padding:2px 6px;border-radius:6px;margin-left:4px;">INV</span>':''}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLoad('${l.id}')">✕</button></td></tr>`;}).join('')}</tbody></table>`;
+  body.innerHTML=`<table class="table"><thead><tr><th>Load #</th><th>Customer</th><th>Origin</th><th>Destination</th><th>Equipment</th><th>Pickup</th><th>Carrier</th><th>Rate</th><th>Margin</th><th>Status</th><th></th></tr></thead><tbody>${loads.map(l=>{const needsInv=l.status==='Delivered'&&!invIds.has(l.id);return`<tr onclick="openLoadDetail('${l.id}')"><td><strong>${l.load_number}</strong></td><td>${l.customers?.name||'—'}</td><td>${l.origin_city||'—'}, ${l.origin_state||''}</td><td>${l.destination_city||'—'}, ${l.destination_state||''}</td><td>${l.equipment_type||'—'}</td><td>${fmtDate(l.pickup_date)}</td><td>${l.carriers?.name||'<span style="color:var(--text3)">—</span>'}</td><td><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></td><td style="color:${marginColor(l.customer_rate,l.carrier_pay)}">${margin(l.customer_rate,l.carrier_pay)}</td><td>${l.hot_load?'<span style="background:var(--red);color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;margin-right:4px;">🔥 HOT</span>':''}${l.appointment_required?'<span style="background:var(--amber-dim);color:var(--amber);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;border:1px solid var(--amber);margin-right:4px;">📅 APPT</span>':''}${statusBadge(l.status)}${needsInv?' <span style="font-size:10px;font-weight:700;color:var(--red);background:var(--red-dim);padding:2px 6px;border-radius:6px;margin-left:4px;">INV</span>':''}</td><td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteLoad('${l.id}')">✕</button></td></tr>`;}).join('')}</tbody></table>`;
 }
 
 function renderCarriers(){
@@ -2192,6 +2224,12 @@ async function saveLoad(){
     equipment_type:document.getElementById('load-equipment')?.value,
     weight:document.getElementById('load-weight')?.value||null,
     commodity:document.getElementById('load-commodity')?.value,
+    hot_load:document.getElementById('load-hot')?.checked||false,
+    appointment_required:document.getElementById('load-appt-required')?.checked||false,
+    appointment_notes:document.getElementById('load-appt-notes')?.value||null,
+    hot_load:document.getElementById('load-hot')?.checked||false,
+    appointment_required:document.getElementById('load-appt-required')?.checked||false,
+    appointment_notes:document.getElementById('load-appt-notes')?.value||null,
     pickup_date:document.getElementById('load-pickup')?.value||null,
     delivery_date:document.getElementById('load-delivery')?.value||null,
     customer_rate:document.getElementById('load-rate')?.value||null,
@@ -2209,8 +2247,6 @@ async function saveLoad(){
     temp_range:document.getElementById('load-temp')?.value||null,
     dims:document.getElementById('load-dims')?.value||null,
     accessorials:accessorials.length?JSON.stringify(accessorials):null,
-    factoring:document.getElementById('load-factoring')?.value||'no',
-    fuel_surcharge:document.getElementById('load-fsc')?.value||null,
     company_id:currentCompanyId||undefined,
   };
   if(!id)payload.load_number=loadNumber();
@@ -2230,6 +2266,12 @@ async function editLoad(id){
   sv('load-equipment',l.equipment_type||'Dry Van');sv('load-weight',l.weight||'');
   sv('load-commodity',l.commodity||'');
   sv('load-pickup',l.pickup_date?l.pickup_date.slice(0,16):'');
+  const hotCb=document.getElementById('load-hot');if(hotCb)hotCb.checked=!!l.hot_load;
+  const apptCb=document.getElementById('load-appt-required');if(apptCb){apptCb.checked=!!l.appointment_required;const apptRow=document.getElementById('appt-details-row');if(apptRow)apptRow.style.display=l.appointment_required?'block':'none';}
+  sv('load-appt-notes',l.appointment_notes);
+  const hotCb=document.getElementById('load-hot');if(hotCb)hotCb.checked=!!l.hot_load;
+  const apptCb=document.getElementById('load-appt-required');if(apptCb){apptCb.checked=!!l.appointment_required;document.getElementById('appt-details-row').style.display=l.appointment_required?'block':'none';}
+  sv('load-appt-notes',l.appointment_notes);
   sv('load-delivery',l.delivery_date?l.delivery_date.slice(0,16):'');
   sv('load-rate',l.customer_rate||'');sv('load-carrier-pay',l.carrier_pay||'');
   sv('load-status',l.status||'Available');sv('load-ref',l.reference_number||'');
@@ -2894,7 +2936,7 @@ function buildRateCon(){
       <div>
         <div style="font-size:13px;font-weight:700;color:white;">TOTAL CARRIER PAY — ALL IN</div>
         <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Payment upon receipt of signed BOL & POD · Net ${s.payment_terms||'30'} days</div>
-        ${l.factoring==='yes'?'<div style="font-size:11px;color:#c084fc;margin-top:2px;">⚡ Factoring Eligible</div>':''}
+        
       </div>
       <div style="font-size:28px;font-weight:900;color:#60A5FA;">$${totalPay.toLocaleString()}</div>
     </div>
@@ -3531,10 +3573,14 @@ async function duplicateLoad() {
     bol_number: null, pro_number: null,
     driver_name: null, driver_phone: null,
     truck_number: null, trailer_number: null,
+    hot_load: l.hot_load || false,
+    appointment_required: l.appointment_required || false,
+    appointment_notes: l.appointment_notes || null,
+    hot_load: false,
+    appointment_required: l.appointment_required || false,
+    appointment_notes: l.appointment_notes || null,
     status: 'Available',
     carrier_id: null,
-    factoring: l.factoring || 'no',
-    fuel_surcharge: l.fuel_surcharge || null,
   };
 
   const { error } = await db.from('loads').insert(payload);
