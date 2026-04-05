@@ -758,6 +758,79 @@ function loadGooglePlaces(apiKey){
   </div>
 
   <!-- LANE INTELLIGENCE -->
+  <!-- ACADEMY -->
+  <div class="content" id="page-academy" style="display:none;padding:0;">
+    <div id="academy-home">
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1B2A4A 0%,#2563EB 100%);padding:32px;border-radius:0 0 24px 24px;margin-bottom:24px;">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:white;margin-bottom:6px;">🎓 FreightFlow Academy</div>
+        <div style="font-size:14px;color:#93c5fd;margin-bottom:20px;">Master every feature with interactive step-by-step tutorials</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px 16px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:white;" id="academy-completed-count">0</div>
+            <div style="font-size:11px;color:#93c5fd;">Completed</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px 16px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:white;">8</div>
+            <div style="font-size:11px;color:#93c5fd;">Tutorials</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px 16px;text-align:center;">
+            <div style="font-size:22px;font-weight:800;color:white;" id="academy-xp">0</div>
+            <div style="font-size:11px;color:#93c5fd;">XP Earned</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tutorial Grid -->
+      <div style="padding:0 24px 24px;" id="academy-grid"></div>
+    </div>
+
+    <!-- Tutorial Player -->
+    <div id="academy-player" style="display:none;padding:24px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button class="btn btn-ghost btn-sm" onclick="exitTutorial()">← Back to Academy</button>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);" id="player-title"></div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-ghost btn-sm" id="tts-btn" onclick="toggleTTS()" title="Toggle voice narration">🔊 Voice On</button>
+          <span style="font-size:12px;color:var(--text3);" id="player-progress"></span>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="height:4px;background:var(--surface2);border-radius:4px;margin-bottom:24px;overflow:hidden;">
+        <div id="player-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:4px;transition:width 0.3s ease;width:0%;"></div>
+      </div>
+
+      <!-- Step card -->
+      <div style="max-width:680px;margin:0 auto;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div id="player-step-visual" style="background:linear-gradient(135deg,#1B2A4A,#1e3a6e);padding:40px;text-align:center;min-height:200px;display:flex;align-items:center;justify-content:center;">
+            <div style="font-size:72px;" id="player-step-emoji">📦</div>
+          </div>
+          <div style="padding:24px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:8px;" id="player-step-label">Step 1 of 5</div>
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);margin-bottom:12px;" id="player-step-title"></div>
+            <div style="font-size:14px;color:var(--text2);line-height:1.8;margin-bottom:20px;" id="player-step-body"></div>
+            <div id="player-step-tip" style="display:none;background:var(--amber-dim);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--amber);margin-bottom:16px;"></div>
+            <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;">
+              <button class="btn btn-ghost" id="prev-btn" onclick="prevStep()">← Previous</button>
+              <div style="display:flex;gap:6px;" id="step-dots"></div>
+              <button class="btn btn-primary" id="next-btn" onclick="nextStep()">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action prompt -->
+        <div id="player-action" style="display:none;margin-top:16px;background:var(--green-dim);border:1px solid var(--green);border-radius:12px;padding:16px;text-align:center;">
+          <div style="font-size:20px;margin-bottom:8px;" id="action-emoji">👆</div>
+          <div style="font-size:14px;font-weight:600;color:var(--green);" id="action-text">Try it yourself!</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;" id="action-sub"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <div class="content" id="page-lane-intel" style="display:none;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div>
@@ -2006,7 +2079,7 @@ function switchPage(id){
 }
 
 function renderCurrentPage(){
-  const renderers={dashboard:renderDashboard,dispatch:renderDispatch,loads:renderLoads,carriers:renderCarriers,customers:renderCustomers,invoices:renderInvoices,quotes:renderQuotesPage,reports:renderReports,'lane-intel':renderLaneIntel,users:renderUsersPage,settings:renderSettings,crm:renderCRM,integrations:()=>{}};
+  const renderers={dashboard:renderDashboard,dispatch:renderDispatch,loads:renderLoads,carriers:renderCarriers,customers:renderCustomers,invoices:renderInvoices,quotes:renderQuotesPage,reports:renderReports,'lane-intel':renderLaneIntel,'academy':renderAcademy,users:renderUsersPage,settings:renderSettings,crm:renderCRM,integrations:()=>{}};
   if(renderers[currentPage])renderers[currentPage]();
 }
 
@@ -5134,6 +5207,330 @@ function renderLaneIntel() {
           <div style="font-size:13px;font-weight:700;color:${t.up?'var(--green)':'var(--red)'};">${t.up?'📈 +':'📉 '}${t.change}%</div>
         </div>`).join('');
     }
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// FREIGHTFLOW ACADEMY — Interactive Tutorial System
+// ══════════════════════════════════════════════════════════════
+
+const ACADEMY_TUTORIALS = [
+  {
+    id: 'create-load',
+    title: 'Creating Your First Load',
+    emoji: '📦',
+    desc: 'Learn how to build a load from scratch, set pickup and delivery, and get it ready for tendering.',
+    category: 'Operations',
+    xp: 100,
+    steps: [
+      { emoji:'📦', title:'Welcome to Load Management', body:'Every shipment starts as a load in FreightFlowHQ. A load tracks everything — origin, destination, pickup date, carrier, rate, and status — from the moment you book it to the moment you invoice it.', tip:'💡 Use the dispatch board to see all your loads in one visual view.' },
+      { emoji:'🖱️', title:'Click "+ New Load"', body:'From the Loads page, find the blue "+ New Load" button in the top right corner. This opens the load creation form. You can also use the keyboard shortcut by clicking the button in the dashboard Quick Actions panel.', action:'Try it now — click the Loads page in the sidebar, then click "+ New Load"', actionEmoji:'📦', actionSub:'Click Loads → + New Load' },
+      { emoji:'📍', title:'Enter Pickup Address', body:'Start typing the pickup address in the Pickup Address field. After 3 characters, real address suggestions will appear from OpenStreetMap. Select your address and the City, State, and ZIP fields will auto-fill below.', tip:'💡 You can also type just the city name if you don\'t have a street address yet.' },
+      { emoji:'🏁', title:'Enter Delivery Address', body:'Do the same for the delivery destination. FreightFlowHQ tracks origin city, state, and ZIP separately from the full address — this powers the Lane Intelligence Engine to surface rate trends on your lanes.', tip:'💡 Every unique origin→destination pair becomes a lane that the system learns from over time.' },
+      { emoji:'📅', title:'Set Pickup & Delivery Dates', body:'Use the date/time pickers to set your pickup window and expected delivery date. If the shipper or receiver requires an appointment, check the "📅 Appointment Required" box — this adds an APPT badge on your dispatch board.', tip:'💡 If this load is time-critical, check "🔥 Hot Load" to add a priority indicator across the board.' },
+      { emoji:'💰', title:'Set the Rate', body:'Enter the Customer Rate (what you\'re billing the shipper) and the Carrier Pay (what you\'re paying the carrier). FreightFlowHQ automatically calculates your Gross Profit and margin percentage in real time.', tip:'💡 Gross Profit = Customer Rate minus Carrier Pay. Target 15-20% margin as a broker.' },
+      { emoji:'🚛', title:'Select Equipment & Commodity', body:'Choose the equipment type (Dry Van, Reefer, Flatbed, etc.) and enter the commodity description and weight. This information flows to the rate confirmation the carrier receives.', tip:'💡 Check the Hazmat box if the shipment contains hazardous materials — this adds a red warning to the rate con.' },
+      { emoji:'✅', title:'Save Your Load', body:'Click "Save Load" at the bottom of the form. Your load gets a unique number (FF-0001 format) and appears in the Loads page as "Available" — ready to be tendered to a carrier.', tip:'🎉 You just created your first load! Now head to the "Tendering to a Carrier" tutorial to learn how to book it.' },
+    ]
+  },
+  {
+    id: 'tender-carrier',
+    title: 'Tendering to a Carrier',
+    emoji: '📧',
+    desc: 'Send a digital rate confirmation, have the carrier accept on their phone, and watch the load auto-update.',
+    category: 'Operations',
+    xp: 150,
+    steps: [
+      { emoji:'📧', title:'What is a Tender?', body:'Tendering means offering a load to a carrier with all the details — pickup, delivery, rate, and legal terms. In FreightFlowHQ, the entire process is digital: you click one button, the carrier gets an email, they accept on their phone, and your dispatch board updates automatically.', tip:'💡 No more PDFs, phone tags, or manual status updates.' },
+      { emoji:'🔍', title:'Open the Load Detail', body:'From the Loads page or Dispatch Board, click any Available load to open the detail panel. You\'ll see all the load information, financials, and action buttons at the top.', action:'Click any Available load to open it', actionEmoji:'📋', actionSub:'Click a load row or dispatch board card' },
+      { emoji:'🚛', title:'Click "Tender to Carrier"', body:'In the load detail header, click the green "Tender to Carrier" button. This opens the tender modal where you assign a carrier, add driver info, and review the rate confirmation before sending.', tip:'💡 Only carriers in your network who are fully onboarded (Active status) will appear in the dropdown.' },
+      { emoji:'🔥', title:'The Carrier Packet Section', body:'Inside the tender modal, the Carrier Packet section shows the onboarding status of the selected carrier — whether you have their W9, insurance certificate, and broker-carrier agreement on file. If anything is missing, you can send a packet request right from here.', tip:'⚠️ Never dispatch a carrier without verified insurance. The system will warn you if their insurance is expired.' },
+      { emoji:'📤', title:'Send the Rate Confirmation', body:'Click "Send Rate Con to Carrier" and FreightFlowHQ emails a professional rate confirmation to the carrier\'s email address. The email includes load details, all-in carrier pay, and 7 key legal terms including no re-brokering and Carmack Amendment cargo liability.', tip:'💡 The email comes from your dispatch email (set in Company Settings) — not a generic address.' },
+      { emoji:'📱', title:'Carrier Accepts on Mobile', body:'The carrier receives the email and clicks "Accept Rate Confirmation" — a mobile-optimized page that works on any phone, no app required. They can read the full terms, see the pay, and tap Accept or Decline.', tip:'💡 Once accepted, the load status automatically changes from "Pending Acceptance" to "Assigned".' },
+      { emoji:'✅', title:'Dispatch Board Updates', body:'Head to the Dispatch Board and watch the load move from the "Pending Acceptance" column to "Assigned" — in real time. No manual updates. Your dispatcher can now contact the driver directly using the driver info you entered.', tip:'🎉 The full tender workflow is complete! Next: learn how to use the Dispatch Board to manage your fleet.' },
+    ]
+  },
+  {
+    id: 'dispatch-board',
+    title: 'Using the Dispatch Board',
+    emoji: '📋',
+    desc: 'Master the 5-column visual board, milestone timeline, detention clock, and check call logging.',
+    category: 'Operations',
+    xp: 125,
+    steps: [
+      { emoji:'📋', title:'Your Command Center', body:'The Dispatch Board is where you manage loads in real time. It shows every active load across 5 columns: Available → Pending Acceptance → Assigned → In Transit → Delivered. Drag-and-drop movement is visual, but status changes are also enforced by the system.', tip:'💡 Bookmark the Dispatch page — experienced dispatchers spend 80% of their time here.' },
+      { emoji:'🟢', title:'Available Column', body:'Available loads are booked but have no carrier assigned. These need to be tendered. Hot loads show a red 🔥 badge. Loads requiring appointments show 📅 APPT. Use the Scout button to blast capacity emails to your carrier network for hard-to-cover loads.', tip:'💡 Sort your Available column by pickup date to prioritize which loads need coverage soonest.' },
+      { emoji:'⏳', title:'Pending Acceptance Column', body:'These loads have been tendered to a carrier but not yet accepted. The tender email has been sent — the carrier has the rate con in their inbox. Follow up by phone if it\'s been more than 30 minutes.', tip:'⚠️ Loads stuck in Pending Acceptance too long will be flagged. Set a reminder in your calendar if acceptance is taking too long.' },
+      { emoji:'🚦', title:'Milestone Timeline', body:'Click any Assigned or In Transit load to open the detail panel. You\'ll see the Milestone Timeline — 6 checkpoints from Dispatched to Empty. Click each milestone as the driver hits it. The system logs the time, updates the status, and auto-starts the detention clock at shipper and receiver.', tip:'💡 Each milestone click is timestamped and logged as a load event — creating a full audit trail.' },
+      { emoji:'⏱️', title:'The Detention Clock', body:'When you click "Arrived Shipper" or "Arrived Receiver," a detention clock starts. It turns red after 2 hours of free time. At that point, a detention accessorial is automatically added to the load and an alert banner fires — reminding you to document it for billing.', tip:'💡 Detention billing typically runs $50-75/hr after 2 free hours. Pre-approve with the shipper before dispatching.' },
+      { emoji:'📞', title:'Check Call Logging', body:'Inside the load detail, click the "Check Calls" tab to see a log of all driver check-ins. Use the "+ Log Check Call" button to record driver location, status (On Time / Delayed / Issue), and notes. FreightFlowHQ alerts you if an In Transit load hasn\'t had a check call in 2+ hours.', tip:'💡 Consistent check calls = fewer customer escalations. Set a reminder schedule per customer in their settings.' },
+      { emoji:'✅', title:'Delivered!', body:'When the driver delivers, click the "Delivered" milestone. The load moves to the Delivered column, the detention clock stops, and an invoice can now be created from the Invoices page. The load data feeds into your Lane Intelligence reports.', tip:'🎉 Great job! Your delivery is logged. Head to Invoicing to learn how to bill your customer.' },
+    ]
+  },
+  {
+    id: 'carrier-vetting',
+    title: 'Carrier Vetting & Onboarding',
+    emoji: '🔍',
+    desc: 'Look up carriers by MC# or DOT#, run the vetting checklist, send the onboarding packet, and add them to your network.',
+    category: 'Carriers',
+    xp: 125,
+    steps: [
+      { emoji:'🔍', title:'Why Vetting Matters', body:'Using an unvetted carrier is one of the biggest risks in freight brokerage. Double brokering fraud, expired insurance, and poor safety ratings can expose you to massive liability. FreightFlowHQ\'s vetting pipeline makes it fast to do the right checks every time.', tip:'⚠️ Never dispatch a carrier you haven\'t verified — even if they\'re vouched for by another broker.' },
+      { emoji:'🗂️', title:'The Carrier Vetting Pipeline', body:'Navigate to the Carriers page and click the "Find & Vet Carrier" tab. This is where you search, vet, and onboard new carriers — completely separate from your existing network list.', action:'Click Carriers in the sidebar, then click "Find & Vet Carrier"', actionEmoji:'🔍', actionSub:'Carriers → Find & Vet Carrier tab' },
+      { emoji:'🔢', title:'Search by MC# or DOT#', body:'Enter the carrier\'s MC number or DOT number in the search field and click "FMCSA Lookup." FreightFlowHQ calls the FMCSA API through a secure Supabase edge function, returning the carrier\'s legal name, authority status, safety rating, and out-of-service percentage.', tip:'💡 You can enter just the numbers — no need to type "MC" or "DOT" prefix.' },
+      { emoji:'✅', title:'The Vetting Checklist', body:'After the FMCSA results load, a 5-point vetting checklist appears automatically: ✅ Operating Authority Active, ✅ Safety Rating Acceptable, ✅ OOS Rate below 20%, ✅ Not on your DNL list, ✅ No fatal crashes in 2 years. The system shows a green "PASSES VETTING" or red "REVIEW REQUIRED" badge.', tip:'💡 A carrier can pass all 5 checks and still be a bad actor — always verify insurance directly.' },
+      { emoji:'🛡️', title:'Highway & RMIS Integration', body:'On Growth tier and above, your clients can plug in their own Highway or RMIS API key in Company Settings. When configured, two additional buttons appear — "Highway →" and "RMIS →" — for deeper carrier monitoring including fraud scoring and real-time insurance verification.', tip:'💡 Highway and RMIS are subscription services your client brings — FreightFlowHQ just plugs them in.' },
+      { emoji:'📧', title:'Send the Carrier Packet', body:'If the carrier passes vetting, click "Send Packet." Enter the carrier\'s contact email and FreightFlowHQ sends a professional onboarding packet requesting: W9/tax form, Certificate of Insurance (min $1M auto, $100K cargo), and a signed Broker-Carrier Agreement.', tip:'💡 The packet email comes from your dispatch email and includes your company name and MC number.' },
+      { emoji:'➕', title:'Add to Network', body:'Click "Add to Network" to create a carrier profile pre-filled with the FMCSA data — legal name, MC#, DOT#, phone, and safety score. Their onboarding status starts as "Pending" and advances as you receive their documents.', tip:'💡 Track all pending onboarding in the "Onboarding Queue" tab — shows W9 → Insurance → Agreement → Active.' },
+    ]
+  },
+  {
+    id: 'rate-con',
+    title: 'Rate Confirmations',
+    emoji: '📄',
+    desc: 'Understand the rate con structure, legal terms, QR code, and how to print or email it.',
+    category: 'Operations',
+    xp: 100,
+    steps: [
+      { emoji:'📄', title:'What is a Rate Confirmation?', body:'A Rate Confirmation is a legally binding contract between you (the broker) and the carrier. It confirms the load details, the all-in carrier pay, and the terms under which the carrier agrees to haul. FreightFlowHQ generates professional rate cons automatically from your load data.', tip:'💡 The Rate Con is your paper trail. It\'s your protection if a carrier double-brokers or if cargo is damaged.' },
+      { emoji:'🏢', title:'Company Branding on Rate Cons', body:'Rate cons pull your company name, MC#, DOT#, dispatch email, and phone from Company Settings. On Growth tier and above, your company logo appears. On Professional tier, the rate con is fully white-labeled with your colors and custom legal terms.', action:'Go to Settings → Company Info to configure your branding', actionEmoji:'⚙️', actionSub:'Settings → Company Info' },
+      { emoji:'⚖️', title:'The 10-Point Legal Terms', body:'FreightFlowHQ rate cons include 10 legally-drafted terms covering: DOT/FMCSA compliance, no re-brokering, insurance requirements ($1M auto, $100K cargo), Carmack Amendment cargo liability, detention policy (2hr free time), payment terms (Net 30, 180-day filing deadline), double brokering fraud prevention, check call requirements, governing law, and entire agreement clause.', tip:'💡 You can add custom additional terms in Company Settings → Rate Con Terms field.' },
+      { emoji:'💰', title:'Rate Breakdown Section', body:'The rate con automatically shows a breakdown of Base Carrier Rate, Fuel Surcharge (if applicable), and any accessorials — with the All-In Total prominently displayed in navy at the bottom. Carriers see exactly what they\'re getting paid, with no surprises.', tip:'💡 Accessorials are extras like detention, layover, or lumper fees that get added to the load.' },
+      { emoji:'📱', title:'QR Code for Marketing', body:'Every FreightFlowHQ rate con includes a QR code in the bottom right corner linking to freightflowhq.com. When carriers scan it, they see your platform. This is passive marketing — every load you haul puts FreightFlowHQ in front of new carriers.', tip:'💡 On Professional tier, the QR code links to your brokerage website instead.' },
+      { emoji:'🖨️', title:'Print or Email the Rate Con', body:'From the load detail panel, click "🖨️ Rate Con" to open the preview. Click "Print / Save PDF" to open the print dialog — save as PDF to your computer or print directly. The email version is sent automatically when you tender to a carrier.', tip:'💡 The email rate con is a condensed version optimized for mobile — carriers read it on their phone.' },
+    ]
+  },
+  {
+    id: 'invoicing',
+    title: 'Invoicing & Billing',
+    emoji: '🧾',
+    desc: 'Create invoices from delivered loads, manage the invoice queue, and track aging receivables.',
+    category: 'Finance',
+    xp: 100,
+    steps: [
+      { emoji:'🧾', title:'Invoice Lifecycle', body:'After a load is delivered, it\'s ready to invoice. FreightFlowHQ tracks the full invoice lifecycle: Draft → Sent → Paid. The Invoices page has a queue showing all delivered loads that need billing, so nothing slips through the cracks.', tip:'💡 Industry standard payment terms are Net 30. Always get your invoice out within 24 hours of delivery.' },
+      { emoji:'⚡', title:'The Invoice Queue', body:'Navigate to Invoices. At the top you\'ll see the Invoice Queue — all delivered loads without an invoice yet, showing load number, route, customer, rate, and delivery date. Click "Create →" next to any load to auto-fill an invoice from that load\'s data.', action:'Click Invoices in the sidebar to see your queue', actionEmoji:'🧾', actionSub:'Invoices → Invoice Queue at the top' },
+      { emoji:'📋', title:'Auto-Fill from Load', body:'When you click "Create →" on a queued load, the invoice form pre-fills with the customer, load number, amount, and due date automatically. You just review and save — no re-entering data you\'ve already entered.', tip:'💡 The invoice number auto-generates in INV-0001 format. You can override it with your own numbering system.' },
+      { emoji:'📊', title:'Aging Receivables Report', body:'Navigate to Reports → Aging Receivables tab. This shows all outstanding invoices bucketed by age: 0-30 days (current), 31-60 days (follow up), 61-90 days (escalate), 90+ days (collections risk). Dollar totals are shown at the top for quick cash flow visibility.', tip:'💡 Follow up on 31-60 day invoices with a friendly call. Wait until 61+ to escalate to collections.' },
+      { emoji:'💰', title:'Marking Invoices Paid', body:'When a customer pays, find the invoice in the list and change its status to "Paid." This removes it from the aging report and records the payment date. FreightFlowHQ doesn\'t process payments — it tracks them. Integrate with QuickBooks (coming Growth tier feature) to sync automatically.', tip:'💡 Always record the payment method and reference number in the invoice notes for your audit trail.' },
+    ]
+  },
+  {
+    id: 'lane-intel',
+    title: 'Lane Intelligence Engine',
+    emoji: '🧠',
+    desc: 'Discover which lanes are most profitable, surface carrier performance data, and spot rate trends.',
+    category: 'Analytics',
+    xp: 150,
+    steps: [
+      { emoji:'🧠', title:'What is Lane Intelligence?', body:'The Lane Intelligence Engine analyzes every load you\'ve ever moved and surfaces patterns — which lanes are most profitable, which carriers perform best on which routes, and whether rates on a lane are trending up or down. It gets smarter the more loads you complete.', tip:'💡 No other small-to-mid-market TMS has this built in. This is your competitive advantage.' },
+      { emoji:'📊', title:'Lane Performance Table', body:'Navigate to 🧠 Lane Intelligence in the sidebar. The Lane Performance table shows every unique origin→destination pair with loads moved, total revenue, carrier pay, gross profit, GP%, and a trend arrow (📈/📉) comparing recent performance to historical.', action:'Click "🧠 Lane Intelligence" in the sidebar', actionEmoji:'🧠', actionSub:'Click Lane Intelligence in the left sidebar' },
+      { emoji:'🎯', title:'Sorting and Filtering', body:'Sort lanes by Best Margin to see where you make the most money. Sort by Most Loads to see your highest-volume lanes. Use the search box to find a specific city pair. Use the period selector to filter by last 30, 90, 180 days, or all time.', tip:'💡 Your highest-volume lanes are where you should be negotiating dedicated carrier contracts — guaranteed capacity at better rates.' },
+      { emoji:'⚠️', title:'Automated Alerts', body:'The system automatically flags lanes where your GP% has dropped below 10% across multiple loads — a signal you\'re either pricing too low or your carrier costs have crept up. It also flags high-volume lanes as candidates for dedicated carrier agreements.', tip:'💡 A 10% GP warning on a lane you run frequently is worth a rate renegotiation call to the shipper.' },
+      { emoji:'🚚', title:'Best Carrier Per Lane', body:'The right panel shows the best-performing carrier for each of your top lanes, ranked by on-time delivery rate. Use this when you have a load on that lane — start with your highest on-time carrier before going to the open market.', tip:'💡 Building preferred carrier relationships on your top lanes reduces your covered costs and improves reliability.' },
+      { emoji:'📈', title:'Rate Trend Alerts', body:'The Market Trend Alerts panel detects lanes where your average rate has moved more than 10% compared to historical. A 📈 means rates are rising (good — you\'re billing more). A 📉 means rates are dropping (review your pricing or carrier costs).', tip:'💡 Rate trends require 4+ loads on a lane to detect. Keep moving freight and the engine keeps learning.' },
+    ]
+  },
+  {
+    id: 'settings-branding',
+    title: 'Company Settings & Branding',
+    emoji: '⚙️',
+    desc: 'Configure your company info, MC/DOT numbers, dispatch email, rate con terms, and API integrations.',
+    category: 'Setup',
+    xp: 75,
+    steps: [
+      { emoji:'⚙️', title:'Company Settings Overview', body:'Company Settings is where you configure everything that appears on your rate confirmations, emails, and customer-facing documents. Click Settings in the sidebar. You\'ll see tabs for Company Info, Notifications, Integrations, and Permissions.', action:'Click Settings in the sidebar', actionEmoji:'⚙️', actionSub:'Click Settings in the left sidebar' },
+      { emoji:'🏢', title:'Company Information', body:'Fill in your company name, MC number, DOT number, dispatch email, phone, and address. These fields auto-populate on every rate confirmation you generate. Your dispatch email is also used as the "reply-to" on carrier emails — so carrier replies come directly to you.', tip:'💡 Your MC and DOT numbers are legally required on rate confirmations. Don\'t skip them.' },
+      { emoji:'📧', title:'Email Domain Setup', body:'To send emails from your own domain (e.g. dispatch@yourbrokerage.com instead of onboarding@resend.dev), verify your domain in Resend.com and add the DNS records to your domain registrar. Then add your dispatch email here. This keeps your emails out of spam.', tip:'💡 Domain verification typically takes 15-30 minutes once DNS records are added. Check your Resend dashboard for status.' },
+      { emoji:'🗺️', title:'Google Places API Key', body:'For full street address autocomplete on loads (instead of OpenStreetMap), add a Google Places API key here. Get a free key at console.cloud.google.com → Enable Places API → Create Credentials → API Key. Google gives $200/month free credit — more than enough for a brokerage.', tip:'💡 Without a Google key, FreightFlowHQ falls back to OpenStreetMap which still gives real addresses, just slightly less accurate.' },
+      { emoji:'📝', title:'Custom Rate Con Terms', body:'In the Custom Rate Confirmation Terms field, add any additional legal language specific to your brokerage — special payment requirements, fuel surcharge policies, or regional regulations. These appear as an "Additional Terms" section at the bottom of every rate con.', tip:'💡 Have a transportation attorney review your rate con terms at least once a year.' },
+      { emoji:'👥', title:'User Roles & Permissions', body:'Under the Users tab, you can add team members and assign roles: Admin (full access), Dispatcher (loads and carriers), Accounting (invoices only), Sales (CRM), or Read-Only. Each role has pre-configured permissions that you can further customize in the Permissions matrix.', tip:'🎉 You\'re all set up! FreightFlowHQ is configured and ready for your first real customer load.' },
+    ]
+  },
+];
+
+// ── ACADEMY STATE ─────────────────────────────────────────────
+let academyProgress = JSON.parse(localStorage.getItem('ff-academy-progress') || '{}');
+let currentTutorial = null;
+let currentStep = 0;
+let ttsEnabled = true;
+let ttsVoice = null;
+
+// Pick the best voice on load
+window.speechSynthesis && window.speechSynthesis.onvoiceschanged !== undefined
+  ? window.speechSynthesis.onvoiceschanged = () => { ttsVoice = window.speechSynthesis.getVoices().find(v => v.lang === 'en-US' && v.name.includes('Google')) || window.speechSynthesis.getVoices().find(v => v.lang.startsWith('en')) || null; }
+  : setTimeout(() => { ttsVoice = window.speechSynthesis?.getVoices()?.find(v => v.lang.startsWith('en')) || null; }, 500);
+
+function speak(text) {
+  if (!ttsEnabled || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.voice = ttsVoice;
+  utt.rate = 0.95;
+  utt.pitch = 1.0;
+  utt.volume = 0.9;
+  window.speechSynthesis.speak(utt);
+}
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  const btn = document.getElementById('tts-btn');
+  if (btn) btn.textContent = ttsEnabled ? '🔊 Voice On' : '🔇 Voice Off';
+  if (!ttsEnabled) window.speechSynthesis?.cancel();
+  else if (currentTutorial) speak(currentTutorial.steps[currentStep].body);
+}
+
+function renderAcademy() {
+  const grid = document.getElementById('academy-grid');
+  if (!grid) return;
+
+  // Update XP and completed count
+  const completed = Object.values(academyProgress).filter(Boolean).length;
+  const xp = ACADEMY_TUTORIALS.filter(t => academyProgress[t.id]).reduce((s,t) => s + t.xp, 0);
+  setEl('academy-completed-count', completed);
+  setEl('academy-xp', xp);
+
+  const categories = [...new Set(ACADEMY_TUTORIALS.map(t => t.category))];
+
+  grid.innerHTML = categories.map(cat => `
+    <div style="margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px;">${cat}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+        ${ACADEMY_TUTORIALS.filter(t => t.category === cat).map(t => {
+          const done = academyProgress[t.id];
+          return `<div class="card" style="cursor:pointer;border:1px solid ${done?'var(--green)':'var(--border)'};transition:all 0.2s;position:relative;" onclick="startTutorial('${t.id}')" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            ${done?'<div style="position:absolute;top:10px;right:10px;background:var(--green);color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">✓ DONE</div>':''}
+            <div style="padding:20px;">
+              <div style="font-size:40px;margin-bottom:12px;">${t.emoji}</div>
+              <div style="font-family:\'Syne\',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">${t.title}</div>
+              <div style="font-size:12px;color:var(--text3);line-height:1.5;margin-bottom:12px;">${t.desc}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:11px;color:var(--text3);">${t.steps.length} steps</span>
+                <span style="font-size:11px;font-weight:700;color:var(--amber);">+${t.xp} XP</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function startTutorial(id) {
+  currentTutorial = ACADEMY_TUTORIALS.find(t => t.id === id);
+  if (!currentTutorial) return;
+  currentStep = 0;
+  document.getElementById('academy-home').style.display = 'none';
+  document.getElementById('academy-player').style.display = 'block';
+  setEl('player-title', currentTutorial.title);
+  renderStep();
+  speak(`Welcome to ${currentTutorial.title}. ${currentTutorial.steps[0].body}`);
+}
+
+function exitTutorial() {
+  window.speechSynthesis?.cancel();
+  currentTutorial = null;
+  document.getElementById('academy-home').style.display = 'block';
+  document.getElementById('academy-player').style.display = 'none';
+  renderAcademy();
+}
+
+function renderStep() {
+  if (!currentTutorial) return;
+  const steps = currentTutorial.steps;
+  const step = steps[currentStep];
+  const total = steps.length;
+
+  setEl('player-step-emoji', step.emoji || '📦');
+  setEl('player-step-label', `Step ${currentStep + 1} of ${total}`);
+  setEl('player-step-title', step.title);
+  setEl('player-step-body', step.body);
+  setEl('player-progress', `${currentStep + 1} / ${total}`);
+
+  const bar = document.getElementById('player-progress-bar');
+  if (bar) bar.style.width = ((currentStep + 1) / total * 100) + '%';
+
+  const tip = document.getElementById('player-step-tip');
+  if (tip) {
+    if (step.tip) { tip.textContent = step.tip; tip.style.display = 'block'; }
+    else tip.style.display = 'none';
+  }
+
+  const action = document.getElementById('player-action');
+  if (action) {
+    if (step.action) {
+      action.style.display = 'block';
+      setEl('action-emoji', step.actionEmoji || '👆');
+      setEl('action-text', step.action);
+      setEl('action-sub', step.actionSub || '');
+    } else action.style.display = 'none';
+  }
+
+  // Dots
+  const dots = document.getElementById('step-dots');
+  if (dots) {
+    dots.innerHTML = steps.map((_, i) => `<div style="width:${i===currentStep?16:6}px;height:6px;border-radius:3px;background:${i===currentStep?'var(--accent)':i<currentStep?'var(--green)':'var(--surface3)'};transition:all 0.3s;"></div>`).join('');
+  }
+
+  // Buttons
+  const prev = document.getElementById('prev-btn');
+  const next = document.getElementById('next-btn');
+  if (prev) prev.style.visibility = currentStep === 0 ? 'hidden' : 'visible';
+  if (next) {
+    if (currentStep === total - 1) {
+      next.textContent = '🎉 Complete!';
+      next.style.background = 'var(--green)';
+    } else {
+      next.textContent = 'Next →';
+      next.style.background = '';
+    }
+  }
+}
+
+function nextStep() {
+  if (!currentTutorial) return;
+  if (currentStep < currentTutorial.steps.length - 1) {
+    currentStep++;
+    renderStep();
+    speak(currentTutorial.steps[currentStep].body);
+  } else {
+    completeTutorial();
+  }
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    currentStep--;
+    renderStep();
+    speak(currentTutorial.steps[currentStep].body);
+  }
+}
+
+function completeTutorial() {
+  window.speechSynthesis?.cancel();
+  academyProgress[currentTutorial.id] = true;
+  localStorage.setItem('ff-academy-progress', JSON.stringify(academyProgress));
+  
+  // Confetti!
+  launchConfetti();
+  speak(`Congratulations! You've completed ${currentTutorial.title} and earned ${currentTutorial.xp} XP! Keep going to master FreightFlowHQ.`);
+
+  setTimeout(() => exitTutorial(), 3500);
+}
+
+function launchConfetti() {
+  const colors = ['#2563EB','#10B981','#F59E0B','#8B5CF6','#EF4444','#60A5FA'];
+  const container = document.getElementById('academy-player');
+  if (!container) return;
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:2px;left:${Math.random()*100}vw;top:-10px;z-index:9999;pointer-events:none;transform:rotate(${Math.random()*360}deg);`;
+    document.body.appendChild(el);
+    const duration = 1500 + Math.random() * 1500;
+    el.animate([
+      { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+      { transform: `translateY(${80 + Math.random()*40}vh) rotate(${360+Math.random()*360}deg)`, opacity: 0 }
+    ], { duration, easing: 'ease-in', fill: 'forwards' }).onfinish = () => el.remove();
   }
 }
 
