@@ -1953,11 +1953,7 @@ function renderDispatch(){
 }
 
 function renderLoads(){renderLoadsTable(allLoads);}
-function filterLoads(){
-  const q=(document.getElementById('load-search')?.value||'').toLowerCase();
-  const s=document.getElementById('load-filter-status')?.value||'';
-  renderLoadsTable(allLoads.filter(l=>{const mQ=!q||(l.load_number||'').toLowerCase().includes(q)||(l.origin_city||'').toLowerCase().includes(q)||(l.destination_city||'').toLowerCase().includes(q)||(l.customers?.name||'').toLowerCase().includes(q)||(l.carriers?.name||'').toLowerCase().includes(q);const mS=!s||l.status===s;return mQ&&mS;}));
-}
+// filterLoads defined below with enhanced date range filtering
 function renderLoadsTable(loads){
   const body=document.getElementById('loads-body');if(!body)return;
   if(!loads.length){body.innerHTML=`<div class="empty-state"><div class="empty-icon">📦</div><p>No loads match your filters.</p></div>`;return;}
@@ -3991,8 +3987,8 @@ function renderOnboardingQueue() {
 // ══════════════════════════════════════════════════════════════
 
 // ── ENHANCED FILTER (date range) ─────────────────────────────
-const _origFilterLoads = filterLoads;
-filterLoads = function() {
+// filterLoads enhanced below with date range support
+function filterLoads() {
   const q = (document.getElementById('load-search')?.value || '').toLowerCase();
   const s = document.getElementById('load-filter-status')?.value || '';
   const dateFrom = document.getElementById('load-filter-date-from')?.value || '';
@@ -4065,7 +4061,7 @@ function checkOverdueLoads() {
   if (overdue.length > 0) {
     const badge = document.getElementById('overdue-badge');
     if (!badge) {
-      const loadNav = document.querySelector('[onclick="switchPage('loads')"]');
+      const loadNav = document.querySelector('.nav-item') || document.querySelector('[data-page]');
       if (loadNav) {
         const b = document.createElement('span');
         b.id = 'overdue-badge';
