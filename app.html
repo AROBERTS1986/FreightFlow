@@ -4679,51 +4679,26 @@ function handleAddressInput(input, type) {
   }, 300);
 }
 
-// Radar.io free geocoding — much better than Nominatim for US addresses
+// Fallback when Google Places not configured — show helpful prompt
 async function useRadarFallback(val, drop, type) {
-  try {
-    positionDrop(drop, type);
-    drop.innerHTML = '<div class="address-suggestion" style="pointer-events:none;"><span class="sug-icon">⏳</span><div><div class="sug-main">Searching addresses…</div></div></div>';
-    drop.classList.add('open');
-
-    const resp = await fetch(
-      `https://api.radar.io/v1/search/autocomplete?query=${encodeURIComponent(val)}&country=US&limit=6`,
-      { headers: { 'Authorization': 'prj_live_pk_2e5b8c1f4a8b2d9e0c3f7a1b5e8d2c4f6a9b3e7d' } }
-    );
-
-    if (!resp.ok) throw new Error('Radar error');
-    const data = await resp.json();
-    const results = data.addresses || [];
-
-    if (!results.length) {
-      showAddressNotFound(drop, type, val);
-      return;
-    }
-
-    positionDrop(drop, type);
-    drop.innerHTML = results.map(r => {
-      const street = [r.number, r.street].filter(Boolean).join(' ');
-      const city = r.city || r.county || '';
-      const state = r.stateCode || r.state || '';
-      const zip = r.postalCode || '';
-      const mainText = street || r.formattedAddress?.split(',')[0] || '';
-      const subText = [city, state, zip].filter(Boolean).join(', ');
-
-      const d = JSON.stringify({ street, city, state, zip, display: r.formattedAddress }).replace(/"/g, '&quot;');
-      return `<div class="address-suggestion" onclick="selectNominatimResult('${d}','${type}',this)">
-        <span class="sug-icon">${street ? '🏠' : '🏙️'}</span>
-        <div>
-          <div class="sug-main">${mainText || r.formattedAddress}</div>
-          <div class="sug-sub">${subText}</div>
-        </div>
-      </div>`;
-    }).join('');
-    drop.classList.add('open');
-
-  } catch(e) {
-    // Last resort — show manual entry prompt
-    showAddressNotFound(drop, type, val);
-  }
+  positionDrop(drop, type);
+  drop.innerHTML = `
+    <div class="address-suggestion" style="pointer-events:none;background:var(--amber-dim);border-bottom:1px solid rgba(245,158,11,0.3);">
+      <span class="sug-icon">💡</span>
+      <div>
+        <div class="sug-main" style="color:var(--amber);font-weight:700;">Add a Google Places API key for address search</div>
+        <div class="sug-sub">Settings → Company → Google Places API Key (free at console.cloud.google.com)</div>
+      </div>
+    </div>
+    <div class="address-suggestion" style="pointer-events:none;">
+      <span class="sug-icon">⌨️</span>
+      <div>
+        <div class="sug-main">For now, type the address manually</div>
+        <div class="sug-sub">Fill in City, State, and ZIP in the fields below</div>
+      </div>
+    </div>`;
+  drop.classList.add('open');
+  setTimeout(() => { if(drop) { drop.innerHTML=''; drop.classList.remove('open'); } }, 4000);
 }
 
 function showAddressNotFound(drop, type, val) {
