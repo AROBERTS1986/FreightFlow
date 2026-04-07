@@ -2626,7 +2626,7 @@ async function confirmMilestone() {
   renderMilestoneTimeline(currentDetailLoadId);
   renderDispatch(); // refresh board cards
   toast(milestone.label + ' logged! ✅', 'success');
-  if(pendingMilestone === 'empty') { await loadData(); toast('Load delivered! ⚡ Heading to Invoice Queue','success'); setTimeout(()=>{closeModal('detail');switchPage('invoices');},1500);
+  if(pendingMilestone === 'empty') { await loadData(); toast('Load delivered! ⚡ Heading to Invoice Queue','success'); setTimeout(()=>{closeModal('detail');switchPage('invoices');},1500); }
 }
 
 // ── DETENTION CLOCK ───────────────────────────────────────────
