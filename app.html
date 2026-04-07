@@ -2118,7 +2118,7 @@ function renderDashboardQuoteQueue(){
 function renderDispatch(){
   const statuses=['Available','Pending Acceptance','Assigned','In Transit','Delivered'];
   const colors={'Available':'var(--accent)','Pending Acceptance':'var(--purple)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'};
-  const cols=statuses.map(status=>{const loads=allLoads.filter(l=>l.status===status);const cards=!loads.length?`<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No ${status.toLowerCase()} loads</div>`:loads.map(l=>`<div class="load-card ${l.status}" onclick="openLoadDetail('${l.id}')"><div class="load-id">${l.load_number} · ${l.equipment_type||'Dry Van'}${l.hot_load?' <span style="background:#ef4444;color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.5px;">🔥 HOT</span>':''}</div><div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}${l.appointment_required?' <span style="font-size:9px;color:var(--amber);font-weight:700;">📅 APPT</span>':''}</div><div class="load-meta-row"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div><div class="load-meta-row"><span>Rate</span><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></div><div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div></div>`).join('');return`<div class="dispatch-col"><div class="dispatch-col-header" style="border-top:3px solid ${colors[status]}">${status} <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span></div>${cards}</div>`;}).join('');
+  const cols=statuses.map(status=>{const loads=allLoads.filter(l=>l.status===status);const cards=!loads.length?`<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No ${status.toLowerCase()} loads</div>`:loads.map(l=>`<div class="load-card ${l.status}" onclick="openLoadDetail('${l.id}')"><div class="load-id">${l.load_number} · ${l.equipment_type||'Dry Van'}${l.hot_load?' <span style="background:#ef4444;color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.5px;">🔥 HOT</span>':''}</div><div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}${l.appointment_required?' <span style="font-size:9px;color:var(--amber);font-weight:700;">📅 APPT</span>':''}</div><div class="load-meta-row"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div><div class="load-meta-row"><span>Rate</span><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></div><div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div>${l.status==='In Transit'&&l.last_milestone?`<div style="font-size:10px;font-weight:700;color:var(--amber);margin-top:4px;padding:2px 6px;background:rgba(245,158,11,0.1);border-radius:4px;display:inline-block;">📍 ${l.last_milestone}</div>`:''}</div>`).join('');return`<div class="dispatch-col"><div class="dispatch-col-header" style="border-top:3px solid ${colors[status]}">${status} <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span></div>${cards}</div>`;}).join('');
   const board=document.getElementById('dispatch-board');if(board)board.innerHTML=`<div class="dispatch-grid">${cols}</div>`;
 }
 
@@ -2518,11 +2518,11 @@ function openEditFromDetail(){closeModal('detail');setTimeout(()=>editLoad(curre
 
 // ── MILESTONE TIMELINE ───────────────────────────────────────
 const MILESTONES = [
-  {id:'dispatched',   label:'Dispatched',          icon:'📋', color:'var(--accent)',  detention:false},
-  {id:'arr_shipper',  label:'Arrived at Shipper',  icon:'🏭', color:'var(--amber)',   detention:'start'},
-  {id:'loaded',       label:'Loaded',               icon:'📦', color:'var(--green)',   detention:'stop'},
-  {id:'arr_receiver', label:'Arrived at Receiver',  icon:'🏢', color:'var(--amber)',   detention:'start'},
-  {id:'empty',        label:'Empty / Delivered',    icon:'✅', color:'var(--green)',   detention:'stop'},
+  {id:'dispatched',   label:'Dispatched',           icon:'📋', color:'var(--accent)',  detention:false,   status:'In Transit'},
+  {id:'arr_shipper',  label:'Arrived at Shipper',   icon:'🏭', color:'var(--amber)',   detention:'start', status:'In Transit'},
+  {id:'loaded',       label:'Loaded / Departed',    icon:'📦', color:'var(--green)',   detention:'stop',  status:'In Transit'},
+  {id:'arr_receiver', label:'Arrived at Receiver',  icon:'🏢', color:'var(--amber)',   detention:'start', status:'In Transit'},
+  {id:'empty',        label:'Empty / POD',           icon:'✅', color:'var(--green)',   detention:'stop',  status:'Delivered'},
 ];
 
 let loadMilestones = {}; // {loadId: [{id, timestamp, notes}]}
@@ -2603,6 +2603,10 @@ async function confirmMilestone() {
     await db.from('loads').update({status: statusMap[pendingMilestone]}).eq('id', currentDetailLoadId);
     document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active-status'));
     const map = {'Available':'s-available','Pending Acceptance':'s-pending','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
+    // Save last milestone to load record for dispatch board display
+    try {
+      await db.from('loads').update({ last_milestone: milestone.label }).eq('id', currentDetailLoadId);
+    } catch(e) {}
     document.querySelector('.status-btn.' + (map[statusMap[pendingMilestone]]||''))?.classList.add('active-status');
   }
 
