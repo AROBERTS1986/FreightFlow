@@ -382,11 +382,18 @@ textarea{resize:vertical;min-height:80px;}
 </script>
 <script>
 function loadGooglePlaces(apiKey){
+  if(!apiKey)return;
+  // If already loaded and ready, just reinit
+  if(window.google && window.google.maps && window.google.maps.places){
+    initPlacesAutocomplete();
+    return;
+  }
   if(document.getElementById("google-places-script"))return;
   const s=document.createElement("script");
   s.id="google-places-script";
   s.src=`https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initPlacesAutocomplete`;
   s.async=true;
+  s.onerror=()=>console.error('[FF] Google Places script failed to load');
   document.head.appendChild(s);
 }
 </script>
@@ -3566,6 +3573,16 @@ applyTheme();
 initRolePerms();
 checkAuth();
 loadRememberedEmail();
+// Load Google Places immediately on boot — hardcoded key as primary, DB as backup
+(async()=>{
+  try{
+    const{data}=await db.from('company_settings').select('google_places_key').limit(1);
+    const key=data?.[0]?.google_places_key||'AIzaSyCPzoeVg2ePSGZu-ZKaiN5BXhys_QDQtVY';
+    if(key)loadGooglePlaces(key);
+  }catch(e){
+    loadGooglePlaces('AIzaSyCPzoeVg2ePSGZu-ZKaiN5BXhys_QDQtVY');
+  }
+})();
 
 // ── ACCESSORIALS ──────────────────────────────────────────────
 let accessorials = [];
@@ -4756,8 +4773,14 @@ function initPlacesAutocomplete() {
     placesService = new google.maps.places.PlacesService(document.createElement('div'));
     sessionToken = new google.maps.places.AutocompleteSessionToken();
     console.log('[FF] Google Places loaded ✅');
+    window._placesReady = true;
+  } else {
+    console.warn('[FF] Google Places script loaded but maps not ready');
   }
 }
+
+// Also expose as global for the script callback
+window.initPlacesAutocomplete = initPlacesAutocomplete;
 
 // Main input handler — uses Google if available, falls back to Radar.io
 const addressDebounces = {};
@@ -4925,16 +4948,14 @@ async function showFallbackSuggestions(val, drop, type) {
 }
 
 function positionDrop(drop, type) {
-  const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
-  const input = document.getElementById(inputId);
-  if (input) {
-    const rect = input.getBoundingClientRect();
-    drop.style.position = 'fixed';
-    drop.style.top = (rect.bottom + 2) + 'px';
-    drop.style.left = rect.left + 'px';
-    drop.style.width = rect.width + 'px';
-    drop.style.zIndex = '99999';
-  }
+  // Use the wrapper div's natural positioning instead of fixed
+  // The dropdown is already inside the relative wrapper div
+  drop.style.position = 'absolute';
+  drop.style.top = '100%';
+  drop.style.left = '0';
+  drop.style.right = '0';
+  drop.style.zIndex = '99999';
+  drop.style.marginTop = '2px';
 }
 
 function selectNominatimResult(dataStr, type, el) {
