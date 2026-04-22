@@ -2860,7 +2860,8 @@ function mtsStampNow(field) {
 }
 
 async function confirmMilestoneModal() {
-  if(!pendingMilestone || !currentDetailLoadId) return;
+  try {
+  if(!pendingMilestone || !currentDetailLoadId) { console.warn('confirmMilestoneModal: no pendingMilestone or loadId'); return; }
 
   // Look up milestone by label (pendingMilestone stores the label string)
   const milestoneObj = MILESTONES.find(m => m.label === pendingMilestone) ||
@@ -2961,6 +2962,10 @@ async function confirmMilestoneModal() {
 
   pendingMilestone       = null;
   pendingMilestoneStatus = null;
+  } catch(err) {
+    console.error('confirmMilestoneModal error:', err);
+    toast('Error logging milestone: ' + err.message, 'error');
+  }
 }
 
 
