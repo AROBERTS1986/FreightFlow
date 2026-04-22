@@ -936,7 +936,7 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Pickup Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('origin-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},200)"/>
+            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('origin-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},300)"/>
             <div id="origin-suggestions" class="address-dropdown"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
@@ -948,7 +948,7 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Delivery Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('dest-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},200)"/>
+            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('dest-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},300)"/>
             <div id="dest-suggestions" class="address-dropdown"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
@@ -4948,14 +4948,19 @@ async function showFallbackSuggestions(val, drop, type) {
 }
 
 function positionDrop(drop, type) {
-  // Use the wrapper div's natural positioning instead of fixed
-  // The dropdown is already inside the relative wrapper div
-  drop.style.position = 'absolute';
-  drop.style.top = '100%';
-  drop.style.left = '0';
-  drop.style.right = '0';
-  drop.style.zIndex = '99999';
-  drop.style.marginTop = '2px';
+  // Use fixed positioning based on input rect — avoids modal overflow clipping
+  const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
+  const input = document.getElementById(inputId);
+  if (input) {
+    const rect = input.getBoundingClientRect();
+    drop.style.position = 'fixed';
+    drop.style.top = (rect.bottom + 2) + 'px';
+    drop.style.left = rect.left + 'px';
+    drop.style.width = rect.width + 'px';
+    drop.style.zIndex = '99999';
+    drop.style.maxHeight = '220px';
+    drop.style.overflowY = 'auto';
+  }
 }
 
 function selectNominatimResult(dataStr, type, el) {
