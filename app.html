@@ -936,7 +936,7 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Pickup Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('origin-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},300)"/>
+            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('origin-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}const bd=document.getElementById('body-addr-drop-origin');if(bd)bd.style.display='none';},300)"/>
             <div id="origin-suggestions" class="address-dropdown"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
@@ -948,7 +948,7 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Delivery Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('dest-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}},300)"/>
+            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;" onblur="setTimeout(()=>{const d=document.getElementById('dest-suggestions');if(d){d.innerHTML='';d.classList.remove('open');}const bd=document.getElementById('body-addr-drop-dest');if(bd)bd.style.display='none';},300)"/>
             <div id="dest-suggestions" class="address-dropdown"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
@@ -4832,19 +4832,44 @@ function handleAddressInput(input, type) {
 
 // Fallback when Google Places not configured — show helpful prompt
 async function useNominatimFallback(val, drop, type) {
-  // Real address suggestions via OpenStreetMap Nominatim — no API key needed
-  positionDrop(drop, type);
+  // Real address suggestions via OpenStreetMap Nominatim
+  // KEY FIX: Use a body-level floating dropdown to escape modal overflow clipping
+  const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  // Get or create a body-level dropdown (not inside modal)
+  const bodyDropId = 'body-addr-drop-' + type;
+  let bodyDrop = document.getElementById(bodyDropId);
+  if (!bodyDrop) {
+    bodyDrop = document.createElement('div');
+    bodyDrop.id = bodyDropId;
+    bodyDrop.className = 'address-dropdown';
+    bodyDrop.style.cssText = 'position:fixed;z-index:999999;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,0.5);max-height:240px;overflow-y:auto;display:none;';
+    document.body.appendChild(bodyDrop);
+  }
+
+  // Hide the original in-modal drop
+  drop.innerHTML = '';
+  drop.classList.remove('open');
+
+  // Position the body-level drop under the input
+  const rect = input.getBoundingClientRect();
+  bodyDrop.style.top = (rect.bottom + 4) + 'px';
+  bodyDrop.style.left = rect.left + 'px';
+  bodyDrop.style.width = rect.width + 'px';
+  bodyDrop.style.display = 'none';
+
   try {
     const resp = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&countrycodes=us&format=json&addressdetails=1&limit=6`, {
       headers: { 'Accept-Language': 'en-US', 'User-Agent': 'FreightFlowHQ/1.0' }
     });
     const results = await resp.json();
     if (!results?.length) {
-      drop.innerHTML = '';
-      drop.classList.remove('open');
+      bodyDrop.style.display = 'none';
       return;
     }
-    drop.innerHTML = results.map(r => {
+    bodyDrop.innerHTML = results.map(r => {
       const addr = r.address || {};
       const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
       const city = addr.city || addr.town || addr.village || addr.county || '';
@@ -4854,7 +4879,7 @@ async function useNominatimFallback(val, drop, type) {
       const mainText = street || r.display_name.split(',')[0];
       const subText = [city, stateAbbr, zip].filter(Boolean).join(', ');
       const dataObj = JSON.stringify({street: mainText, city, state: stateAbbr, zip}).replace(/"/g, '&quot;');
-      return `<div class="address-suggestion" onclick="selectNominatimResult('${dataObj}','${type}',this)">
+      return `<div class="address-suggestion" onclick="selectNominatimResult('${dataObj}','${type}',null);document.getElementById('${bodyDropId}').style.display='none';">
         <span class="sug-icon">📍</span>
         <div>
           <div class="sug-main">${mainText}</div>
@@ -4862,10 +4887,19 @@ async function useNominatimFallback(val, drop, type) {
         </div>
       </div>`;
     }).join('');
-    drop.classList.add('open');
+    bodyDrop.style.display = 'block';
+
+    // Hide on outside click
+    const hideOnClick = (e) => {
+      if (!bodyDrop.contains(e.target) && e.target !== input) {
+        bodyDrop.style.display = 'none';
+        document.removeEventListener('click', hideOnClick);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', hideOnClick), 100);
+
   } catch(e) {
-    drop.innerHTML = '';
-    drop.classList.remove('open');
+    bodyDrop.style.display = 'none';
   }
 }
 
@@ -4889,17 +4923,46 @@ function showAddressNotFound(drop, type, val) {
 }
 
 function showGoogleSuggestions(predictions, drop, type) {
-  if (!drop) return;
-  positionDrop(drop, type);
-  drop.innerHTML = predictions.slice(0, 6).map(p => `
-    <div class="address-suggestion" onclick="selectGooglePlace('${p.place_id}','${type}',this)">
+  // Use body-level dropdown to escape modal overflow clipping
+  const inputId = type === 'origin' ? 'load-origin-address' : 'load-dest-address';
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  const bodyDropId = 'body-addr-drop-' + type;
+  let bodyDrop = document.getElementById(bodyDropId);
+  if (!bodyDrop) {
+    bodyDrop = document.createElement('div');
+    bodyDrop.id = bodyDropId;
+    bodyDrop.className = 'address-dropdown';
+    bodyDrop.style.cssText = 'position:fixed;z-index:999999;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,0.5);max-height:240px;overflow-y:auto;display:none;';
+    document.body.appendChild(bodyDrop);
+  }
+
+  // Hide in-modal drop
+  if (drop) { drop.innerHTML = ''; drop.classList.remove('open'); }
+
+  const rect = input.getBoundingClientRect();
+  bodyDrop.style.top = (rect.bottom + 4) + 'px';
+  bodyDrop.style.left = rect.left + 'px';
+  bodyDrop.style.width = rect.width + 'px';
+
+  bodyDrop.innerHTML = predictions.slice(0, 6).map(p => `
+    <div class="address-suggestion" onclick="selectGooglePlace('${p.place_id}','${type}',this);document.getElementById('${bodyDropId}').style.display='none';">
       <span class="sug-icon">📍</span>
       <div>
         <div class="sug-main">${p.structured_formatting?.main_text || p.description}</div>
         <div class="sug-sub">${p.structured_formatting?.secondary_text || ''}</div>
       </div>
     </div>`).join('');
-  drop.classList.add('open');
+  bodyDrop.style.display = 'block';
+
+  const hideOnClick = (e) => {
+    if (!bodyDrop.contains(e.target) && e.target !== input) {
+      bodyDrop.style.display = 'none';
+      document.removeEventListener('click', hideOnClick);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', hideOnClick), 100);
 }
 
 function selectGooglePlace(placeId, type, el) {
