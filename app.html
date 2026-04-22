@@ -2177,10 +2177,121 @@ function renderDashboardQuoteQueue(){
 }
 
 function renderDispatch(){
-  const statuses=['Available','Pending Acceptance','Assigned','In Transit'];
-  const colors={'Available':'var(--accent)','Pending Acceptance':'var(--purple)','Assigned':'var(--amber)','In Transit':'var(--green)','Delivered':'var(--text3)'};
-  const cols=statuses.map(status=>{const loads=allLoads.filter(l=>l.status===status);const cards=!loads.length?`<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No ${status.toLowerCase()} loads</div>`:loads.map(l=>`<div class="load-card ${l.status}" onclick="openLoadDetail('${l.id}')"><div class="load-id">${l.load_number} · ${l.equipment_type||'Dry Van'}${l.hot_load?' <span style="background:#ef4444;color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.5px;">🔥 HOT</span>':''}</div><div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}${l.appointment_required?' <span style="font-size:9px;color:var(--amber);font-weight:700;">📅 APPT</span>':''}</div>${l.status==='In Transit'?'<div style="font-size:10px;font-weight:700;color:#10b981;margin:4px 0 2px;padding:3px 8px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:6px;display:inline-block;">📍 '+(l.last_milestone||'Dispatched')+'</div>':''}</div><div class="load-meta-row"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div><div class="load-meta-row"><span>Rate</span><strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong></div><div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div></div>`).join('');return`<div class="dispatch-col"><div class="dispatch-col-header" style="border-top:3px solid ${colors[status]}">${status} <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span></div>${cards}</div>`;}).join('');
-  const board=document.getElementById('dispatch-board');if(board)board.innerHTML=`<div class="dispatch-grid" style="width:100%;">${cols}</div>`;
+  // Milestone-based dispatch board columns
+  // Each load's column is determined by its operational status + last_milestone
+  const today = new Date().toDateString();
+
+  // Column definitions — each has a label, color, icon, and a filter function
+  const COLS = [
+    {
+      id: 'available',
+      label: 'Available',
+      icon: '📋',
+      color: 'var(--accent)',
+      emptyMsg: 'No available loads',
+      filter: l => l.status === 'Available',
+    },
+    {
+      id: 'pending',
+      label: 'Pending Acceptance',
+      icon: '⏳',
+      color: 'var(--purple)',
+      emptyMsg: 'No loads pending',
+      filter: l => l.status === 'Pending Acceptance',
+    },
+    {
+      id: 'at_shipper',
+      label: 'At Shipper',
+      icon: '🏭',
+      color: 'var(--amber)',
+      emptyMsg: 'No loads at shipper',
+      filter: l => ['Assigned','In Transit'].includes(l.status) &&
+                   ['Dispatched','Arrived at Shipper'].includes(l.last_milestone),
+    },
+    {
+      id: 'in_transit',
+      label: 'In Transit',
+      icon: '🚛',
+      color: 'var(--green)',
+      emptyMsg: 'No loads in transit',
+      filter: l => ['Assigned','In Transit'].includes(l.status) &&
+                   (!l.last_milestone || l.last_milestone === 'Loaded / Departed') &&
+                   !['Dispatched','Arrived at Shipper','Arrived at Receiver','Empty / POD'].includes(l.last_milestone),
+    },
+    {
+      id: 'at_receiver',
+      label: 'At Receiver',
+      icon: '🏢',
+      color: '#f97316',
+      emptyMsg: 'No loads at receiver',
+      filter: l => ['Assigned','In Transit'].includes(l.status) &&
+                   l.last_milestone === 'Arrived at Receiver',
+    },
+    {
+      id: 'empty',
+      label: 'Empty Today',
+      icon: '✅',
+      color: 'var(--text3)',
+      emptyMsg: 'No empties today',
+      // Only show loads emptied TODAY
+      filter: l => l.status === 'Delivered' &&
+                   l.last_milestone === 'Empty / POD' &&
+                   l.updated_at && new Date(l.updated_at).toDateString() === today,
+    },
+  ];
+
+  // Margin color helper for card
+  function cardMarginColor(rate, pay) {
+    if (!rate || !pay) return 'var(--text3)';
+    const m = (rate - pay) / rate * 100;
+    return m >= 18 ? 'var(--green)' : m >= 10 ? 'var(--amber)' : 'var(--red)';
+  }
+  function cardMarginPct(rate, pay) {
+    if (!rate || !pay) return '—';
+    return ((rate - pay) / rate * 100).toFixed(0) + '%';
+  }
+
+  const cols = COLS.map(col => {
+    const loads = allLoads.filter(col.filter);
+
+    const cards = !loads.length
+      ? `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">${col.emptyMsg}</div>`
+      : loads.map(l => {
+          const mc = cardMarginColor(l.customer_rate, l.carrier_pay);
+          const mp = cardMarginPct(l.customer_rate, l.carrier_pay);
+          const milestone = l.last_milestone || '';
+          return `<div class="load-card ${l.status}${l.hot_load?' hot-load':''}" onclick="openLoadDetail('${l.id}')">
+            <div class="load-id">
+              ${l.load_number} · ${l.equipment_type||'Dry Van'}
+              ${l.hot_load?'<span style="background:#ef4444;color:white;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;letter-spacing:0.5px;margin-left:4px;">🔥 HOT</span>':''}
+              ${l.appointment_required?'<span style="background:var(--amber-dim);color:var(--amber);font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;border:1px solid var(--amber);margin-left:4px;">📅</span>':''}
+            </div>
+            <div class="load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div>
+            ${milestone?`<div style="font-size:10px;font-weight:700;color:${col.color};margin:4px 0 2px;padding:2px 8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:6px;display:inline-block;">${col.icon} ${milestone}</div>`:''}
+            <div class="load-meta-row" style="margin-top:6px;"><span>Pickup</span><strong>${fmtDate(l.pickup_date)}</strong></div>
+            <div class="load-meta-row">
+              <span>Rate</span>
+              <strong style="color:var(--green)">${fmt$(l.customer_rate)}</strong>
+            </div>
+            <div class="load-meta-row">
+              <span>Margin</span>
+              <strong style="color:${mc};font-family:'JetBrains Mono',monospace;font-size:11px;">${mp}</strong>
+            </div>
+            <div class="load-carrier">Carrier: <strong style="color:var(--accent2)">${l.carriers?.name||'Unassigned'}</strong></div>
+          </div>`;
+        }).join('');
+
+    return `<div class="dispatch-col">
+      <div class="dispatch-col-header" style="border-top:3px solid ${col.color}">
+        <span>${col.icon} ${col.label}</span>
+        <span style="background:var(--surface3);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;">${loads.length}</span>
+      </div>
+      ${cards}
+    </div>`;
+  }).join('');
+
+  const board = document.getElementById('dispatch-board');
+  if(board) board.innerHTML = `<div class="dispatch-grid" style="width:100%;grid-template-columns:repeat(6,minmax(0,1fr));">${cols}</div>`;
 }
 
 function renderLoads(){renderLoadsTable(allLoads);}
