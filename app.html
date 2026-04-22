@@ -3016,6 +3016,22 @@ async function confirmMilestone() {
   if(pendingMilestone === 'empty') { await loadData(); toast('Load delivered! ⚡ Heading to Invoice Queue','success'); setTimeout(()=>{closeModal('detail');switchPage('invoices');},1500); }
 }
 
+// ── MILESTONE DEFINITIONS ────────────────────────────────────
+const MILESTONES = [
+  {id:'dispatched',   label:'Dispatched',          icon:'📋', color:'var(--accent)',  detention:false,   status:'In Transit'},
+  {id:'arr_shipper',  label:'Arrived at Shipper',  icon:'🏭', color:'var(--amber)',   detention:'start', status:'In Transit'},
+  {id:'loaded',       label:'Loaded / Departed',   icon:'📦', color:'var(--green)',   detention:'stop',  status:'In Transit'},
+  {id:'arr_receiver', label:'Arrived at Receiver', icon:'🏢', color:'#f97316',       detention:'start', status:'In Transit'},
+  {id:'empty',        label:'Empty / POD',          icon:'✅', color:'var(--green)',   detention:'stop',  status:'Delivered'},
+];
+
+let loadMilestones      = {}; // {loadId: [{id, timestamp, notes, departure}]}
+let pendingMilestone    = null;
+let pendingMilestoneStatus = null;
+let detentionInterval = null;
+let detentionStart   = null;
+let detentionPhase   = null;
+
 // ── DETENTION CLOCK ───────────────────────────────────────────
 function startDetentionClock() {
   if(detentionInterval) clearInterval(detentionInterval);
