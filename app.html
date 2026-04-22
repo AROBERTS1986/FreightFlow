@@ -723,6 +723,7 @@ function loadGooglePlaces(apiKey){
         <div class="settings-tab active" onclick="switchSettingsTab('profile')">🏢 Company Profile</div>
         <div class="settings-tab" onclick="switchSettingsTab('branding')">🎨 Branding</div>
         <div class="settings-tab" onclick="switchSettingsTab('permissions')">🔐 Permissions</div>
+        <div class="settings-tab" onclick="switchSettingsTab('portal')">👥 Customer Portal</div>
         <div class="settings-tab" onclick="switchSettingsTab('subscription')">💳 Subscription</div>
       </div>
     </div>
@@ -763,6 +764,92 @@ function loadGooglePlaces(apiKey){
       <div style="overflow-x:auto;"><table class="perm-matrix"><thead><tr><th style="width:40%;">Module</th><th class="center" style="width:20%;">✅ Full Access</th><th class="center" style="width:20%;">👁 View Only</th><th class="center" style="width:20%;">— Hidden</th></tr></thead><tbody id="perm-matrix-body"></tbody></table></div>
       <div class="perm-save-bar"><div><span id="perm-change-count" style="font-weight:600;color:var(--text3);">No changes</span> <span id="perm-change-text">— permissions are up to date</span></div><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="resetPermissions()">Reset to Default</button><button class="btn btn-primary btn-sm" onclick="savePermissions()">Save Permissions →</button></div></div>
     </div>
+    <div id="stab-portal" class="card" style="display:none;border-top-left-radius:0;border-top-right-radius:0;border-top:none;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">👥 Customer Portal Settings</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Control which sections your customers can access in their portal</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="savePortalSettings()">Save Changes</button>
+      </div>
+      <div style="padding:20px;">
+
+        <div style="background:var(--accent-dim);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--accent2);">
+          💡 These settings apply to <strong>all customers</strong> in your portal. Toggle sections on or off to control what your customers and their teams can see.
+        </div>
+
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:12px;">Portal Sections</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:24px;">
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:15px;">📦</div>
+              <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;">
+                <input type="checkbox" id="ps-loads" checked style="opacity:0;width:0;height:0;" onchange="updatePortalToggle(this,'ps-loads')"/>
+                <span id="ps-loads-track" style="position:absolute;inset:0;background:var(--accent);border-radius:11px;transition:0.2s;"></span>
+                <span id="ps-loads-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:0.2s;transform:translateX(18px);"></span>
+              </label>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Load Board</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;">Customers can track active & past shipments</div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:15px;">🧾</div>
+              <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;">
+                <input type="checkbox" id="ps-invoices" checked style="opacity:0;width:0;height:0;" onchange="updatePortalToggle(this,'ps-invoices')"/>
+                <span id="ps-invoices-track" style="position:absolute;inset:0;background:var(--accent);border-radius:11px;transition:0.2s;"></span>
+                <span id="ps-invoices-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:0.2s;transform:translateX(18px);"></span>
+              </label>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Invoicing</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;">Customers can view invoices & amounts due</div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:15px;">📋</div>
+              <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;">
+                <input type="checkbox" id="ps-quotes" checked style="opacity:0;width:0;height:0;" onchange="updatePortalToggle(this,'ps-quotes')"/>
+                <span id="ps-quotes-track" style="position:absolute;inset:0;background:var(--accent);border-radius:11px;transition:0.2s;"></span>
+                <span id="ps-quotes-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:0.2s;transform:translateX(18px);"></span>
+              </label>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Quote Requests</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;">Customers can submit & track quote requests</div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:15px;">🎯</div>
+              <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer;">
+                <input type="checkbox" id="ps-crm" style="opacity:0;width:0;height:0;" onchange="updatePortalToggle(this,'ps-crm')"/>
+                <span id="ps-crm-track" style="position:absolute;inset:0;background:var(--surface3);border-radius:11px;transition:0.2s;"></span>
+                <span id="ps-crm-thumb" style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:white;border-radius:50%;transition:0.2s;transform:translateX(0);"></span>
+              </label>
+            </div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">CRM</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:3px;">Access pipeline & relationship tools</div>
+          </div>
+
+        </div>
+
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:12px;">Portal Branding</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Portal Welcome Message</label>
+            <input type="text" id="ps-welcome" placeholder="Welcome to your shipment portal" style="font-size:13px;"/>
+          </div>
+          <div class="form-group">
+            <label>Support Email (shown in portal)</label>
+            <input type="email" id="ps-support-email" placeholder="dispatch@yourcompany.com" style="font-size:13px;"/>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div id="stab-subscription" class="card" style="display:none;border-top-left-radius:0;border-top-right-radius:0;border-top:none;">
       <div class="card-header"><div class="card-title">Subscription & Billing</div></div>
       <div style="padding:20px;"><div style="background:var(--surface2);border-radius:10px;padding:16px;border:1px solid var(--border);"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><div><div style="font-size:15px;font-weight:700;color:var(--text);">Growth Plan</div><div style="font-size:12px;color:var(--text3);">4–10 users · $129/user/month</div></div><span class="badge badge-green">● Active</span></div><button class="btn btn-ghost btn-sm" style="width:100%;">Upgrade Plan →</button></div></div>
@@ -2147,7 +2234,16 @@ async function loadData(){
     }
     // Cache company settings globally for rate con
     const{data:settingsData}=await db.from('company_settings').select('*').limit(1);if(settingsData?.length){window._companySettings=settingsData[0];// Auto-load Google Places key on boot
-    if(settingsData[0].google_places_key){loadGooglePlaces(settingsData[0].google_places_key);}}
+    if(settingsData[0].google_places_key){loadGooglePlaces(settingsData[0].google_places_key);}
+    // Load portal settings into memory
+    window._portalSettings = {
+      loads:         settingsData[0].portal_loads !== false,
+      invoices:      settingsData[0].portal_invoices !== false,
+      quotes:        settingsData[0].portal_quotes !== false,
+      crm:           settingsData[0].portal_crm === true,
+      welcome:       settingsData[0].portal_welcome || '',
+      support_email: settingsData[0].portal_support_email || '',
+    };}
     await loadQuoteRequests();
     populateSelects();
     renderCurrentPage();
@@ -2727,6 +2823,7 @@ async function saveCustomer(){
     payment_terms:document.getElementById('customer-payment-terms')?.value||'Net 30',
     credit_status:document.getElementById('customer-credit-status')?.value||'Approved',
     credit_notes:document.getElementById('customer-credit-notes')?.value||null,
+
   };
   const{error}=id?await db.from('customers').update(payload).eq('id',id):await db.from('customers').insert(payload);
   if(error){toast('Error: '+error.message,'error');return;}
@@ -2739,6 +2836,7 @@ async function editCustomer(id){
   sv('customer-name',c.name);sv('customer-contact',c.contact_name);sv('customer-email',c.email);sv('customer-phone',c.phone);sv('customer-city',c.city);sv('customer-state',c.state);sv('customer-notes',c.notes);
   [['notif-picked-up',c.notif_picked_up],['notif-in-transit',c.notif_in_transit],['notif-delivered',c.notif_delivered],['notif-pod-ready',c.notif_pod_ready],['notif-detention',c.notif_detention],['notif-late',c.notif_late]].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.checked=!!val;});
   const freqEl=document.getElementById('customer-checkcall-freq');if(freqEl)freqEl.value=c.checkcall_freq||'none';
+
   // Credit fields
   sv('customer-credit-limit', c.credit_limit||'');
   sv('customer-credit-notes', c.credit_notes||'');
@@ -3755,12 +3853,37 @@ function openCustomerPortal(customerId){
   const openInvs=custInvoices.filter(i=>i.status!=='Paid');
   const amtDue=openInvs.reduce((s,i)=>s+(Number(i.amount)||0),0);
   setEl('portal-active',activeLoads);setEl('portal-delivered',delivered);setEl('portal-invoices',openInvs.length);setEl('portal-due',fmt$(amtDue));
+  // Enforce portal access from company-level settings
+  const ps = window._portalSettings || { loads: true, invoices: true, quotes: true };
+  const canSeeLo  = ps.loads !== false;
+  const canSeeInv = ps.invoices !== false;
+  const canSeeQ   = ps.quotes !== false;
+  const canSeeCRM = ps.crm === true;
+
+  // Show/hide portal sections based on access
+  const loadsSection = document.getElementById('portal-loads-list')?.closest('[style*="border-radius:12px"]');
+  const invSection = document.getElementById('portal-invoices-list')?.closest('[style*="border-radius:12px"]');
+  const quotesSection = document.getElementById('portal-quotes-list')?.closest('[style*="border-radius:12px"]');
+  if(loadsSection) loadsSection.style.display = canSeeLo ? 'block' : 'none';
+  if(invSection) invSection.style.display = canSeeInv ? 'block' : 'none';
+  if(quotesSection) quotesSection.style.display = canSeeQ ? 'block' : 'none';
+
+  // Also update KPI cards visibility
+  const kpiActive = document.getElementById('portal-active')?.closest('[style*="border-top:3px solid #3b82f6"]');
+  const kpiDel = document.getElementById('portal-delivered')?.closest('[style*="border-top:3px solid #10b981"]');
+  const kpiInv = document.getElementById('portal-invoices')?.closest('[style*="border-top:3px solid #f59e0b"]');
+  const kpiDue = document.getElementById('portal-due')?.closest('[style*="border-top:3px solid #8b5cf6"]');
+  if(kpiActive) kpiActive.style.display = canSeeLo ? '' : 'none';
+  if(kpiDel) kpiDel.style.display = canSeeLo ? '' : 'none';
+  if(kpiInv) kpiInv.style.display = canSeeInv ? '' : 'none';
+  if(kpiDue) kpiDue.style.display = canSeeInv ? '' : 'none';
+
   const loadsList=document.getElementById('portal-loads-list');
   if(loadsList){if(!custLoads.length){loadsList.innerHTML='<p style="color:#64748b;font-size:13px;">No loads yet.</p>';}else{loadsList.innerHTML=custLoads.map(l=>{const statusClass={'Available':'available','Assigned':'assigned','In Transit':'transit','Delivered':'delivered'}[l.status]||'available';return`<div class="portal-load-card"><div><div class="portal-load-route">${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}</div><div class="portal-load-meta">${l.load_number} · ${l.equipment_type||'—'} · Pickup: ${fmtDate(l.pickup_date)}</div></div><span class="portal-status ${statusClass}">${l.status}</span></div>`;}).join('');}}
-  const invList=document.getElementById('portal-invoices-list');
+  const invList=canSeeInv ? document.getElementById('portal-invoices-list') : null;
   if(invList){if(!custInvoices.length){invList.innerHTML='<p style="color:#64748b;font-size:13px;">No invoices yet.</p>';}else{invList.innerHTML=`<table style="width:100%;border-collapse:collapse;">${custInvoices.map(i=>`<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 0;font-size:13px;font-weight:600;color:#1B2A4A;">${i.invoice_number}</td><td style="font-size:12px;color:#64748b;">${fmtDate(i.due_date)}</td><td style="font-size:14px;font-weight:700;color:#059669;">${fmt$(i.amount)}</td><td><span class="portal-status ${i.status==='Paid'?'delivered':i.status==='Overdue'?'transit':'assigned'}">${i.status}</span></td></tr>`).join('')}</table>`;}}
   const custQuotes=allQuoteRequests.filter(q=>q.customer_id===customer.id);
-  const quotesList=document.getElementById('portal-quotes-list');
+  const quotesList=canSeeQ ? document.getElementById('portal-quotes-list') : null;
   if(quotesList){if(!custQuotes.length){quotesList.innerHTML='<div style="text-align:center;color:#64748b;font-size:13px;padding:12px;">No quote requests yet</div>';}else{quotesList.innerHTML=custQuotes.map(q=>`<div class="quote-card"><div class="quote-card-header"><div><div class="quote-card-route">${q.origin_city||'?'}, ${q.origin_state||''} → ${q.destination_city||'?'}, ${q.destination_state||''}</div><div class="quote-card-meta">${q.equipment_type||'—'} · ${fmtDate(q.pickup_date)}</div></div><span class="portal-status ${q.status==='Pending'?'assigned':q.status==='Quoted'?'available':q.status==='Approved'?'transit':'delivered'}">${q.status}</span></div>${q.status==='Quoted'?`<div style="margin-top:8px;padding:8px;background:#f0fdf4;border-radius:8px;font-size:13px;color:#059669;font-weight:600;">Quoted: ${fmt$(q.quoted_rate)}</div>`:''}</div>`).join('');}}
   document.getElementById('portal-quote-form').style.display='none';
   document.getElementById('customer-portal').classList.add('visible');
@@ -3897,7 +4020,7 @@ function renderSettings(){
   });
 }
 function switchSettingsTab(tab){
-  ['profile','branding','permissions','subscription'].forEach(t=>{const el=document.getElementById('stab-'+t);if(el)el.style.display=t===tab?'block':'none';document.querySelectorAll('.settings-tab').forEach((btn,i)=>btn.classList.toggle('active',['profile','branding','permissions','subscription'][i]===tab));});
+  ['profile','branding','permissions','portal','subscription'].forEach(t=>{const el=document.getElementById('stab-'+t);if(el)el.style.display=t===tab?'block':'none';document.querySelectorAll('.settings-tab').forEach((btn,i)=>btn.classList.toggle('active',['profile','branding','permissions','subscription'][i]===tab));});
   if(tab==='permissions'){initRolePerms();renderPermMatrix();}
 }
 // saveCompanySettings — see enhanced version below
@@ -5800,6 +5923,84 @@ async function tryLoadGooglePlaces() {
     loadGooglePlaces(s.google_places_key);
   }
 }
+
+// ── PORTAL SETTINGS ──────────────────────────────────────────
+// In-memory portal settings (loaded from company_settings)
+window._portalSettings = {
+  loads: true,
+  invoices: true,
+  quotes: true,
+  crm: false,
+  welcome: '',
+  support_email: '',
+};
+
+function updatePortalToggle(checkbox, prefix) {
+  const isOn = checkbox.checked;
+  const track = document.getElementById(prefix + '-track');
+  const thumb = document.getElementById(prefix + '-thumb');
+  if(track) track.style.background = isOn ? 'var(--accent)' : 'var(--surface3)';
+  if(thumb) thumb.style.transform = isOn ? 'translateX(18px)' : 'translateX(0)';
+}
+
+function loadPortalSettings() {
+  const s = window._companySettings || {};
+  const ps = {
+    loads:         s.portal_loads !== false,
+    invoices:      s.portal_invoices !== false,
+    quotes:        s.portal_quotes !== false,
+    crm:           s.portal_crm === true,
+    welcome:       s.portal_welcome || '',
+    support_email: s.portal_support_email || '',
+  };
+  window._portalSettings = ps;
+
+  // Populate UI
+  ['loads','invoices','quotes','crm'].forEach(key => {
+    const cb = document.getElementById('ps-' + key);
+    if(cb) { cb.checked = ps[key]; updatePortalToggle(cb, 'ps-' + key); }
+  });
+  const w = document.getElementById('ps-welcome'); if(w) w.value = ps.welcome;
+  const se = document.getElementById('ps-support-email'); if(se) se.value = ps.support_email;
+}
+
+async function savePortalSettings() {
+  const payload = {
+    portal_loads:         document.getElementById('ps-loads')?.checked !== false,
+    portal_invoices:      document.getElementById('ps-invoices')?.checked !== false,
+    portal_quotes:        document.getElementById('ps-quotes')?.checked !== false,
+    portal_crm:           document.getElementById('ps-crm')?.checked === true,
+    portal_welcome:       document.getElementById('ps-welcome')?.value?.trim() || null,
+    portal_support_email: document.getElementById('ps-support-email')?.value?.trim() || null,
+  };
+  // Merge into company settings
+  Object.assign(window._portalSettings, {
+    loads:   payload.portal_loads,
+    invoices: payload.portal_invoices,
+    quotes:  payload.portal_quotes,
+    crm:     payload.portal_crm,
+    welcome: payload.portal_welcome || '',
+    support_email: payload.portal_support_email || '',
+  });
+  try {
+    const existing = await db.from('company_settings').select('id').limit(1);
+    const { error } = existing.data?.length
+      ? await db.from('company_settings').update(payload).eq('id', existing.data[0].id)
+      : await db.from('company_settings').insert({...payload, company_id: currentCompanyId});
+    if(error) { toast('Error saving: ' + error.message, 'error'); return; }
+    if(window._companySettings) Object.assign(window._companySettings, payload);
+    toast('Portal settings saved! ✅', 'success');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// Also load portal settings when settings tab opens
+const _origSwitchSettingsTab = switchSettingsTab;
+switchSettingsTab = function(tab) {
+  _origSwitchSettingsTab(tab);
+  if(tab === 'portal') loadPortalSettings();
+};
 
 // Also add Google Places key to Company Settings save/load
 async function saveCompanySettings() {
