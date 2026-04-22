@@ -730,6 +730,11 @@ function loadGooglePlaces(apiKey){
           <div class="form-group"><label>State</label><input type="text" id="s-state" placeholder="TX" maxlength="2"/></div>
           <div class="form-group"><label>Zip</label><input type="text" id="s-zip" placeholder="75201"/></div>
         </div>
+        <div class="form-group full" style="background:var(--accent-dim);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px 14px;">
+            <label style="color:var(--accent2);">🗺️ Google Places API Key <span style="font-weight:400;font-size:10px;color:var(--text3);">(enables address autocomplete on loads)</span></label>
+            <input type="text" id="s-google-places" placeholder="AIza… get yours free at console.cloud.google.com → Enable Places API → Create Key"/>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Paste your key and click Save — address autocomplete activates immediately on all load forms.</div>
+          </div>
         <div class="form-group"><label>Standard T&C (Rate Confirmations)</label><textarea id="s-terms" placeholder="Enter your standard rate confirmation terms…" style="min-height:120px;"></textarea></div>
       </div>
     </div>
@@ -1069,6 +1074,43 @@ function loadGooglePlaces(apiKey){
         <div class="form-group"><label>City</label><input type="text" id="customer-city" placeholder="Dallas"/></div>
         <div class="form-group"><label>State</label><input type="text" id="customer-state" placeholder="TX" maxlength="2"/></div>
         <div class="form-group full"><label>Notes</label><textarea id="customer-notes" placeholder="Any additional notes…"></textarea></div>
+
+        <div class="form-group full" style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border);margin-top:4px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:10px;">📬 Customer Email Notifications <span style="font-weight:400;color:var(--text3);">(all off by default)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--text2);letter-spacing:0;font-weight:400;">
+              <input type="checkbox" id="cust-notif-pickedup" style="width:auto;accent-color:var(--accent);cursor:pointer;"/> Picked Up
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--text2);letter-spacing:0;font-weight:400;">
+              <input type="checkbox" id="cust-notif-intransit" style="width:auto;accent-color:var(--accent);cursor:pointer;"/> In Transit Check-in
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--text2);letter-spacing:0;font-weight:400;">
+              <input type="checkbox" id="cust-notif-delivered" style="width:auto;accent-color:var(--accent);cursor:pointer;"/> Delivered
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--text2);letter-spacing:0;font-weight:400;">
+              <input type="checkbox" id="cust-notif-pod" style="width:auto;accent-color:var(--accent);cursor:pointer;"/> POD Ready
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--text2);letter-spacing:0;font-weight:400;">
+              <input type="checkbox" id="cust-notif-detention" style="width:auto;accent-color:var(--accent);cursor:pointer;"/> Detention Triggered
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--red);letter-spacing:0;font-weight:400;">
+              <input type="checkbox" id="cust-notif-late" style="width:auto;accent-color:var(--red);cursor:pointer;"/> Late Pickup/Delivery Alert
+            </label>
+          </div>
+          <div style="padding-top:10px;border-top:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:6px;">Check Call Frequency</div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);">
+              Alert broker if no check call in
+              <select id="cust-checkcall-freq" style="width:110px;font-size:12px;padding:5px 8px;">
+                <option value="0">Off</option>
+                <option value="1">1 hour</option>
+                <option value="2" selected>2 hours</option>
+                <option value="4">4 hours</option>
+                <option value="8">8 hours</option>
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer →</button></div>
@@ -2426,7 +2468,22 @@ async function deleteCarrier(id){if(!confirm('Delete this carrier?'))return;awai
 // ── SAVE CUSTOMER ─────────────────────────────────────────────
 async function saveCustomer(){
   const id=document.getElementById('customer-id')?.value;
-  const payload={name:document.getElementById('customer-name')?.value,contact_name:document.getElementById('customer-contact')?.value,email:document.getElementById('customer-email')?.value,phone:document.getElementById('customer-phone')?.value,city:document.getElementById('customer-city')?.value,state:document.getElementById('customer-state')?.value?.toUpperCase(),notes:document.getElementById('customer-notes')?.value};
+  const payload={
+    name:document.getElementById('customer-name')?.value,
+    contact_name:document.getElementById('customer-contact')?.value,
+    email:document.getElementById('customer-email')?.value,
+    phone:document.getElementById('customer-phone')?.value,
+    city:document.getElementById('customer-city')?.value,
+    state:document.getElementById('customer-state')?.value?.toUpperCase(),
+    notes:document.getElementById('customer-notes')?.value,
+    notif_picked_up:document.getElementById('cust-notif-pickedup')?.checked||false,
+    notif_in_transit:document.getElementById('cust-notif-intransit')?.checked||false,
+    notif_delivered:document.getElementById('cust-notif-delivered')?.checked||false,
+    notif_pod:document.getElementById('cust-notif-pod')?.checked||false,
+    notif_detention:document.getElementById('cust-notif-detention')?.checked||false,
+    notif_late:document.getElementById('cust-notif-late')?.checked||false,
+    checkcall_freq_hours:parseInt(document.getElementById('cust-checkcall-freq')?.value)||0,
+  };
   const{error}=id?await db.from('customers').update(payload).eq('id',id):await db.from('customers').insert(payload);
   if(error){toast('Error: '+error.message,'error');return;}
   toast(id?'Customer updated!':'Customer added!','success');closeModal('customer');await loadData();
@@ -2436,6 +2493,8 @@ async function editCustomer(id){
   document.getElementById('customer-id').value=c.id;document.getElementById('customer-modal-title').textContent=`Edit ${c.name}`;
   const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
   sv('customer-name',c.name);sv('customer-contact',c.contact_name);sv('customer-email',c.email);sv('customer-phone',c.phone);sv('customer-city',c.city);sv('customer-state',c.state);sv('customer-notes',c.notes);
+  [['cust-notif-pickedup',c.notif_picked_up],['cust-notif-intransit',c.notif_in_transit],['cust-notif-delivered',c.notif_delivered],['cust-notif-pod',c.notif_pod],['cust-notif-detention',c.notif_detention],['cust-notif-late',c.notif_late]].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.checked=!!val;});
+  const freqEl=document.getElementById('cust-checkcall-freq');if(freqEl)freqEl.value=c.checkcall_freq_hours||0;
   openModal('customer');
 }
 async function deleteCustomer(id){if(!confirm('Delete this customer?'))return;await db.from('customers').delete().eq('id',id);toast('Customer deleted','info');await loadData();}
@@ -4928,15 +4987,29 @@ async function tryLoadGooglePlaces() {
 }
 
 // Also add Google Places key to Company Settings save/load
-const _origSaveSettings = saveCompanySettings;
 async function saveCompanySettings() {
-  // Grab the Google key before calling original
-  const gKey = document.getElementById('s-google-places')?.value;
-  if (gKey && window._companySettings) {
-    window._companySettings.google_places_key = gKey;
-  }
-  await _origSaveSettings();
-  if (gKey) loadGooglePlaces(gKey);
+  const gKey = document.getElementById('s-google-places')?.value?.trim()||null;
+  const payload = {
+    google_places_key: gKey,
+    company_name: document.getElementById('s-company-name')?.value||null,
+    mc_number: document.getElementById('s-mc')?.value||null,
+    dot_number: document.getElementById('s-dot')?.value||null,
+    dispatch_email: document.getElementById('s-email')?.value||null,
+    phone: document.getElementById('s-phone')?.value||null,
+    city: document.getElementById('s-city')?.value||null,
+    state: document.getElementById('s-state')?.value||null,
+    zip: document.getElementById('s-zip')?.value||null,
+    rate_con_terms: document.getElementById('s-terms')?.value||null,
+  };
+  const existing = await db.from('company_settings').select('id').limit(1);
+  const { error } = existing.data?.length
+    ? await db.from('company_settings').update(payload).eq('id', existing.data[0].id)
+    : await db.from('company_settings').insert(payload);
+  if(error){toast('Error saving: '+error.message,'error');return;}
+  if(!window._companySettings) window._companySettings = {};
+  Object.assign(window._companySettings, payload);
+  if(gKey){ loadGooglePlaces(gKey); toast('Settings saved! Google Places activated ✅','success'); }
+  else toast('Settings saved! ✅','success');
 }
 
 
