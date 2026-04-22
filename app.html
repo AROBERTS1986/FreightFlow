@@ -1281,20 +1281,12 @@ function loadGooglePlaces(apiKey){
           </div>
         </div>
       </div>
-      <!-- DETENTION TIMER -->
-      <div id="detention-section" style="margin-bottom:16px;">
-        <div class="detention-timer">
-          <div>
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:4px;">⏱️ Detention Clock</div>
-            <div id="detention-time" class="detention-time">00:00:00</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px;" id="detention-started">Not started</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-            <button class="btn btn-primary btn-sm" onclick="startDetention()" id="detention-start-btn">▶ Start</button>
-            <button class="btn btn-danger btn-sm" onclick="stopDetention()" id="detention-stop-btn" style="display:none;">⏹ Stop</button>
-            <div style="font-size:10px;color:var(--text3);">Free time: 2 hrs</div>
-          </div>
-        </div>
+      <!-- DETENTION TIMER (hidden — auto-tracked via milestones) -->
+      <div id="detention-section" style="display:none;">
+        <div id="detention-time" style="display:none;">00:00:00</div>
+        <div id="detention-started" style="display:none;">Not started</div>
+        <button id="detention-start-btn" style="display:none;" onclick="startDetention()"></button>
+        <button id="detention-stop-btn" style="display:none;" onclick="stopDetention()"></button>
       </div>
       <!-- DOCUMENTS -->
       <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
@@ -1325,7 +1317,7 @@ function loadGooglePlaces(apiKey){
       <div style="background:var(--surface2);border-radius:10px;padding:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
           <div style="font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">📍 Load Milestones</div>
-          <div id="detention-display" style="display:none;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;padding:4px 10px;border-radius:8px;background:var(--green-dim);color:var(--green);">⏱ 0:00:00</div>
+          <div id="detention-display" style="display:none;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,0.3);">⏱ 0:00:00</div>
         </div>
         <div id="milestone-timeline" style="display:flex;flex-direction:column;gap:0;"></div>
 
@@ -2540,7 +2532,7 @@ function renderQuoteCard(q){
       </div>
     </div>`:''}
     ${isQuoted?`<div class="quote-respond-bar"><div><div style="font-size:12px;color:var(--text3);margin-bottom:4px;">Quoted Rate</div><div style="font-size:18px;font-weight:700;color:var(--green);">${fmt$(q.quoted_rate)}</div>${q.broker_note?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${q.broker_note}</div>`:''}</div><div style="font-size:12px;color:var(--text3);text-align:right;"><div>Waiting on customer response</div><div style="margin-top:2px;">Sent ${fmtDate(q.quoted_at)}</div></div></div>`:''}
-    ${isApproved?`<div class="quote-respond-bar"><div><span style="color:var(--green);font-weight:700;">✅ Customer Accepted</span><div style="font-size:11px;color:var(--text3);margin-top:2px;">Rate: ${fmt$(q.quoted_rate)}${q.quoted_carrier_pay?' · Carrier Pay: '+fmt$(q.quoted_carrier_pay):''}</div></div><button class="btn btn-primary btn-sm" onclick="convertQuoteToLoad('${q.id}')">Convert to Load →</button></div>`:''}
+    ${isApproved?`<div class="quote-respond-bar"><div><span style="color:var(--green);font-weight:700;">✅ Customer Accepted</span><div style="font-size:11px;color:var(--text3);margin-top:2px;">Agreed Rate: ${fmt$(q.quoted_rate)}</div></div><button class="btn btn-primary btn-sm" onclick="convertQuoteToLoad('${q.id}')">Convert to Load →</button></div>`:''}
     ${q.status==='Customer Declined'?`<div style="padding:12px 20px;background:var(--red-dim);border-top:1px solid var(--border);"><div style="font-size:12px;color:var(--red);">❌ Customer declined${q.declined_reason?': '+q.declined_reason:'.'}</div></div>`:''}
     ${q.status==='Declined'?`<div style="padding:12px 20px;background:var(--surface2);border-top:1px solid var(--border);"><div style="font-size:12px;color:var(--text3);">Declined${q.declined_reason?': '+q.declined_reason:'.'}</div></div>`:''}
   </div>`;
@@ -3238,35 +3230,41 @@ function updateDetentionDisplay() {
     }
   }
 
-  // At 2 hour mark — trigger card pulse + alert banner
-  const milestoneCard = document.querySelector('#modal-detail .detention-alert-card') ||
-                        document.getElementById('milestone-timeline')?.closest('[style*="background:var(--surface2)"]');
+  const totalMins = Math.floor(elapsed / 60);
+  const overMins = Math.max(0, totalMins - 120);
+  const locationLabel = detentionPhase === 'shipper' ? 'shipper' : 'receiver';
+  const milestoneSection = document.getElementById('milestone-timeline')?.parentElement;
   const alertBanner = document.getElementById('checkcall-alert');
   const alertTitle = document.getElementById('checkcall-alert-title');
   const alertSub = document.getElementById('checkcall-alert-sub');
 
-  // Find the milestone section card
-  const milestoneSection = document.getElementById('milestone-timeline')?.parentElement;
-
-  const totalMins = Math.floor(elapsed / 60);
-  const overMins = Math.max(0, totalMins - 120);
-  const locationLabel = detentionPhase === 'shipper' ? 'shipper' : 'receiver';
-
   if(elapsed >= 7200) {
-    // Add pulsing red border to milestone card
+    // 2hrs up — detention is running
+    // 1. Pulse the milestone section in the detail modal
     if(milestoneSection) milestoneSection.classList.add('detention-alert-card');
-    // Show alert banner
+    // 2. Show check call alert banner
     if(alertBanner) alertBanner.classList.add('visible');
     if(alertTitle) alertTitle.textContent = `🔴 Check Call Needed — ${overMins} min${overMins!==1?'s':''} of billable detention at ${locationLabel}`;
-    if(alertSub) alertSub.textContent = `Driver has been at ${locationLabel} for ${h}h ${m}m — free time expired, detention is running at $75/hr`;
-    // Flash the load card on dispatch board too if visible
-    const loadCard = document.querySelector(`.load-card[onclick*="${currentDetailLoadId}"]`);
-    if(loadCard) loadCard.style.outline = '2px solid var(--red)';
+    if(alertSub) alertSub.textContent = `Driver at ${locationLabel} for ${h}h ${m}m — free time expired, detention running at $75/hr`;
+    // 3. Turn ALL dispatch board cards for this load red
+    document.querySelectorAll('.load-card').forEach(card => {
+      if(card.getAttribute('onclick')?.includes(currentDetailLoadId)) {
+        card.style.borderColor = 'var(--red)';
+        card.style.boxShadow = '0 0 0 2px var(--red), 0 0 12px rgba(239,68,68,0.4)';
+      }
+    });
+    // 4. Update the subtle timer badge color
+    const display = document.getElementById('detention-display');
+    if(display) { display.style.background = 'var(--red-dim)'; display.style.color = 'var(--red)'; }
   } else {
     if(milestoneSection) milestoneSection.classList.remove('detention-alert-card');
     if(alertBanner) alertBanner.classList.remove('visible');
-    const loadCard = document.querySelector(`.load-card[onclick*="${currentDetailLoadId}"]`);
-    if(loadCard) loadCard.style.outline = '';
+    document.querySelectorAll('.load-card').forEach(card => {
+      if(card.getAttribute('onclick')?.includes(currentDetailLoadId)) {
+        card.style.borderColor = '';
+        card.style.boxShadow = '';
+      }
+    });
   }
 }
 
