@@ -2773,6 +2773,20 @@ async function updateLoadStatus(newStatus){
   await loadData();
 }
 
+// Highlight the correct status button based on current status + last_milestone
+function highlightMilestoneStatusBtn(status, milestone) {
+  document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active-status'));
+  let targetId = null;
+  if(status === 'Available')                                    targetId = 'msb-available';
+  else if(status === 'Pending Acceptance')                      targetId = 'msb-pending';
+  else if(milestone === 'Empty / POD' || status==='Delivered')  targetId = 'msb-empty';
+  else if(milestone === 'Arrived at Receiver')                  targetId = 'msb-at-receiver';
+  else if(milestone === 'Loaded / Departed')                    targetId = 'msb-in-transit';
+  else if(milestone === 'Arrived at Shipper' || milestone === 'Dispatched') targetId = 'msb-at-shipper';
+  else if(status === 'In Transit' || status === 'Assigned')     targetId = 'msb-in-transit';
+  if(targetId) document.getElementById(targetId)?.classList.add('active-status');
+}
+
 // Milestone-aware status setter — opens the timestamp modal for operational milestones
 async function setMilestoneStatus(newStatus, milestone) {
   if(!currentDetailLoadId) return;
