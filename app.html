@@ -1987,6 +1987,51 @@ function loadGooglePlaces(apiKey){
   </div>
 </div>
 
+<!-- MODAL: Milestone Timestamp -->
+<div class="modal-overlay" id="modal-milestone-ts" style="z-index:800;">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header" id="mts-header">
+      <div>
+        <div class="modal-title" id="mts-title">Log Milestone</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;" id="mts-subtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeMilestoneModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+
+      <!-- Arrival -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);display:block;margin-bottom:6px;">🟢 Arrival Time</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="datetime-local" id="mts-arrival" style="flex:1;font-size:13px;padding:8px 12px;"/>
+          <button class="btn btn-ghost btn-sm" onclick="mtsStampNow('arrival')" style="white-space:nowrap;color:var(--accent2);border-color:var(--accent2);font-weight:600;">⏱ Timestamp</button>
+        </div>
+      </div>
+
+      <!-- Departure -->
+      <div style="margin-bottom:16px;" id="mts-departure-row">
+        <label id="mts-dep-label" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);display:block;margin-bottom:6px;">🔴 Departure Time <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0;">(optional — fill in when departing)</span></label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="datetime-local" id="mts-departure" style="flex:1;font-size:13px;padding:8px 12px;"/>
+          <button class="btn btn-ghost btn-sm" onclick="mtsStampNow('departure')" style="white-space:nowrap;color:var(--amber);border-color:var(--amber);font-weight:600;">⏱ Timestamp</button>
+        </div>
+        <div id="mts-dep-required" style="display:none;font-size:11px;color:var(--red);margin-top:4px;font-weight:600;">⚠️ Required — needed to calculate detention time</div>
+      </div>
+
+      <!-- Notes -->
+      <div style="margin-bottom:4px;">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);display:block;margin-bottom:6px;">📝 Notes <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+        <textarea id="mts-notes" placeholder="ETA update, dock number, contact name, issues…" style="width:100%;min-height:60px;font-size:13px;resize:vertical;"></textarea>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeMilestoneModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmMilestoneModal()">Confirm →</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
 <iframe id="print-frame" style="display:none;"></iframe>
@@ -2717,44 +2762,173 @@ async function updateLoadStatus(newStatus){
   await loadData();
 }
 
-// New milestone-aware status setter — updates both DB status AND last_milestone
+// Milestone-aware status setter — opens the timestamp modal for operational milestones
 async function setMilestoneStatus(newStatus, milestone) {
   if(!currentDetailLoadId) return;
   const l = allLoads.find(x => x.id === currentDetailLoadId);
 
-  // Block In Transit/At Shipper/At Receiver if no carrier assigned
-  if(newStatus === 'In Transit' && (!l || !l.carrier_id)) {
+  // Block operational milestones if no carrier
+  if(milestone && newStatus === 'In Transit' && (!l || !l.carrier_id)) {
     toast('⚠️ Assign a carrier first via Tender to Carrier before moving to dispatch milestones.', 'error');
     return;
   }
 
-  // Show timestamp form for operational milestones (not Available/Pending)
-  if(milestone) {
-    pendingMilestone = milestone;
-    pendingMilestoneStatus = newStatus; // store for confirmMilestoneStatus
-    const form = document.getElementById('milestone-note-form');
-    const lbl = document.getElementById('milestone-note-label');
-    const input = document.getElementById('milestone-note-input');
-    const ts = document.getElementById('milestone-timestamp');
-    if(lbl) lbl.textContent = `Log: ${milestone}`;
-    if(input) input.value = '';
-    if(ts) {
-      const now = new Date();
-      const pad = n => String(n).padStart(2,'0');
-      ts.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    }
-    if(form) { form.style.display = 'block'; form.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  // Simple status-only update (Available, Pending) — no modal needed
+  if(!milestone) {
+    const {error} = await db.from('loads').update({status: newStatus}).eq('id', currentDetailLoadId);
+    if(error) { toast('Error: '+error.message, 'error'); return; }
+    highlightMilestoneStatusBtn(newStatus, null);
+    toast('Status → ' + newStatus, 'success');
+    await loadData();
     return;
   }
 
-  // Simple status-only update (Available, Pending)
-  const payload = {status: newStatus};
-  const {error} = await db.from('loads').update(payload).eq('id', currentDetailLoadId);
-  if(error) { toast('Error: '+error.message, 'error'); return; }
+  // Operational milestone — open the timestamp modal
+  pendingMilestone = milestone;
+  pendingMilestoneStatus = newStatus;
 
-  highlightMilestoneStatusBtn(newStatus, null);
-  toast('Status → ' + newStatus, 'success');
-  await loadData();
+  // Set modal header
+  const icons = {'Arrived at Shipper':'🏭','Loaded / Departed':'🚛','Arrived at Receiver':'🏢','Empty / POD':'✅','Dispatched':'📋'};
+  const icon = icons[milestone] || '📍';
+  const titleEl = document.getElementById('mts-title');
+  const subEl = document.getElementById('mts-subtitle');
+  if(titleEl) titleEl.textContent = `${icon} ${milestone}`;
+  if(subEl) subEl.textContent = `${l.load_number} · ${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}`;
+
+  // Departure field logic:
+  // - At Shipper / At Receiver: show as OPTIONAL (driver is arriving, may not have left yet)
+  // - In Transit (from shipper) / Empty (from receiver): show as REQUIRED for detention tracking
+  // - Other milestones: hide departure
+  const depRow = document.getElementById('mts-departure-row');
+  const depLabel = document.getElementById('mts-dep-label');
+  const depRequired = document.getElementById('mts-dep-required');
+
+  const isArrival = ['Arrived at Shipper','Arrived at Receiver'].includes(milestone);
+  const isDeparture = ['Loaded / Departed','Empty / POD'].includes(milestone);
+
+  if(depRow) depRow.style.display = (isArrival || isDeparture) ? 'block' : 'none';
+
+  if(isDeparture) {
+    // Departure is REQUIRED — this is what stops detention clock
+    if(depLabel) depLabel.innerHTML = '🔴 Departure Time &nbsp;<span style="color:var(--red);font-weight:700;font-size:11px;">* Required for detention tracking</span>';
+    if(depRequired) depRequired.style.display = 'block';
+    // Pre-fill departure with now as a starting point
+    mtsStampNow('departure');
+  } else {
+    // Arrival milestone — driver is just showing up, departure is optional for now
+    if(depLabel) depLabel.innerHTML = '🔴 Departure Time &nbsp;<span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0;">(optional — log when driver departs)</span>';
+    if(depRequired) depRequired.style.display = 'none';
+    const dep = document.getElementById('mts-departure'); if(dep) dep.value = '';
+  }
+
+  // Pre-fill arrival with now, clear departure and notes
+  mtsStampNow('arrival');
+  const dep = document.getElementById('mts-departure'); if(dep) dep.value = '';
+  const notes = document.getElementById('mts-notes'); if(notes) notes.value = '';
+
+  // Open the modal
+  document.getElementById('modal-milestone-ts')?.classList.add('open');
+}
+
+function closeMilestoneModal() {
+  document.getElementById('modal-milestone-ts')?.classList.remove('open');
+  pendingMilestone = null;
+  pendingMilestoneStatus = null;
+}
+
+function mtsStampNow(field) {
+  const el = document.getElementById('mts-' + field);
+  if(!el) return;
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  el.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // Flash green
+  el.style.borderColor = 'var(--green)';
+  el.style.boxShadow = '0 0 0 2px rgba(16,185,129,0.2)';
+  setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 800);
+}
+
+async function confirmMilestoneModal() {
+  if(!pendingMilestone || !currentDetailLoadId) return;
+
+  const arrivalVal = document.getElementById('mts-arrival')?.value;
+  const departureVal = document.getElementById('mts-departure')?.value;
+  const notes = document.getElementById('mts-notes')?.value?.trim() || '';
+
+  if(!arrivalVal) { toast('Please set an arrival time', 'error'); return; }
+
+  // Departure required for Loaded/Departed and Empty/POD (detention tracking)
+  const requiresDeparture = ['Loaded / Departed','Empty / POD'].includes(pendingMilestone) ||
+    (milestone && ['Loaded / Departed','Empty / POD'].includes(milestone.label));
+  if(requiresDeparture && !departureVal) {
+    toast('⚠️ Departure time is required — this stops the detention clock', 'error');
+    const depEl = document.getElementById('mts-departure');
+    if(depEl) { depEl.style.borderColor = 'var(--red)'; depEl.style.boxShadow = '0 0 0 2px rgba(239,68,68,0.25)'; setTimeout(()=>{ depEl.style.borderColor=''; depEl.style.boxShadow=''; }, 2000); }
+    return;
+  }
+
+  const arrivalTs = new Date(arrivalVal).toISOString();
+  const departureTs = departureVal ? new Date(departureVal).toISOString() : null;
+
+  const milestone = MILESTONES.find(m => m.id === pendingMilestone) ||
+                    { id: pendingMilestone, label: pendingMilestone, detention: false };
+
+  // Build note string with times
+  let noteStr = notes;
+  if(departureTs) {
+    const depStr = new Date(departureTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    noteStr = noteStr ? `Departed: ${depStr} — ${noteStr}` : `Departed: ${depStr}`;
+  }
+
+  // Add to in-memory milestones
+  if(!loadMilestones[currentDetailLoadId]) loadMilestones[currentDetailLoadId] = [];
+  const entry = { id: pendingMilestone, timestamp: arrivalTs, notes: noteStr, departure: departureTs };
+  loadMilestones[currentDetailLoadId].push(entry);
+
+  // Handle detention clock
+  if(milestone.detention === 'start') {
+    detentionStart = new Date(arrivalTs);
+    detentionPhase = pendingMilestone === 'arr_shipper' ? 'shipper' : 'receiver';
+    startDetentionClock();
+  } else if(milestone.detention === 'stop' && detentionStart) {
+    stopDetentionClock(true);
+  }
+
+  // Update DB status + last_milestone
+  const newStatus = pendingMilestoneStatus || 'In Transit';
+  try {
+    await db.from('loads').update({ status: newStatus, last_milestone: milestone.label }).eq('id', currentDetailLoadId);
+  } catch(e) {}
+
+  // Log check call
+  try {
+    await db.from('check_calls').insert({
+      load_id: currentDetailLoadId,
+      status: pendingMilestone,
+      notes: noteStr || null,
+      contact: milestone.label,
+    });
+  } catch(e) {}
+
+  // Update in-memory
+  const liveLoad = allLoads.find(x => x.id === currentDetailLoadId);
+  if(liveLoad) { liveLoad.status = newStatus; liveLoad.last_milestone = milestone.label; }
+
+  highlightMilestoneStatusBtn(newStatus, milestone.label);
+  closeMilestoneModal();
+  renderMilestoneTimeline(currentDetailLoadId);
+  renderDispatch();
+
+  toast(`${milestone.label} logged! ✅`, 'success');
+
+  if(pendingMilestone === 'empty' || milestone.label === 'Empty / POD') {
+    await loadData();
+    toast('Load delivered! ⚡ Heading to Invoice Queue', 'success');
+    setTimeout(() => { closeModal('detail'); switchPage('invoices'); }, 1500);
+  }
+
+  pendingMilestone = null;
+  pendingMilestoneStatus = null;
 }
 
 // Highlight the correct status button based on current status + milestone
