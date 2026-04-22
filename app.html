@@ -2851,186 +2851,107 @@ function mtsStampNow(field) {
 async function confirmMilestoneModal() {
   if(!pendingMilestone || !currentDetailLoadId) return;
 
-  const arrivalVal = document.getElementById('mts-arrival')?.value;
+  // Look up milestone by label (pendingMilestone stores the label string)
+  const milestoneObj = MILESTONES.find(m => m.label === pendingMilestone) ||
+                       { id: pendingMilestone, label: pendingMilestone, detention: false, status: pendingMilestoneStatus || 'In Transit' };
+
+  const arrivalVal   = document.getElementById('mts-arrival')?.value;
   const departureVal = document.getElementById('mts-departure')?.value;
-  const notes = document.getElementById('mts-notes')?.value?.trim() || '';
+  const notes        = document.getElementById('mts-notes')?.value?.trim() || '';
 
-  if(!arrivalVal) { toast('Please set an arrival time', 'error'); return; }
-
-  // Departure required for Loaded/Departed and Empty/POD (detention tracking)
-  const requiresDeparture = ['Loaded / Departed','Empty / POD'].includes(pendingMilestone) ||
-    (milestone && ['Loaded / Departed','Empty / POD'].includes(milestone.label));
-  if(requiresDeparture && !departureVal) {
-    toast('⚠️ Departure time is required — this stops the detention clock', 'error');
-    const depEl = document.getElementById('mts-departure');
-    if(depEl) { depEl.style.borderColor = 'var(--red)'; depEl.style.boxShadow = '0 0 0 2px rgba(239,68,68,0.25)'; setTimeout(()=>{ depEl.style.borderColor=''; depEl.style.boxShadow=''; }, 2000); }
+  if(!arrivalVal) {
+    toast('Please set an arrival time', 'error');
     return;
   }
 
-  const arrivalTs = new Date(arrivalVal).toISOString();
+  // Departure required for milestones that STOP detention clock
+  const requiresDeparture = ['Loaded / Departed','Empty / POD'].includes(milestoneObj.label);
+  if(requiresDeparture && !departureVal) {
+    toast('⚠️ Departure time is required — this stops the detention clock', 'error');
+    const depEl = document.getElementById('mts-departure');
+    if(depEl) {
+      depEl.style.borderColor = 'var(--red)';
+      depEl.style.boxShadow   = '0 0 0 2px rgba(239,68,68,0.25)';
+      setTimeout(() => { depEl.style.borderColor = ''; depEl.style.boxShadow = ''; }, 2000);
+    }
+    return;
+  }
+
+  const arrivalTs   = new Date(arrivalVal).toISOString();
   const departureTs = departureVal ? new Date(departureVal).toISOString() : null;
 
-  const milestone = MILESTONES.find(m => m.id === pendingMilestone) ||
-                    { id: pendingMilestone, label: pendingMilestone, detention: false };
-
-  // Build note string with times
+  // Build note string
   let noteStr = notes;
   if(departureTs) {
-    const depStr = new Date(departureTs).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    const depStr = new Date(departureTs).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
     noteStr = noteStr ? `Departed: ${depStr} — ${noteStr}` : `Departed: ${depStr}`;
   }
 
-  // Add to in-memory milestones
+  // Save to in-memory milestone log
   if(!loadMilestones[currentDetailLoadId]) loadMilestones[currentDetailLoadId] = [];
-  const entry = { id: pendingMilestone, timestamp: arrivalTs, notes: noteStr, departure: departureTs };
-  loadMilestones[currentDetailLoadId].push(entry);
+  loadMilestones[currentDetailLoadId].push({
+    id: milestoneObj.id,
+    timestamp: arrivalTs,
+    notes: noteStr,
+    departure: departureTs
+  });
 
   // Handle detention clock
-  if(milestone.detention === 'start') {
+  if(milestoneObj.detention === 'start') {
     detentionStart = new Date(arrivalTs);
-    detentionPhase = pendingMilestone === 'arr_shipper' ? 'shipper' : 'receiver';
+    detentionPhase = milestoneObj.id === 'arr_shipper' ? 'shipper' : 'receiver';
     startDetentionClock();
-  } else if(milestone.detention === 'stop' && detentionStart) {
+  } else if(milestoneObj.detention === 'stop' && detentionStart) {
     stopDetentionClock(true);
   }
 
-  // Update DB status + last_milestone
-  const newStatus = pendingMilestoneStatus || 'In Transit';
+  // Determine new DB status
+  const newStatus = milestoneObj.status || pendingMilestoneStatus || 'In Transit';
+
+  // Update DB
   try {
-    await db.from('loads').update({ status: newStatus, last_milestone: milestone.label }).eq('id', currentDetailLoadId);
-  } catch(e) {}
+    await db.from('loads')
+      .update({ status: newStatus, last_milestone: milestoneObj.label })
+      .eq('id', currentDetailLoadId);
+  } catch(e) { console.error('DB update error:', e); }
 
   // Log check call
   try {
     await db.from('check_calls').insert({
-      load_id: currentDetailLoadId,
-      status: pendingMilestone,
-      notes: noteStr || null,
-      contact: milestone.label,
+      load_id:  currentDetailLoadId,
+      status:   milestoneObj.id,
+      notes:    noteStr || null,
+      contact:  milestoneObj.label,
     });
   } catch(e) {}
 
-  // Update in-memory
+  // Update in-memory load
   const liveLoad = allLoads.find(x => x.id === currentDetailLoadId);
-  if(liveLoad) { liveLoad.status = newStatus; liveLoad.last_milestone = milestone.label; }
+  if(liveLoad) {
+    liveLoad.status         = newStatus;
+    liveLoad.last_milestone = milestoneObj.label;
+  }
 
-  highlightMilestoneStatusBtn(newStatus, milestone.label);
+  highlightMilestoneStatusBtn(newStatus, milestoneObj.label);
   closeMilestoneModal();
   renderMilestoneTimeline(currentDetailLoadId);
   renderDispatch();
 
-  toast(`${milestone.label} logged! ✅`, 'success');
+  toast(`${milestoneObj.icon || '✅'} ${milestoneObj.label} logged!`, 'success');
 
-  if(pendingMilestone === 'empty' || milestone.label === 'Empty / POD') {
+  // If Empty/POD — route to invoicing
+  if(milestoneObj.id === 'empty' || milestoneObj.label === 'Empty / POD') {
     await loadData();
-    toast('Load delivered! ⚡ Heading to Invoice Queue', 'success');
-    setTimeout(() => { closeModal('detail'); switchPage('invoices'); }, 1500);
+    setTimeout(() => {
+      toast('Load delivered! ⚡ Heading to Invoice Queue', 'success');
+      setTimeout(() => { closeModal('detail'); switchPage('invoices'); }, 1500);
+    }, 500);
   }
 
-  pendingMilestone = null;
+  pendingMilestone       = null;
   pendingMilestoneStatus = null;
 }
 
-// Highlight the correct status button based on current status + milestone
-function highlightMilestoneStatusBtn(status, milestone) {
-  document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active-status'));
-  let targetId = null;
-  if(status === 'Available') targetId = 'msb-available';
-  else if(status === 'Pending Acceptance') targetId = 'msb-pending';
-  else if(status === 'Delivered' || milestone === 'Empty / POD') targetId = 'msb-empty';
-  else if(milestone === 'Arrived at Receiver') targetId = 'msb-at-receiver';
-  else if(milestone === 'Loaded / Departed') targetId = 'msb-in-transit';
-  else if(milestone === 'Arrived at Shipper' || milestone === 'Dispatched') targetId = 'msb-at-shipper';
-  else if(status === 'In Transit' || status === 'Assigned') targetId = 'msb-in-transit';
-  if(targetId) document.getElementById(targetId)?.classList.add('active-status');
-}
-function openEditFromDetail(){closeModal('detail');setTimeout(()=>editLoad(currentDetailLoadId),200);}
-
-// ── MILESTONE TIMELINE ───────────────────────────────────────
-const MILESTONES = [
-  {id:'dispatched',   label:'Dispatched',           icon:'📋', color:'var(--accent)',  detention:false,   status:'In Transit'},
-  {id:'arr_shipper',  label:'Arrived at Shipper',   icon:'🏭', color:'var(--amber)',   detention:'start', status:'In Transit'},
-  {id:'loaded',       label:'Loaded / Departed',    icon:'📦', color:'var(--green)',   detention:'stop',  status:'In Transit'},
-  {id:'arr_receiver', label:'Arrived at Receiver',  icon:'🏢', color:'var(--amber)',   detention:'start', status:'In Transit'},
-  {id:'empty',        label:'Empty / POD',           icon:'✅', color:'var(--green)',   detention:'stop',  status:'Delivered'},
-];
-
-let loadMilestones = {}; // {loadId: [{id, timestamp, notes}]}
-let detentionInterval = null;
-let detentionStart = null;
-let detentionPhase = null; // 'shipper' or 'receiver'
-let pendingMilestone = null;
-let pendingMilestoneStatus = null;
-
-function renderMilestoneTimeline(loadId) {
-  const container = document.getElementById('milestone-timeline'); if(!container) return;
-  const done = loadMilestones[loadId] || [];
-  const doneIds = done.map(m => m.id);
-  const nextIdx = MILESTONES.findIndex(m => !doneIds.includes(m.id));
-
-  container.innerHTML = MILESTONES.map((m, idx) => {
-    const completed = doneIds.includes(m.id);
-    const isNext = idx === nextIdx;
-    const entry = done.find(d => d.id === m.id);
-    const isLast = idx === MILESTONES.length - 1;
-    return `
-      <div style="display:flex;gap:0;align-items:stretch;">
-        <div style="display:flex;flex-direction:column;align-items:center;width:32px;flex-shrink:0;">
-          <div style="width:24px;height:24px;border-radius:50%;background:${completed?m.color:'var(--surface3)'};border:2px solid ${completed?m.color:isNext?'var(--border2)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:6px;">${completed?'✓':isNext?'○':'·'}</div>
-          ${!isLast?`<div style="width:2px;flex:1;background:${completed?m.color:'var(--border)'};min-height:20px;margin:2px 0;"></div>`:''}
-        </div>
-        <div style="flex:1;padding:6px 0 ${isLast?'0':'14px'} 10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:14px;">${m.icon}</span>
-              <span style="font-size:13px;font-weight:${completed||isNext?'600':'400'};color:${completed?'var(--text)':isNext?'var(--text2)':'var(--text3)'};">${m.label}</span>
-              ${m.detention?`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:var(--amber-dim);color:var(--amber);">DETENTION</span>`:''}
-            </div>
-            ${completed?`<span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${new Date(entry.timestamp).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>`
-            :isNext?`<button class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 10px;" onclick="triggerMilestone('${m.id}','${m.label}')">Mark ${m.label} →</button>`:''}
-          </div>
-          ${completed&&entry.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px;font-style:italic;padding-left:20px;">"${entry.notes}"</div>`:''}
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function triggerMilestone(milestoneId, label) {
-  pendingMilestone = milestoneId;
-  const form = document.getElementById('milestone-note-form');
-  const lbl = document.getElementById('milestone-note-label');
-  const input = document.getElementById('milestone-note-input');
-  const ts = document.getElementById('milestone-timestamp');
-  if(lbl) lbl.textContent = `Log: ${label}`;
-  if(input) input.value = '';
-  // Pre-fill timestamp with right now
-  if(ts) {
-    const now = new Date();
-    // Format for datetime-local: YYYY-MM-DDTHH:MM
-    const pad = n => String(n).padStart(2,'0');
-    ts.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  }
-  if(form) form.style.display = 'block';
-  if(form) form.scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
-
-function stampMilestoneNow() {
-  const ts = document.getElementById('milestone-timestamp');
-  if(!ts) return;
-  const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  ts.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  // Flash the field so dispatcher knows it updated
-  ts.style.borderColor = 'var(--green)';
-  ts.style.boxShadow = '0 0 0 2px rgba(16,185,129,0.25)';
-  setTimeout(() => { ts.style.borderColor = ''; ts.style.boxShadow = ''; }, 1000);
-}
-
-function cancelMilestone() {
-  pendingMilestone = null;
-  const form = document.getElementById('milestone-note-form');
-  if(form) form.style.display = 'none';
-}
 
 async function confirmMilestone() {
   if(!pendingMilestone || !currentDetailLoadId) return;
