@@ -3119,6 +3119,83 @@ async function logQuickCheckCall() {
   toast('Check call logged! ✅', 'success');
 }
 
+function renderMilestoneTimeline(loadId) {
+  const container = document.getElementById('milestone-timeline');
+  if(!container) return;
+  const l = allLoads.find(x => x.id === loadId);
+  const logged = (loadMilestones[loadId] || []);
+
+  // Build a map of logged milestones by id for quick lookup
+  const loggedMap = {};
+  logged.forEach(e => { loggedMap[e.id] = e; });
+
+  // Determine current milestone index from last_milestone label
+  const currentMsLabel = l?.last_milestone || null;
+  const currentMsIdx   = MILESTONES.findIndex(m => m.label === currentMsLabel);
+
+  container.innerHTML = MILESTONES.map((ms, idx) => {
+    const entry     = loggedMap[ms.id];
+    const isLogged  = !!entry;
+    const isCurrent = ms.label === currentMsLabel;
+    const isNext    = idx === currentMsIdx + 1 || (currentMsIdx === -1 && idx === 0);
+    const isPast    = idx < currentMsIdx;
+    const isFuture  = !isLogged && !isNext && !isCurrent;
+
+    // Timestamp display
+    let tsDisplay = '';
+    if(entry?.timestamp) {
+      const d = new Date(entry.timestamp);
+      tsDisplay = d.toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+      if(entry.departure) {
+        const dep = new Date(entry.departure);
+        tsDisplay += ` → Departed ${dep.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+      }
+    }
+
+    // Style based on state
+    const dotColor  = isLogged ? ms.color : isCurrent ? ms.color : 'var(--border2)';
+    const textColor = isLogged || isCurrent ? 'var(--text)' : 'var(--text3)';
+    const opacity   = isFuture ? '0.45' : '1';
+
+    // Action button — show for current+next only
+    let actionBtn = '';
+    if(isNext || isCurrent) {
+      const btnLabel = isLogged ? `↻ Re-log ${ms.label}` : `Mark ${ms.label} →`;
+      const btnStyle = isLogged
+        ? `background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:11px;`
+        : `background:${ms.color}22;border:1px solid ${ms.color};color:${ms.color};font-size:11px;font-weight:700;`;
+      actionBtn = `<button class="btn btn-sm" style="${btnStyle}padding:3px 10px;border-radius:6px;cursor:pointer;margin-top:6px;"
+        onclick="setMilestoneStatus('${ms.status}','${ms.label}')">${btnLabel}</button>`;
+    }
+
+    // Note display
+    const noteHtml = entry?.notes
+      ? `<div style="font-size:11px;color:var(--text3);margin-top:3px;font-style:italic;">"${entry.notes}"</div>`
+      : '';
+
+    // Connector line between milestones
+    const connector = idx < MILESTONES.length - 1
+      ? `<div style="width:2px;height:16px;background:${isLogged ? ms.color : 'var(--border)'};margin-left:9px;opacity:0.4;"></div>`
+      : '';
+
+    return `
+      <div style="display:flex;flex-direction:column;opacity:${opacity};">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="width:20px;height:20px;border-radius:50%;background:${dotColor}22;border:2px solid ${dotColor};flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:9px;">${isLogged?'✓':''}</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:12px;font-weight:700;color:${textColor};">${ms.icon} ${ms.label}</span>
+              ${tsDisplay ? `<span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${tsDisplay}</span>` : ''}
+            </div>
+            ${noteHtml}
+            ${actionBtn}
+          </div>
+        </div>
+        ${connector}
+      </div>`;
+  }).join('');
+}
+
 function resetMilestonesForLoad(loadId) {
   if(detentionInterval) { clearInterval(detentionInterval); detentionInterval = null; }
   detentionStart = null; pendingMilestone = null;
@@ -4032,6 +4109,7 @@ function populateNewDetailFields(loadId) {
   const sb = document.getElementById('detention-start-btn'); if(sb) sb.style.display = '';
   const stb = document.getElementById('detention-stop-btn'); if(stb) stb.style.display = 'none';
   detentionStart = null;
+  renderMilestoneTimeline(loadId);
 }
 
 
