@@ -936,8 +936,8 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Pickup Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" oninput="handleAddressInput(this,'origin')" style="width:100%;" onblur="setTimeout(()=>hideGlobalDrop('origin'),300)"/>
-            <div id="origin-suggestions" class="address-dropdown"></div>
+            <input type="text" id="load-origin-address" placeholder="123 Main St, Dallas, TX 75201" autocomplete="off" list="origin-datalist" oninput="handleAddressInput(this,'origin')" style="width:100%;"/>
+            <datalist id="origin-datalist"></datalist>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
             <input type="text" id="load-origin-city" placeholder="City" autocomplete="off"/>
@@ -948,8 +948,8 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Delivery Address</label>
           <div style="position:relative;">
-            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" oninput="handleAddressInput(this,'dest')" style="width:100%;" onblur="setTimeout(()=>hideGlobalDrop('dest'),300)"/>
-            <div id="dest-suggestions" class="address-dropdown"></div>
+            <input type="text" id="load-dest-address" placeholder="456 Commerce Blvd, Chicago, IL 60601" autocomplete="off" list="dest-datalist" oninput="handleAddressInput(this,'dest')" style="width:100%;"/>
+            <datalist id="dest-datalist"></datalist>
           </div>
           <div style="display:grid;grid-template-columns:1fr 80px 100px;gap:8px;margin-top:6px;">
             <input type="text" id="load-dest-city" placeholder="City" autocomplete="off"/>
@@ -4805,38 +4805,87 @@ function initPlacesAutocomplete() {
 // Also expose as global for the script callback
 window.initPlacesAutocomplete = initPlacesAutocomplete;
 
-// Main input handler — uses Nominatim fallback (Google Places deprecated PlacesService)
+// Address autocomplete using native <datalist> — works in all stacking contexts
 const addressDebounces = {};
+const addressDataMap = {}; // maps display text -> {street, city, state, zip}
+
 function handleAddressInput(input, type) {
   clearTimeout(addressDebounces[type]);
   const val = input.value.trim();
+  if (val.length < 3) return;
 
-  if (val.length < 3) {
-    hideGlobalDrop(type);
+  // Check if user selected from datalist (value matches a known entry)
+  if (addressDataMap[type] && addressDataMap[type][val]) {
+    const d = addressDataMap[type][val];
+    if (type === 'origin') {
+      setVal('load-origin-city', d.city);
+      setVal('load-origin-state', d.state);
+      setVal('load-origin-zip', d.zip);
+    } else {
+      setVal('load-dest-city', d.city);
+      setVal('load-dest-state', d.state);
+      setVal('load-dest-zip', d.zip);
+    }
     return;
   }
 
-  addressDebounces[type] = setTimeout(() => {
-    // Try Google Places if available
-    if (autocompleteService && sessionToken) {
-      try {
-        autocompleteService.getPlacePredictions({
-          input: val,
-          sessionToken,
-          componentRestrictions: { country: 'us' },
-          types: ['address'],
-        }, (predictions, status) => {
-          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions?.length) {
-            fetchNominatim(val, input, type);
-            return;
-          }
-          showGlobalGoogleSuggestions(predictions, input, type);
-        });
-        return;
-      } catch(e) {}
-    }
-    fetchNominatim(val, input, type);
-  }, 350);
+  addressDebounces[type] = setTimeout(() => fetchNominatim(val, input, type), 400);
+}
+
+async function fetchNominatim(val, input, type) {
+  try {
+    const resp = await fetch(
+      'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(val) +
+      '&countrycodes=us&format=json&addressdetails=1&limit=8',
+      { headers: { 'Accept-Language': 'en-US', 'User-Agent': 'FreightFlowHQ' } }
+    );
+    const results = await resp.json();
+    if (!results?.length) return;
+
+    const datalistId = type === 'origin' ? 'origin-datalist' : 'dest-datalist';
+    const datalist = document.getElementById(datalistId);
+    if (!datalist) return;
+
+    if (!addressDataMap[type]) addressDataMap[type] = {};
+
+    datalist.innerHTML = '';
+    results.forEach(r => {
+      const addr = r.address || {};
+      const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+      const city = addr.city || addr.town || addr.village || addr.county || '';
+      const state = addr.state || '';
+      const zip = addr.postcode || '';
+      const stateAbbr = STATE_ABBR[state] || state.substring(0,2).toUpperCase();
+      const displayVal = [street, city, stateAbbr, zip].filter(Boolean).join(', ');
+
+      if (!displayVal) return;
+      addressDataMap[type][displayVal] = { street, city, state: stateAbbr, zip };
+
+      const opt = document.createElement('option');
+      opt.value = displayVal;
+      datalist.appendChild(opt);
+    });
+
+    // When user picks from datalist, the input value changes — trigger lookup
+    input.onchange = () => {
+      const v = input.value;
+      if (addressDataMap[type]?.[v]) {
+        const d = addressDataMap[type][v];
+        if (type === 'origin') {
+          setVal('load-origin-city', d.city);
+          setVal('load-origin-state', d.state);
+          setVal('load-origin-zip', d.zip);
+        } else {
+          setVal('load-dest-city', d.city);
+          setVal('load-dest-state', d.state);
+          setVal('load-dest-zip', d.zip);
+        }
+      }
+    };
+
+  } catch(e) {
+    console.warn('[FF] Nominatim error:', e.message);
+  }
 }
 
 function hideGlobalDrop(type) {
