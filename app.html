@@ -4768,13 +4768,21 @@ function handleAddressInput(input, type) {
   const drop = document.getElementById(dropId);
   if (!drop) return;
 
-  if (val.length < 4) {
+  if (val.length < 3) {
     drop.innerHTML = '';
     drop.classList.remove('open');
     return;
   }
 
   addressDebounces[type] = setTimeout(() => {
+    // Try to init Places if key is available but service not yet loaded
+    if (!autocompleteService && window._companySettings?.google_places_key) {
+      loadGooglePlaces(window._companySettings.google_places_key);
+      // Give it a moment then retry
+      setTimeout(() => handleAddressInput(input, type), 800);
+      return;
+    }
+
     if (autocompleteService && sessionToken) {
       // Google Places — best option
       try {
@@ -4785,40 +4793,61 @@ function handleAddressInput(input, type) {
           types: ['address'],
         }, (predictions, status) => {
           if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions?.length) {
-            useRadarFallback(val, drop, type);
+            useNominatimFallback(val, drop, type);
             return;
           }
           showGoogleSuggestions(predictions, drop, type);
         });
       } catch(e) {
-        useRadarFallback(val, drop, type);
+        useNominatimFallback(val, drop, type);
       }
     } else {
-      useRadarFallback(val, drop, type);
+      useNominatimFallback(val, drop, type);
     }
-  }, 300);
+  }, 350);
 }
 
 // Fallback when Google Places not configured — show helpful prompt
-async function useRadarFallback(val, drop, type) {
+async function useNominatimFallback(val, drop, type) {
+  // Real address suggestions via OpenStreetMap Nominatim — no API key needed
   positionDrop(drop, type);
-  drop.innerHTML = `
-    <div class="address-suggestion" style="pointer-events:none;background:var(--amber-dim);border-bottom:1px solid rgba(245,158,11,0.3);">
-      <span class="sug-icon">💡</span>
-      <div>
-        <div class="sug-main" style="color:var(--amber);font-weight:700;">Add a Google Places API key for address search</div>
-        <div class="sug-sub">Settings → Company → Google Places API Key (free at console.cloud.google.com)</div>
-      </div>
-    </div>
-    <div class="address-suggestion" style="pointer-events:none;">
-      <span class="sug-icon">⌨️</span>
-      <div>
-        <div class="sug-main">For now, type the address manually</div>
-        <div class="sug-sub">Fill in City, State, and ZIP in the fields below</div>
-      </div>
-    </div>`;
-  drop.classList.add('open');
-  setTimeout(() => { if(drop) { drop.innerHTML=''; drop.classList.remove('open'); } }, 4000);
+  try {
+    const resp = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&countrycodes=us&format=json&addressdetails=1&limit=6`, {
+      headers: { 'Accept-Language': 'en-US', 'User-Agent': 'FreightFlowHQ/1.0' }
+    });
+    const results = await resp.json();
+    if (!results?.length) {
+      drop.innerHTML = '';
+      drop.classList.remove('open');
+      return;
+    }
+    drop.innerHTML = results.map(r => {
+      const addr = r.address || {};
+      const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
+      const city = addr.city || addr.town || addr.village || addr.county || '';
+      const state = addr.state || '';
+      const zip = addr.postcode || '';
+      const stateAbbr = getStateAbbr(state);
+      const mainText = street || r.display_name.split(',')[0];
+      const subText = [city, stateAbbr, zip].filter(Boolean).join(', ');
+      const dataObj = JSON.stringify({street: mainText, city, state: stateAbbr, zip}).replace(/"/g, '&quot;');
+      return `<div class="address-suggestion" onclick="selectNominatimResult('${dataObj}','${type}',this)">
+        <span class="sug-icon">📍</span>
+        <div>
+          <div class="sug-main">${mainText}</div>
+          <div class="sug-sub">${subText}</div>
+        </div>
+      </div>`;
+    }).join('');
+    drop.classList.add('open');
+  } catch(e) {
+    drop.innerHTML = '';
+    drop.classList.remove('open');
+  }
+}
+
+async function useRadarFallback(val, drop, type) {
+  await useNominatimFallback(val, drop, type);
 }
 
 function showAddressNotFound(drop, type, val) {
