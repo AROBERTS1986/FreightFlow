@@ -2699,38 +2699,49 @@ async function deleteInvoice(id){if(!confirm('Delete this invoice?'))return;awai
 function openLoadDetail(loadId){
   const l=allLoads.find(x=>x.id===loadId);if(!l)return;
   currentDetailLoadId=loadId;
-  setEl('detail-load-number',l.load_number);setEl('detail-load-route',`${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}`);
-  setEl('d-customer',l.customers?.name||'—');setEl('d-origin',`${l.origin_city||'—'}, ${l.origin_state||''}`);setEl('d-dest',`${l.destination_city||'—'}, ${l.destination_state||''}`);setEl('d-equipment',l.equipment_type||'—');setEl('d-weight',l.weight?Number(l.weight).toLocaleString()+' lbs':'—');setEl('d-commodity',l.commodity||'—');setEl('d-pickup',fmtDate(l.pickup_date));setEl('d-delivery',fmtDate(l.delivery_date));
+
+  // Open modal FIRST so all DOM elements exist before we try to populate them
+  openModal('detail');
+
+  setEl('detail-load-number',l.load_number);
+  setEl('detail-load-route',`${l.origin_city||'?'}, ${l.origin_state||''} → ${l.destination_city||'?'}, ${l.destination_state||''}`);
+  setEl('d-customer',l.customers?.name||'—');
+  setEl('d-origin',`${l.origin_city||'—'}, ${l.origin_state||''}`);
+  setEl('d-dest',`${l.destination_city||'—'}, ${l.destination_state||''}`);
+  setEl('d-equipment',l.equipment_type||'—');
+  setEl('d-weight',l.weight?Number(l.weight).toLocaleString()+' lbs':'—');
+  setEl('d-commodity',l.commodity||'—');
+  setEl('d-pickup',fmtDate(l.pickup_date));
+  setEl('d-delivery',fmtDate(l.delivery_date));
+
   const rateEl=document.getElementById('d-rate');if(rateEl)rateEl.textContent=fmt$(l.customer_rate);
   const cpEl=document.getElementById('d-carrier-pay');if(cpEl)cpEl.textContent=fmt$(l.carrier_pay);
   const mEl=document.getElementById('d-margin');if(mEl)mEl.textContent=l.customer_rate&&l.carrier_pay?`${margin(l.customer_rate,l.carrier_pay)} (${fmt$(l.customer_rate-l.carrier_pay)})`: '—';
   setEl('d-ref',l.reference_number||'—');
+
   const carrier=allCarriers.find(c=>c.id===l.carrier_id);
-  setEl('d-carrier',carrier?.name||'Unassigned');setEl('d-mc',carrier?.mc_number||'—');setEl('d-carrier-phone',carrier?.phone||'—');
-  highlightMilestoneStatusBtn(l.status, l.last_milestone);
+  setEl('d-carrier',carrier?.name||'Unassigned');
+  setEl('d-mc',carrier?.mc_number||'—');
+  setEl('d-carrier-phone',carrier?.phone||'—');
+
   const rcPrev=document.getElementById('rate-con-preview-area'),rcColl=document.getElementById('rate-con-collapsed');
   if(rcPrev)rcPrev.style.display='none';if(rcColl)rcColl.style.display='block';
-  openModal('detail');
+
   populateNewDetailFields(loadId);
-  // Show/hide tender vs remove carrier button + lock/unlock status btns
+
+  // Show/hide tender vs remove carrier button
   const tenderBtn = document.getElementById('tender-btn');
   const removeBtn = document.getElementById('remove-carrier-btn');
-  const loadForDetail = allLoads.find(x => x.id === loadId);
-  if(tenderBtn && removeBtn && loadForDetail) {
-    const hasCarrier = !!loadForDetail.carrier_id;
-    const isPending = loadForDetail.status === 'Pending Acceptance';
-    const isAssigned = ['Assigned','In Transit'].includes(loadForDetail.status);
-    tenderBtn.style.display = hasCarrier ? 'none' : '';
-    removeBtn.style.display = (hasCarrier && (isPending || isAssigned)) ? '' : 'none';
-
-    // Unlock In Transit button if carrier is assigned
-    const transitBtn = document.querySelector('.status-btn.s-transit');
-    if(transitBtn) {
-      if(hasCarrier) { transitBtn.style.opacity=''; transitBtn.style.cursor=''; }
-      else { transitBtn.style.opacity='0.5'; transitBtn.style.cursor='not-allowed'; }
-    }
+  if(tenderBtn && removeBtn) {
+    const hasCarrier = !!l.carrier_id;
+    const isPending  = l.status === 'Pending Acceptance';
+    const isAssigned = ['Assigned','In Transit'].includes(l.status);
+    tenderBtn.style.display  = hasCarrier ? 'none' : '';
+    removeBtn.style.display  = (hasCarrier && (isPending || isAssigned)) ? '' : 'none';
   }
-  // Reset and render milestone timeline
+
+  // Highlight active milestone button and render timeline
+  highlightMilestoneStatusBtn(l.status, l.last_milestone);
   resetMilestonesForLoad(loadId);
 }
 
