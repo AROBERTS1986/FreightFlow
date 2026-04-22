@@ -1318,9 +1318,20 @@ function loadGooglePlaces(apiKey){
         </div>
 
         <!-- MILESTONE NOTE FORM -->
-        <div id="milestone-note-form" style="display:none;margin-top:12px;padding:12px;background:var(--surface3);border-radius:10px;">
-          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;" id="milestone-note-label">Notes for this milestone</div>
-          <textarea id="milestone-note-input" placeholder="Optional notes…" style="width:100%;min-height:60px;font-size:12px;margin-bottom:8px;"></textarea>
+        <div id="milestone-note-form" style="display:none;margin-top:12px;padding:14px;background:var(--surface3);border-radius:10px;border:1px solid var(--border2);">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:12px;" id="milestone-note-label">Notes for this milestone</div>
+
+          <!-- Date/Time row -->
+          <div style="margin-bottom:10px;">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);display:block;margin-bottom:6px;">📅 Event Time</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input type="datetime-local" id="milestone-timestamp" style="flex:1;font-size:12px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);"/>
+              <button class="btn btn-ghost btn-sm" onclick="stampMilestoneNow()" style="white-space:nowrap;font-size:12px;font-weight:600;border-color:var(--accent2);color:var(--accent2);">⏱ Timestamp</button>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:4px;">Use ⏱ Timestamp to lock in right now, or pick a specific time.</div>
+          </div>
+
+          <textarea id="milestone-note-input" placeholder="Optional notes — ETA update, issues, instructions…" style="width:100%;min-height:55px;font-size:12px;margin-bottom:10px;"></textarea>
           <div style="display:flex;gap:8px;justify-content:flex-end;">
             <button class="btn btn-ghost btn-sm" onclick="cancelMilestone()">Cancel</button>
             <button class="btn btn-primary btn-sm" onclick="confirmMilestone()">Confirm →</button>
@@ -2764,9 +2775,30 @@ function triggerMilestone(milestoneId, label) {
   const form = document.getElementById('milestone-note-form');
   const lbl = document.getElementById('milestone-note-label');
   const input = document.getElementById('milestone-note-input');
-  if(lbl) lbl.textContent = `Notes for: ${label} (optional)`;
+  const ts = document.getElementById('milestone-timestamp');
+  if(lbl) lbl.textContent = `Log: ${label}`;
   if(input) input.value = '';
+  // Pre-fill timestamp with right now
+  if(ts) {
+    const now = new Date();
+    // Format for datetime-local: YYYY-MM-DDTHH:MM
+    const pad = n => String(n).padStart(2,'0');
+    ts.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
   if(form) form.style.display = 'block';
+  if(form) form.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function stampMilestoneNow() {
+  const ts = document.getElementById('milestone-timestamp');
+  if(!ts) return;
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  ts.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // Flash the field so dispatcher knows it updated
+  ts.style.borderColor = 'var(--green)';
+  ts.style.boxShadow = '0 0 0 2px rgba(16,185,129,0.25)';
+  setTimeout(() => { ts.style.borderColor = ''; ts.style.boxShadow = ''; }, 1000);
 }
 
 function cancelMilestone() {
@@ -2780,7 +2812,10 @@ async function confirmMilestone() {
   const notes = document.getElementById('milestone-note-input')?.value || '';
   const milestone = MILESTONES.find(m => m.id === pendingMilestone);
   if(!loadMilestones[currentDetailLoadId]) loadMilestones[currentDetailLoadId] = [];
-  const entry = {id: pendingMilestone, timestamp: new Date().toISOString(), notes};
+  // Use selected timestamp from picker, fallback to now
+  const tsEl = document.getElementById('milestone-timestamp');
+  const selectedTs = tsEl?.value ? new Date(tsEl.value).toISOString() : new Date().toISOString();
+  const entry = {id: pendingMilestone, timestamp: selectedTs, notes};
   loadMilestones[currentDetailLoadId].push(entry);
 
   // Handle detention clock
