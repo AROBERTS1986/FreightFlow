@@ -4989,27 +4989,40 @@ async function tryLoadGooglePlaces() {
 // Also add Google Places key to Company Settings save/load
 async function saveCompanySettings() {
   const gKey = document.getElementById('s-google-places')?.value?.trim()||null;
-  const payload = {
-    google_places_key: gKey,
-    company_name: document.getElementById('s-company-name')?.value||null,
-    mc_number: document.getElementById('s-mc')?.value||null,
-    dot_number: document.getElementById('s-dot')?.value||null,
-    dispatch_email: document.getElementById('s-email')?.value||null,
-    phone: document.getElementById('s-phone')?.value||null,
-    city: document.getElementById('s-city')?.value||null,
-    state: document.getElementById('s-state')?.value||null,
-    zip: document.getElementById('s-zip')?.value||null,
-    rate_con_terms: document.getElementById('s-terms')?.value||null,
+  // Build payload dynamically — only include fields that exist in the form
+  // mc_number and all fields are optional; nothing is required
+  const fieldMap = {
+    company_name: 's-company-name',
+    mc_number: 's-mc',
+    dot_number: 's-dot',
+    dispatch_email: 's-email',
+    phone: 's-phone',
+    city: 's-city',
+    state: 's-state',
+    zip: 's-zip',
+    rate_con_terms: 's-terms',
+    google_places_key: 's-google-places',
   };
-  const existing = await db.from('company_settings').select('id').limit(1);
-  const { error } = existing.data?.length
-    ? await db.from('company_settings').update(payload).eq('id', existing.data[0].id)
-    : await db.from('company_settings').insert(payload);
-  if(error){toast('Error saving: '+error.message,'error');return;}
-  if(!window._companySettings) window._companySettings = {};
-  Object.assign(window._companySettings, payload);
-  if(gKey){ loadGooglePlaces(gKey); toast('Settings saved! Google Places activated ✅','success'); }
-  else toast('Settings saved! ✅','success');
+  const payload = {};
+  Object.entries(fieldMap).forEach(([key, elId]) => {
+    const el = document.getElementById(elId);
+    if(el) payload[key] = el.value?.trim()||null;
+  });
+  // Always include company_id for RLS
+  if(currentCompanyId) payload.company_id = currentCompanyId;
+  try {
+    const existing = await db.from('company_settings').select('id').limit(1);
+    const { error } = existing.data?.length
+      ? await db.from('company_settings').update(payload).eq('id', existing.data[0].id)
+      : await db.from('company_settings').insert(payload);
+    if(error){toast('Error saving: '+error.message,'error');return;}
+    if(!window._companySettings) window._companySettings = {};
+    Object.assign(window._companySettings, payload);
+    if(gKey){ loadGooglePlaces(gKey); toast('Settings saved! Google Places activated ✅','success'); }
+    else toast('Settings saved! ✅','success');
+  } catch(e) {
+    toast('Error saving settings: '+e.message,'error');
+  }
 }
 
 
