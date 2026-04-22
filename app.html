@@ -460,6 +460,8 @@ function loadGooglePlaces(apiKey){
 
   <!-- DASHBOARD -->
   <div class="content active" id="page-dashboard">
+    <!-- Late loads alert banner -->
+    <div id="late-loads-banner" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;"></div>
     <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr);">
       <div class="kpi-card blue"><div class="kpi-label">Active Loads</div><div class="kpi-value" id="kpi-active">—</div><div class="kpi-sub">In system</div></div>
       <div class="kpi-card green"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="kpi-revenue">—</div><div class="kpi-sub">All loads</div></div>
@@ -1083,6 +1085,86 @@ function loadGooglePlaces(apiKey){
         <div class="form-group full"><label>Notes</label><textarea id="customer-notes" placeholder="Any additional notes…"></textarea></div>
 
         <div class="form-group full" style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border);margin-top:4px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:12px;">🔔 Load Status Notifications</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Email alerts sent to customer contact when load status changes. All off by default.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" id="notif-picked-up" style="width:16px;height:16px;accent-color:var(--accent);"/>
+              <span style="font-size:12px;font-weight:600;">📦 Picked Up</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" id="notif-in-transit" style="width:16px;height:16px;accent-color:var(--accent);"/>
+              <span style="font-size:12px;font-weight:600;">🚛 In Transit</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" id="notif-delivered" style="width:16px;height:16px;accent-color:var(--accent);"/>
+              <span style="font-size:12px;font-weight:600;">✅ Delivered</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" id="notif-pod-ready" style="width:16px;height:16px;accent-color:var(--accent);"/>
+              <span style="font-size:12px;font-weight:600;">📄 POD Ready</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" id="notif-detention" style="width:16px;height:16px;accent-color:var(--accent);"/>
+              <span style="font-size:12px;font-weight:600;">⏱ Detention Started</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--surface3);border-radius:8px;cursor:pointer;">
+              <input type="checkbox" id="notif-late" style="width:16px;height:16px;accent-color:var(--accent);"/>
+              <span style="font-size:12px;font-weight:600;">🔴 Late / Delayed</span>
+            </label>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);display:block;margin-bottom:8px;">📞 Check Call Frequency</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <select id="customer-checkcall-freq" style="flex:1;font-size:12px;">
+                <option value="none">No requirement</option>
+                <option value="2">Every 2 hours</option>
+                <option value="4">Every 4 hours</option>
+                <option value="8">Every 8 hours</option>
+                <option value="24">Once daily</option>
+              </select>
+              <span style="font-size:11px;color:var(--text3);">Alert dispatcher if overdue</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group full" style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border);margin-top:4px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:10px;">💳 Credit & Billing</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Credit Limit</label>
+              <div style="position:relative;">
+                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;">$</span>
+                <input type="number" id="customer-credit-limit" placeholder="50000" style="padding-left:22px;" min="0" step="1000"/>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Payment Terms</label>
+              <select id="customer-payment-terms">
+                <option value="Net 30">Net 30</option>
+                <option value="Net 45">Net 45</option>
+                <option value="Net 60">Net 60</option>
+                <option value="Quick Pay">Quick Pay (5 days)</option>
+                <option value="Prepay">Prepay</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Credit Status</label>
+              <select id="customer-credit-status">
+                <option value="Approved">✅ Approved</option>
+                <option value="Pending Review">⏳ Pending Review</option>
+                <option value="On Hold">🔴 On Hold</option>
+                <option value="COD Only">💵 COD Only</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Credit Notes</label>
+            <input type="text" id="customer-credit-notes" placeholder="e.g. Approved by owner 4/22/26, references checked"/>
+          </div>
+        </div>
+
+        <div class="form-group full" style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border);margin-top:4px;">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:10px;">📬 Customer Email Notifications <span style="font-weight:400;color:var(--text3);">(all off by default)</span></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;color:var(--text2);letter-spacing:0;font-weight:400;">
@@ -1316,6 +1398,13 @@ function loadGooglePlaces(apiKey){
               <button class="btn btn-sm" style="background:var(--red);color:white;" onclick="logQuickCheckCall()">Save Check Call →</button>
             </div>
           </div>
+        </div>
+
+        <!-- CHECK CALL HISTORY LOG -->
+        <div id="check-call-history" style="margin-top:12px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px;">📞 Check Call History</div>
+          <div id="check-call-log-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;"></div>
+          <div id="check-call-log-empty" style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0;">No check calls logged yet</div>
         </div>
 
         <!-- MILESTONE NOTE FORM -->
@@ -2111,6 +2200,8 @@ async function loadData(){
     await loadQuoteRequests();
     populateSelects();
     renderCurrentPage();
+    setTimeout(checkLateLoads, 200);
+    startLateAlertPoller();
   }catch(e){
     console.error('[FF] loadData error:',e);
     setDbStatus('error');
@@ -2223,6 +2314,7 @@ function renderDashboard(){
   const totalRev=sorted.reduce((s,c)=>s+c.revenue,0)||1,cgp=document.getElementById('dash-customer-gp');
   if(cgp){if(!sorted.length){cgp.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><p>No load data yet.</p></div>`;}else{const rows=sorted.map(c=>{const gp=c.revenue-c.carrierPay,gpPct=c.revenue>0?(gp/c.revenue*100):0,gpColor=gpPct>=18?'var(--green)':gpPct>=12?'var(--amber)':'var(--red)';return`<tr><td><strong>${c.name}</strong></td><td><strong style="color:var(--text)">${fmt$(c.revenue)}</strong></td><td style="color:var(--text3)">${fmt$(c.carrierPay)}</td><td><strong style="color:${gpColor}">${fmt$(gp)}</strong></td><td><div style="display:flex;align-items:center;gap:8px;"><strong style="color:${gpColor};font-family:'JetBrains Mono',monospace;font-size:12px;min-width:44px;">${gpPct.toFixed(1)}%</strong><div style="flex:1;height:5px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="width:${Math.max(2,(c.revenue/totalRev*100)).toFixed(0)}%;height:100%;background:${gpColor};border-radius:4px;"></div></div></div></td><td style="text-align:center;">${c.loads}</td><td style="text-align:center;color:var(--green);">${c.delivered}</td></tr>`;}).join('');const totalGP=sorted.reduce((s,c)=>s+(c.revenue-c.carrierPay),0),totalGPPct=totalRev>0?(totalGP/totalRev*100):0,tColor=totalGPPct>=18?'var(--green)':totalGPPct>=12?'var(--amber)':'var(--red)';cgp.innerHTML=`<table class="table"><thead><tr><th>Customer</th><th>Revenue</th><th>Carrier Pay</th><th>Gross Profit</th><th>GP %</th><th style="text-align:center;">Loads</th><th style="text-align:center;">Delivered</th></tr></thead><tbody>${rows}<tr style="background:var(--surface2);font-weight:700;"><td><strong>TOTAL</strong></td><td><strong>${fmt$(totalRev)}</strong></td><td style="color:var(--text3);">${fmt$(sorted.reduce((s,c)=>s+c.carrierPay,0))}</td><td><strong style="color:${tColor};">${fmt$(totalGP)}</strong></td><td><strong style="color:${tColor};font-family:'JetBrains Mono',monospace;font-size:12px;">${totalGPPct.toFixed(1)}%</strong></td><td style="text-align:center;"><strong>${sorted.reduce((s,c)=>s+c.loads,0)}</strong></td><td style="text-align:center;color:var(--green);"><strong>${sorted.reduce((s,c)=>s+c.delivered,0)}</strong></td></tr></tbody></table>`;}}
   renderDashboardQuoteQueue();
+  renderLateAlertBanner();
 }
 
 function renderDashboardQuoteQueue(){
@@ -2663,13 +2755,21 @@ async function saveCustomer(){
     city:document.getElementById('customer-city')?.value,
     state:document.getElementById('customer-state')?.value?.toUpperCase(),
     notes:document.getElementById('customer-notes')?.value,
-    notif_picked_up:document.getElementById('cust-notif-pickedup')?.checked||false,
-    notif_in_transit:document.getElementById('cust-notif-intransit')?.checked||false,
-    notif_delivered:document.getElementById('cust-notif-delivered')?.checked||false,
+    notif_picked_up:document.getElementById('notif-picked-up')?.checked||false,
+    notif_in_transit:document.getElementById('notif-in-transit')?.checked||false,
+    notif_delivered:document.getElementById('notif-delivered')?.checked||false,
+    notif_pod_ready:document.getElementById('notif-pod-ready')?.checked||false,
+    notif_detention:document.getElementById('notif-detention')?.checked||false,
+    notif_late:document.getElementById('notif-late')?.checked||false,
+    checkcall_freq:document.getElementById('customer-checkcall-freq')?.value||'none',
     notif_pod:document.getElementById('cust-notif-pod')?.checked||false,
     notif_detention:document.getElementById('cust-notif-detention')?.checked||false,
     notif_late:document.getElementById('cust-notif-late')?.checked||false,
     checkcall_freq_hours:parseInt(document.getElementById('cust-checkcall-freq')?.value)||0,
+    credit_limit:parseFloat(document.getElementById('customer-credit-limit')?.value)||null,
+    payment_terms:document.getElementById('customer-payment-terms')?.value||'Net 30',
+    credit_status:document.getElementById('customer-credit-status')?.value||'Approved',
+    credit_notes:document.getElementById('customer-credit-notes')?.value||null,
   };
   const{error}=id?await db.from('customers').update(payload).eq('id',id):await db.from('customers').insert(payload);
   if(error){toast('Error: '+error.message,'error');return;}
@@ -2680,8 +2780,13 @@ async function editCustomer(id){
   document.getElementById('customer-id').value=c.id;document.getElementById('customer-modal-title').textContent=`Edit ${c.name}`;
   const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
   sv('customer-name',c.name);sv('customer-contact',c.contact_name);sv('customer-email',c.email);sv('customer-phone',c.phone);sv('customer-city',c.city);sv('customer-state',c.state);sv('customer-notes',c.notes);
-  [['cust-notif-pickedup',c.notif_picked_up],['cust-notif-intransit',c.notif_in_transit],['cust-notif-delivered',c.notif_delivered],['cust-notif-pod',c.notif_pod],['cust-notif-detention',c.notif_detention],['cust-notif-late',c.notif_late]].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.checked=!!val;});
-  const freqEl=document.getElementById('cust-checkcall-freq');if(freqEl)freqEl.value=c.checkcall_freq_hours||0;
+  [['notif-picked-up',c.notif_picked_up],['notif-in-transit',c.notif_in_transit],['notif-delivered',c.notif_delivered],['notif-pod-ready',c.notif_pod_ready],['notif-detention',c.notif_detention],['notif-late',c.notif_late]].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.checked=!!val;});
+  const freqEl=document.getElementById('customer-checkcall-freq');if(freqEl)freqEl.value=c.checkcall_freq||'none';
+  // Credit fields
+  sv('customer-credit-limit', c.credit_limit||'');
+  sv('customer-credit-notes', c.credit_notes||'');
+  const ptEl=document.getElementById('customer-payment-terms'); if(ptEl) ptEl.value=c.payment_terms||'Net 30';
+  const csEl=document.getElementById('customer-credit-status'); if(csEl) csEl.value=c.credit_status||'Approved';
   openModal('customer');
 }
 async function deleteCustomer(id){if(!confirm('Delete this customer?'))return;await db.from('customers').delete().eq('id',id);toast('Customer deleted','info');await loadData();}
@@ -2743,6 +2848,7 @@ function openLoadDetail(loadId){
   // Highlight active milestone button and render timeline
   highlightMilestoneStatusBtn(l.status, l.last_milestone);
   resetMilestonesForLoad(loadId);
+  renderCheckCallLog(loadId);
 }
 
 async function updateLoadStatus(newStatus){
@@ -2958,6 +3064,9 @@ async function confirmMilestoneModal() {
     liveLoad.last_milestone = milestoneObj.label;
   }
 
+  // Send customer notification if enabled
+  sendCustomerNotification(currentDetailLoadId, milestoneObj.label);
+
   highlightMilestoneStatusBtn(newStatus, milestoneObj.label);
   closeMilestoneModal();
   renderMilestoneTimeline(currentDetailLoadId);
@@ -3028,6 +3137,74 @@ async function confirmMilestone() {
   renderDispatch(); // refresh board cards
   toast(milestone.label + ' logged! ✅', 'success');
   if(pendingMilestone === 'empty') { await loadData(); toast('Load delivered! ⚡ Heading to Invoice Queue','success'); setTimeout(()=>{closeModal('detail');switchPage('invoices');},1500); }
+}
+
+// ── LATE PICKUP / DELIVERY ALERT SYSTEM ─────────────────────
+function checkLateAlerts() {
+  if(_isDemoMode) return; // skip in demo mode
+  const now = new Date();
+  const activeLoads = allLoads.filter(l =>
+    ['Available','Pending Acceptance','In Transit','Assigned'].includes(l.status)
+  );
+
+  activeLoads.forEach(l => {
+    const pickupDue  = l.pickup_date   ? new Date(l.pickup_date)   : null;
+    const deliveryDue = l.delivery_date ? new Date(l.delivery_date) : null;
+
+    // Late pickup: past pickup date and not yet picked up (no milestone beyond Dispatched)
+    const notPickedUp = !l.last_milestone || ['Dispatched'].includes(l.last_milestone);
+    if(pickupDue && now > pickupDue && notPickedUp) {
+      const hoursLate = Math.floor((now - pickupDue) / 3600000);
+      if(!l._latePickupAlerted) {
+        l._latePickupAlerted = true;
+        toast(`🔴 ${l.load_number} — Pickup overdue by ${hoursLate}h (${l.origin_city}, ${l.origin_state})`, 'error');
+        addDashboardAlert({
+          type: 'late_pickup',
+          load_id: l.id,
+          load_number: l.load_number,
+          message: `Pickup overdue ${hoursLate}h — ${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}`,
+          severity: hoursLate > 4 ? 'critical' : 'warning',
+          ts: now.toISOString()
+        });
+      }
+    }
+
+    // Late delivery: past delivery date and not delivered
+    const notDelivered = l.status !== 'Delivered';
+    if(deliveryDue && now > deliveryDue && notDelivered) {
+      const hoursLate = Math.floor((now - deliveryDue) / 3600000);
+      if(!l._lateDeliveryAlerted) {
+        l._lateDeliveryAlerted = true;
+        toast(`🔴 ${l.load_number} — Delivery overdue by ${hoursLate}h → ${l.destination_city}, ${l.destination_state}`, 'error');
+        addDashboardAlert({
+          type: 'late_delivery',
+          load_id: l.id,
+          load_number: l.load_number,
+          message: `Delivery overdue ${hoursLate}h — due ${new Date(deliveryDue).toLocaleDateString()}`,
+          severity: hoursLate > 2 ? 'critical' : 'warning',
+          ts: now.toISOString()
+        });
+      }
+    }
+  });
+}
+
+// In-session alert store (shown on dashboard)
+let _dashboardAlerts = [];
+function addDashboardAlert(alert) {
+  _dashboardAlerts.unshift(alert);
+  if(_dashboardAlerts.length > 20) _dashboardAlerts.pop();
+  // Update dashboard badge
+  const badge = document.getElementById('alert-badge');
+  if(badge) { badge.textContent = _dashboardAlerts.filter(a=>!a.read).length; badge.style.display = ''; }
+}
+
+// Run late check every 5 minutes after load
+let _lateAlertInterval = null;
+function startLateAlertPoller() {
+  if(_lateAlertInterval) clearInterval(_lateAlertInterval);
+  checkLateAlerts(); // immediate first run
+  _lateAlertInterval = setInterval(checkLateAlerts, 5 * 60 * 1000);
 }
 
 // ── MILESTONE DEFINITIONS ────────────────────────────────────
@@ -3163,6 +3340,7 @@ async function logQuickCheckCall() {
   const form = document.getElementById('checkcall-quick-form');
   if(form) form.classList.remove('visible');
   toast('Check call logged! ✅', 'success');
+  renderCheckCallLog(currentDetailLoadId);
 }
 
 function renderMilestoneTimeline(loadId) {
@@ -3253,6 +3431,7 @@ function resetMilestonesForLoad(loadId) {
   if(ms) ms.classList.remove('detention-alert-card');
   lastCheckCallTime = null;
   renderMilestoneTimeline(loadId);
+  renderCheckCallLog(loadId);
 }
 
 // ── TENDER TO CARRIER ─────────────────────────────────────────
@@ -6676,6 +6855,187 @@ function hideDemoBanner() {
   const sidebar = document.querySelector('.sidebar');
   if (sidebar) sidebar.style.top = '0';
 }
+
+
+
+
+
+// ══════════════════════════════════════════════════════════════════════
+// CHECK CALL LOG RENDERER
+// ══════════════════════════════════════════════════════════════════════
+async async function renderCheckCallLog(loadId) {
+  const list = document.getElementById('check-call-log-list');
+  const empty = document.getElementById('check-call-log-empty');
+  if(!list) return;
+
+  // Fetch check calls for this load from DB
+  let calls = [];
+  try {
+    const { data } = await db.from('check_calls')
+      .select('*')
+      .eq('load_id', loadId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    calls = data || [];
+  } catch(e) {}
+
+  if(!calls.length) {
+    list.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+
+  if(empty) empty.style.display = 'none';
+
+  const statusIcon = { 'On Time':'✅', 'Delayed':'⚠️', 'Issue':'🔴' };
+
+  list.innerHTML = calls.map(c => {
+    const ts = c.created_at ? new Date(c.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+    const icon = statusIcon[c.status] || '📞';
+    return `<div style="background:var(--surface3);border-radius:8px;padding:8px 12px;border:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+        <span style="font-size:12px;font-weight:700;color:var(--text);">${icon} ${c.status||'Check Call'}${c.contact ? ` — ${c.contact}` : ''}</span>
+        <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${ts}</span>
+      </div>
+      ${c.notes ? `<div style="font-size:12px;color:var(--text2);">${c.notes}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// LATE PICKUP / DELIVERY DETECTION
+// ══════════════════════════════════════════════════════════════════════
+function checkLateLoads() {
+  const now = new Date();
+  const activeStatuses = ['Available','Pending Acceptance','Assigned','In Transit'];
+  const lateLoads = allLoads.filter(l => {
+    if(!activeStatuses.includes(l.status)) return false;
+    const notPickedUp = !['Arrived at Shipper','Loaded / Departed','Arrived at Receiver','Empty / POD'].includes(l.last_milestone);
+    const pickupDue = l.pickup_date ? new Date(l.pickup_date) : null;
+    const deliveryDue = l.delivery_date ? new Date(l.delivery_date) : null;
+    const pickupLate = notPickedUp && pickupDue && now > pickupDue;
+    const deliveryLate = deliveryDue && now > deliveryDue && l.status !== 'Delivered';
+    return pickupLate || deliveryLate;
+  });
+
+  // Show dashboard alert badge
+  const badge = document.getElementById('late-loads-badge');
+  if(badge) {
+    badge.textContent = lateLoads.length;
+    badge.style.display = lateLoads.length ? 'inline-flex' : 'none';
+  }
+
+  // Add red border to late load cards on dispatch board
+  lateLoads.forEach(l => {
+    const cards = document.querySelectorAll(`[onclick*="${l.id}"]`);
+    cards.forEach(card => {
+      if(card.classList.contains('load-card')) {
+        card.style.borderColor = 'var(--red)';
+        card.style.boxShadow = '0 0 0 1px var(--red)';
+      }
+    });
+  });
+
+  return lateLoads;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// CUSTOMER NOTIFICATIONS — send email via Resend when milestone fires
+// ══════════════════════════════════════════════════════════════════════
+async function sendCustomerNotification(loadId, eventType) {
+  try {
+    const load = allLoads.find(l => l.id === loadId);
+    if(!load) return;
+    const customer = allCustomers.find(c => c.id === load.customer_id);
+    if(!customer || !customer.email) return;
+
+    // Check if customer has this notification enabled
+    const notifMap = {
+      'Loaded / Departed':      'notif_picked_up',
+      'In Transit':             'notif_in_transit',
+      'Empty / POD':            'notif_delivered',
+      'POD Ready':              'notif_pod',
+      'Detention':              'notif_detention',
+      'Late':                   'notif_late',
+    };
+    const notifKey = notifMap[eventType];
+    if(notifKey && !customer[notifKey]) return; // notification off for this customer
+
+    // Get company settings for "from" name
+    const companyName = window._companySettings?.company_name || 'FreightFlow Brokerage';
+
+    const subject = {
+      'Loaded / Departed':  `📦 Your shipment has been picked up — ${load.load_number}`,
+      'In Transit':         `🚛 Check-in update on ${load.load_number}`,
+      'Empty / POD':        `✅ Delivery confirmed — ${load.load_number}`,
+      'POD Ready':          `📄 POD is ready for ${load.load_number}`,
+      'Late':               `⚠️ Delay notice on ${load.load_number}`,
+    }[eventType] || `Update on ${load.load_number}`;
+
+    const body = `
+Hello ${customer.contact_name || customer.name},
+
+Here's an update on your shipment:
+
+Load #: ${load.load_number}
+Route: ${load.origin_city}, ${load.origin_state} → ${load.destination_city}, ${load.destination_state}
+Status: ${eventType}
+Delivery Date: ${load.delivery_date ? new Date(load.delivery_date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : 'TBD'}
+
+If you have any questions, reply to this email or contact your broker directly.
+
+— ${companyName}
+    `.trim();
+
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${window._companySettings?.resend_api_key || ''}`,
+      },
+      body: JSON.stringify({
+        from: `${companyName} <noreply@freightflowhq.com>`,
+        to: [customer.email],
+        subject,
+        text: body,
+      }),
+    });
+
+    console.log(`📧 Notification sent to ${customer.email} — ${eventType}`);
+  } catch(e) {
+    console.warn('Notification send failed:', e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// LATE ALERT BANNER on dashboard
+// ══════════════════════════════════════════════════════════════════════
+function renderLateAlertBanner() {
+  const lateLoads = checkLateLoads();
+  const banner = document.getElementById('late-loads-banner');
+  if(!banner) return;
+
+  if(!lateLoads.length) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'block';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">⚠️</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);">${lateLoads.length} Late Load${lateLoads.length>1?'s':''} Need Attention</div>
+          <div style="font-size:12px;color:var(--text2);">
+            ${lateLoads.slice(0,3).map(l=>`${l.load_number} (${l.origin_city}→${l.destination_city})`).join(' · ')}${lateLoads.length>3?` +${lateLoads.length-3} more`:''}
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-sm" style="background:var(--red);color:white;" onclick="switchPage('dispatch')">View Dispatch Board →</button>
+    </div>`;
+}
+
 
 
 </script>
