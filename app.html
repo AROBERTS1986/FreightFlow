@@ -4857,9 +4857,11 @@ async function fetchNominatim(val, input, type) {
       { headers: { 'Accept-Language': 'en-US', 'User-Agent': 'FreightFlowHQ' } }
     );
     const results = await resp.json();
-    if (!results?.length) { drop.style.display='none'; return; }
+    if (!results || !results.length) { drop.style.display = 'none'; return; }
 
-    drop.innerHTML = results.map(r => {
+    // Build dropdown items safely — no inline event handler string escaping issues
+    drop.innerHTML = '';
+    results.forEach(r => {
       const addr = r.address || {};
       const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
       const city = addr.city || addr.town || addr.village || addr.county || '';
@@ -4868,15 +4870,17 @@ async function fetchNominatim(val, input, type) {
       const stateAbbr = STATE_ABBR[state] || state.substring(0,2).toUpperCase();
       const mainText = street || r.display_name.split(',')[0];
       const subText = [city, stateAbbr, zip].filter(Boolean).join(', ');
-      const d2 = encodeURIComponent(JSON.stringify({street:mainText,city,state:stateAbbr,zip}));
-      return '<div class="address-suggestion" style="padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text,#f1f5f9);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:flex-start;gap:8px;" ' +
-        'onmouseover="this.style.background='var(--surface2,#1a2235)'" ' +
-        'onmouseout="this.style.background=''" ' +
-        'onclick="pickAddress(decodeURIComponent(\'' + d2 + '\'),\'' + type + '\');">' +
-        '<span style="flex-shrink:0;margin-top:1px;">📍</span>' +
-        '<div><div style="font-weight:600">' + mainText + '</div>' +
-        '<div style="font-size:11px;color:var(--text3,#475569);margin-top:1px;">' + subText + '</div></div></div>';
-    }).join('');
+      const data = {street: mainText, city, state: stateAbbr, zip};
+
+      const el = document.createElement('div');
+      el.className = 'address-suggestion';
+      el.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text,#f1f5f9);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:flex-start;gap:8px;';
+      el.innerHTML = '<span style="flex-shrink:0;margin-top:1px;">📍</span><div><div style="font-weight:600">' + mainText + '</div><div style="font-size:11px;color:var(--text3,#475569);margin-top:1px;">' + subText + '</div></div>';
+      el.onmouseover = function() { this.style.background = 'var(--surface2,#1a2235)'; };
+      el.onmouseout = function() { this.style.background = ''; };
+      el.onclick = function() { pickAddress(JSON.stringify(data), type); };
+      drop.appendChild(el);
+    });
 
     drop.style.display = 'block';
 
@@ -4915,20 +4919,22 @@ function showGlobalGoogleSuggestions(predictions, input, type) {
   const drop = document.getElementById('global-addr-drop-' + type);
   if (!drop) return;
   positionGlobalDrop(drop, input);
-  drop.innerHTML = predictions.slice(0,6).map(p => {
-    const main = p.structured_formatting?.main_text || p.description;
-    const sub = p.structured_formatting?.secondary_text || '';
-    return '<div class="address-suggestion" style="padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text,#f1f5f9);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:flex-start;gap:8px;" ' +
-      'onmouseover="this.style.background='var(--surface2,#1a2235)'" ' +
-      'onmouseout="this.style.background=''" ' +
-      'onclick="selectGooglePlaceById(\'' + p.place_id + '\',\'' + type + '\');">' +
-      '<span style="flex-shrink:0;margin-top:1px;">📍</span>' +
-      '<div><div style="font-weight:600">' + main + '</div>' +
-      '<div style="font-size:11px;color:var(--text3,#475569);margin-top:1px;">' + sub + '</div></div></div>';
-  }).join('');
+
+  drop.innerHTML = '';
+  predictions.slice(0,6).forEach(p => {
+    const main = p.structured_formatting ? p.structured_formatting.main_text : p.description;
+    const sub = p.structured_formatting ? (p.structured_formatting.secondary_text || '') : '';
+    const el = document.createElement('div');
+    el.className = 'address-suggestion';
+    el.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text,#f1f5f9);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:flex-start;gap:8px;';
+    el.innerHTML = '<span style="flex-shrink:0;margin-top:1px;">📍</span><div><div style="font-weight:600">' + main + '</div><div style="font-size:11px;color:var(--text3,#475569);margin-top:1px;">' + sub + '</div></div>';
+    el.onmouseover = function() { this.style.background = 'var(--surface2,#1a2235)'; };
+    el.onmouseout = function() { this.style.background = ''; };
+    el.onclick = function() { selectGooglePlaceById(p.place_id, type); };
+    drop.appendChild(el);
+  });
   drop.style.display = 'block';
 }
-
 function selectGooglePlaceById(placeId, type) {
   hideGlobalDrop(type);
   if (!placesService) return;
