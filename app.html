@@ -1164,12 +1164,13 @@ function loadGooglePlaces(apiKey){
     </div>
     <div class="modal-body" style="padding:20px;">
       <div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;">Load Status</div>
-        <div class="status-btn-group">
-  <button class="status-btn s-available" onclick="updateLoadStatus('Available')">📋 Available</button>
-  <button class="status-btn s-pending" onclick="updateLoadStatus('Pending Acceptance')">⏳ Pending</button>
-  <button class="status-btn s-assigned" onclick="updateLoadStatus('Assigned')" title="Carrier must accept rate con via Tender workflow" style="opacity:0.5;cursor:not-allowed;">🔒 Assigned</button>
-  <button class="status-btn s-transit" onclick="updateLoadStatus('In Transit')">🚛 In Transit</button>
-  <button class="status-btn s-delivered" onclick="updateLoadStatus('Delivered')">📦 Delivered</button>
+        <div class="status-btn-group" id="milestone-status-btns">
+  <button class="status-btn s-available"  id="msb-available"  onclick="setMilestoneStatus('Available',null)">📋 Available</button>
+  <button class="status-btn s-pending"    id="msb-pending"    onclick="setMilestoneStatus('Pending Acceptance',null)">⏳ Pending</button>
+  <button class="status-btn s-assigned"   id="msb-at-shipper" onclick="setMilestoneStatus('In Transit','Arrived at Shipper')">🏭 At Shipper</button>
+  <button class="status-btn s-transit"    id="msb-in-transit" onclick="setMilestoneStatus('In Transit','Loaded / Departed')">🚛 In Transit</button>
+  <button class="status-btn s-transit2"   id="msb-at-receiver" onclick="setMilestoneStatus('In Transit','Arrived at Receiver')" style="border-color:#f97316;color:#f97316;background:rgba(249,115,22,0.12);">🏢 At Receiver</button>
+  <button class="status-btn s-delivered"  id="msb-empty"      onclick="setMilestoneStatus('Delivered','Empty / POD')">✅ Empty</button>
 </div>
       </div>
       <div class="load-detail-grid">
@@ -2661,9 +2662,7 @@ function openLoadDetail(loadId){
   setEl('d-ref',l.reference_number||'—');
   const carrier=allCarriers.find(c=>c.id===l.carrier_id);
   setEl('d-carrier',carrier?.name||'Unassigned');setEl('d-mc',carrier?.mc_number||'—');setEl('d-carrier-phone',carrier?.phone||'—');
-  document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
-  const map={'Available':'s-available','Pending Acceptance':'s-pending','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
-  document.querySelector('.status-btn.'+map[l.status])?.classList.add('active-status');
+  highlightMilestoneStatusBtn(l.status, l.last_milestone);
   const rcPrev=document.getElementById('rate-con-preview-area'),rcColl=document.getElementById('rate-con-collapsed');
   if(rcPrev)rcPrev.style.display='none';if(rcColl)rcColl.style.display='block';
   openModal('detail');
@@ -2707,18 +2706,69 @@ async function updateLoadStatus(newStatus){
 
   const{error}=await db.from('loads').update({status:newStatus}).eq('id',currentDetailLoadId);
   if(error){toast('Error: '+error.message,'error');return;}
-  document.querySelectorAll('.status-btn').forEach(btn=>btn.classList.remove('active-status'));
-  const map={'Available':'s-available','Pending Acceptance':'s-pending','Assigned':'s-assigned','In Transit':'s-transit','Delivered':'s-delivered'};
-  document.querySelector('.status-btn.'+map[newStatus])?.classList.add('active-status');
+  highlightMilestoneStatusBtn(newStatus, null);
   toast('Status updated to '+newStatus,'success');
   if(newStatus==='Delivered'){
     setTimeout(()=>{
       toast('Load delivered! ⚡ Moving to Invoice Queue','success');
-      // Auto-navigate to invoicing after 1.5s
       setTimeout(()=>{switchPage('invoices');},1500);
     },500);
   }
   await loadData();
+}
+
+// New milestone-aware status setter — updates both DB status AND last_milestone
+async function setMilestoneStatus(newStatus, milestone) {
+  if(!currentDetailLoadId) return;
+  const l = allLoads.find(x => x.id === currentDetailLoadId);
+
+  // Block In Transit/At Shipper/At Receiver if no carrier assigned
+  if(newStatus === 'In Transit' && (!l || !l.carrier_id)) {
+    toast('⚠️ Assign a carrier first via Tender to Carrier before moving to dispatch milestones.', 'error');
+    return;
+  }
+
+  // Show timestamp form for operational milestones (not Available/Pending)
+  if(milestone) {
+    pendingMilestone = milestone;
+    pendingMilestoneStatus = newStatus; // store for confirmMilestoneStatus
+    const form = document.getElementById('milestone-note-form');
+    const lbl = document.getElementById('milestone-note-label');
+    const input = document.getElementById('milestone-note-input');
+    const ts = document.getElementById('milestone-timestamp');
+    if(lbl) lbl.textContent = `Log: ${milestone}`;
+    if(input) input.value = '';
+    if(ts) {
+      const now = new Date();
+      const pad = n => String(n).padStart(2,'0');
+      ts.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+    if(form) { form.style.display = 'block'; form.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+    return;
+  }
+
+  // Simple status-only update (Available, Pending)
+  const payload = {status: newStatus};
+  const {error} = await db.from('loads').update(payload).eq('id', currentDetailLoadId);
+  if(error) { toast('Error: '+error.message, 'error'); return; }
+
+  highlightMilestoneStatusBtn(newStatus, null);
+  toast('Status → ' + newStatus, 'success');
+  await loadData();
+}
+
+// Highlight the correct status button based on current status + milestone
+function highlightMilestoneStatusBtn(status, milestone) {
+  document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active-status'));
+  let targetId = null;
+  if(status === 'Available') targetId = 'msb-available';
+  else if(status === 'Pending Acceptance') targetId = 'msb-pending';
+  else if(status === 'Delivered' || milestone === 'Empty / POD') targetId = 'msb-empty';
+  else if(milestone === 'Arrived at Receiver') targetId = 'msb-at-receiver';
+  else if(milestone === 'Loaded / Departed') targetId = 'msb-in-transit';
+  else if(milestone === 'Arrived at Shipper' || milestone === 'Dispatched') targetId = 'msb-at-shipper';
+  else if(status === 'In Transit' || status === 'Assigned') targetId = 'msb-in-transit';
+  if(targetId) document.getElementById(targetId)?.classList.add('active-status');
 }
 function openEditFromDetail(){closeModal('detail');setTimeout(()=>editLoad(currentDetailLoadId),200);}
 
@@ -2736,6 +2786,7 @@ let detentionInterval = null;
 let detentionStart = null;
 let detentionPhase = null; // 'shipper' or 'receiver'
 let pendingMilestone = null;
+let pendingMilestoneStatus = null;
 
 function renderMilestoneTimeline(loadId) {
   const container = document.getElementById('milestone-timeline'); if(!container) return;
@@ -2848,6 +2899,7 @@ async function confirmMilestone() {
   if(liveLoad) liveLoad.last_milestone = milestone.label;
   cancelMilestone();
   renderMilestoneTimeline(currentDetailLoadId);
+  highlightMilestoneStatusBtn(statusMap[pendingMilestone]||'In Transit', milestone.label);
   renderDispatch(); // refresh board cards
   toast(milestone.label + ' logged! ✅', 'success');
   if(pendingMilestone === 'empty') { await loadData(); toast('Load delivered! ⚡ Heading to Invoice Queue','success'); setTimeout(()=>{closeModal('detail');switchPage('invoices');},1500); }
