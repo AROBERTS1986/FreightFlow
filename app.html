@@ -4832,61 +4832,6 @@ function handleAddressInput(input, type) {
   addressDebounces[type] = setTimeout(() => fetchNominatim(val, input, type), 400);
 }
 
-async function fetchNominatim(val, input, type) {
-  try {
-    const resp = await fetch(
-      'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(val) +
-      '&countrycodes=us&format=json&addressdetails=1&limit=8',
-      { headers: { 'Accept-Language': 'en-US', 'User-Agent': 'FreightFlowHQ' } }
-    );
-    const results = await resp.json();
-    if (!results?.length) return;
-
-    const datalistId = type === 'origin' ? 'origin-datalist' : 'dest-datalist';
-    const datalist = document.getElementById(datalistId);
-    if (!datalist) return;
-
-    if (!addressDataMap[type]) addressDataMap[type] = {};
-
-    datalist.innerHTML = '';
-    results.forEach(r => {
-      const addr = r.address || {};
-      const street = [addr.house_number, addr.road].filter(Boolean).join(' ');
-      const city = addr.city || addr.town || addr.village || addr.county || '';
-      const state = addr.state || '';
-      const zip = addr.postcode || '';
-      const stateAbbr = STATE_ABBR[state] || state.substring(0,2).toUpperCase();
-      const displayVal = [street, city, stateAbbr, zip].filter(Boolean).join(', ');
-
-      if (!displayVal) return;
-      addressDataMap[type][displayVal] = { street, city, state: stateAbbr, zip };
-
-      const opt = document.createElement('option');
-      opt.value = displayVal;
-      datalist.appendChild(opt);
-    });
-
-    // When user picks from datalist, the input value changes — trigger lookup
-    input.onchange = () => {
-      const v = input.value;
-      if (addressDataMap[type]?.[v]) {
-        const d = addressDataMap[type][v];
-        if (type === 'origin') {
-          setVal('load-origin-city', d.city);
-          setVal('load-origin-state', d.state);
-          setVal('load-origin-zip', d.zip);
-        } else {
-          setVal('load-dest-city', d.city);
-          setVal('load-dest-state', d.state);
-          setVal('load-dest-zip', d.zip);
-        }
-      }
-    };
-
-  } catch(e) {
-    console.warn('[FF] Nominatim error:', e.message);
-  }
-}
 
 function hideGlobalDrop(type) {
   const d = document.getElementById('global-addr-drop-' + type);
