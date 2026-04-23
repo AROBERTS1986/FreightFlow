@@ -3045,36 +3045,54 @@ async function editCarrier(id){
 async function deleteCarrier(id){if(!confirm('Delete this carrier?'))return;await db.from('carriers').delete().eq('id',id);toast('Carrier deleted','info');await loadData();}
 
 // ── SAVE CUSTOMER ─────────────────────────────────────────────
-async function saveCustomer(){
+async async function saveCustomer(){
   const id=document.getElementById('customer-id')?.value;
-  const payload={
-    name:document.getElementById('customer-name')?.value,
-    contact_name:document.getElementById('customer-contact')?.value,
-    email:document.getElementById('customer-email')?.value,
-    phone:document.getElementById('customer-phone')?.value,
-    city:document.getElementById('customer-city')?.value,
-    state:document.getElementById('customer-state')?.value?.toUpperCase(),
-    notes:document.getElementById('customer-notes')?.value,
-    notif_picked_up:document.getElementById('notif-picked-up')?.checked||false,
-    notif_in_transit:document.getElementById('notif-in-transit')?.checked||false,
-    notif_delivered:document.getElementById('notif-delivered')?.checked||false,
-    notif_pod_ready:document.getElementById('notif-pod-ready')?.checked||false,
-    notif_detention:document.getElementById('notif-detention')?.checked||false,
-    notif_late:document.getElementById('notif-late')?.checked||false,
-    checkcall_freq:document.getElementById('customer-checkcall-freq')?.value||'none',
-    notif_pod:document.getElementById('cust-notif-pod')?.checked||false,
-    notif_detention:document.getElementById('cust-notif-detention')?.checked||false,
-    notif_late:document.getElementById('cust-notif-late')?.checked||false,
-    checkcall_freq_hours:parseInt(document.getElementById('cust-checkcall-freq')?.value)||0,
-    credit_limit:parseFloat(document.getElementById('customer-credit-limit')?.value)||null,
-    payment_terms:document.getElementById('customer-payment-terms')?.value||'Net 30',
-    credit_status:document.getElementById('customer-credit-status')?.value||'Approved',
-    credit_notes:document.getElementById('customer-credit-notes')?.value||null,
-
+  // Helper — try multiple possible ID variants for notification toggles
+  const pickBool = (...ids) => {
+    for(const i of ids) {
+      const el = document.getElementById(i);
+      if(el) return !!el.checked;
+    }
+    return false;
   };
-  const{error}=id?await db.from('customers').update(payload).eq('id',id):await db.from('customers').insert(payload);
-  if(error){toast('Error: '+error.message,'error');return;}
-  toast(id?'Customer updated!':'Customer added!','success');closeModal('customer');await loadData();
+  const pickVal = (...ids) => {
+    for(const i of ids) {
+      const el = document.getElementById(i);
+      if(el) return el.value;
+    }
+    return null;
+  };
+
+  const payload={
+    name: document.getElementById('customer-name')?.value,
+    contact_name: document.getElementById('customer-contact')?.value,
+    email: document.getElementById('customer-email')?.value,
+    phone: document.getElementById('customer-phone')?.value,
+    city: document.getElementById('customer-city')?.value,
+    state: document.getElementById('customer-state')?.value?.toUpperCase(),
+    notes: document.getElementById('customer-notes')?.value,
+    // Notification toggles (deduped — use whichever IDs exist in the DOM)
+    notif_picked_up: pickBool('notif-picked-up','cust-notif-picked-up'),
+    notif_in_transit: pickBool('notif-in-transit','cust-notif-in-transit'),
+    notif_delivered:  pickBool('notif-delivered','cust-notif-delivered'),
+    notif_pod:        pickBool('notif-pod-ready','cust-notif-pod','notif-pod'),
+    notif_detention:  pickBool('notif-detention','cust-notif-detention'),
+    notif_late:       pickBool('notif-late','cust-notif-late'),
+    checkcall_freq_hours: parseInt(pickVal('cust-checkcall-freq','customer-checkcall-freq')) || 0,
+    // Credit fields
+    credit_limit:  parseFloat(document.getElementById('customer-credit-limit')?.value) || null,
+    payment_terms: document.getElementById('customer-payment-terms')?.value || 'Net 30',
+    credit_status: document.getElementById('customer-credit-status')?.value || 'Approved',
+    credit_notes:  document.getElementById('customer-credit-notes')?.value || null,
+  };
+
+  const {error} = id
+    ? await db.from('customers').update(payload).eq('id', id)
+    : await db.from('customers').insert(payload);
+  if(error) { toast('Error: ' + error.message, 'error'); return; }
+  toast(id ? 'Customer updated!' : 'Customer added!', 'success');
+  closeModal('customer');
+  await loadData();
 }
 async function editCustomer(id){
   const c=allCustomers.find(x=>x.id===id);if(!c)return;
@@ -3082,7 +3100,8 @@ async function editCustomer(id){
   const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
   sv('customer-name',c.name);sv('customer-contact',c.contact_name);sv('customer-email',c.email);sv('customer-phone',c.phone);sv('customer-city',c.city);sv('customer-state',c.state);sv('customer-notes',c.notes);
   [['notif-picked-up',c.notif_picked_up],['notif-in-transit',c.notif_in_transit],['notif-delivered',c.notif_delivered],['notif-pod-ready',c.notif_pod_ready],['notif-detention',c.notif_detention],['notif-late',c.notif_late]].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.checked=!!val;});
-  const freqEl=document.getElementById('customer-checkcall-freq');if(freqEl)freqEl.value=c.checkcall_freq||'none';
+  const freqEl = document.getElementById('cust-checkcall-freq') || document.getElementById('customer-checkcall-freq');
+  if(freqEl) freqEl.value = c.checkcall_freq_hours || '0';
 
   // Credit fields
   sv('customer-credit-limit', c.credit_limit||'');
