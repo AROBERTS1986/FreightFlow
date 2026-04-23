@@ -1423,7 +1423,12 @@ function loadGooglePlaces(apiKey){
 <div class="modal-overlay" id="modal-detail" style="z-index:600;">
   <div class="modal" style="width:820px;max-height:92vh;">
     <div class="modal-header">
-      <div><div class="modal-title" id="detail-load-number">Load Detail</div><div style="font-size:12px;color:var(--text3);margin-top:2px;" id="detail-load-route"></div></div>
+      <div style="min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="modal-title" id="detail-load-number" style="white-space:nowrap;">Load Detail</div>
+          <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;" id="detail-load-route"></div>
+        </div>
+      </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn btn-primary btn-sm" id="tender-btn" onclick="openTenderModal()" style="background:var(--purple);">📤 Tender to Carrier</button>
         <button class="btn btn-danger btn-sm" id="remove-carrier-btn" onclick="openRemoveCarrierModal()" style="display:none;">🚫 Remove Carrier</button>
@@ -3559,15 +3564,16 @@ function renderMilestoneTimeline(loadId) {
     const textColor = isLogged || isCurrent ? 'var(--text)' : 'var(--text3)';
     const opacity   = isFuture ? '0.45' : '1';
 
-    // Action button — show for current+next only
+    // Action button — only show for the NEXT unlogged milestone
     let actionBtn = '';
-    if(isNext || isCurrent) {
-      const btnLabel = isLogged ? `↻ Re-log ${ms.label}` : `Mark ${ms.label} →`;
-      const btnStyle = isLogged
-        ? `background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:11px;`
-        : `background:${ms.color}22;border:1px solid ${ms.color};color:${ms.color};font-size:11px;font-weight:700;`;
+    if(isNext && !isLogged) {
+      const btnStyle = `background:${ms.color}22;border:1px solid ${ms.color};color:${ms.color};font-size:11px;font-weight:700;`;
       actionBtn = `<button class="btn btn-sm" style="${btnStyle}padding:3px 10px;border-radius:6px;cursor:pointer;margin-top:6px;"
-        onclick="setMilestoneStatus('${ms.status}','${ms.label}')">${btnLabel}</button>`;
+        onclick="setMilestoneStatus('${ms.status}','${ms.label}')">Mark ${ms.label} →</button>`;
+    } else if(isLogged) {
+      // Already logged — subtle re-log option
+      actionBtn = `<button class="btn btn-sm" style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:10px;padding:2px 8px;border-radius:6px;cursor:pointer;margin-top:4px;"
+        onclick="setMilestoneStatus('${ms.status}','${ms.label}')">↻ Re-log</button>`;
     }
 
     // Note display
