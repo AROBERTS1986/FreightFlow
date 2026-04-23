@@ -426,6 +426,7 @@ function loadGooglePlaces(apiKey){
   <div class="nav-item" onclick="switchPage('quotes')" style="position:relative;"><span class="nav-icon">📋</span> Quotes<span id="quotes-sidebar-badge" style="display:none;position:absolute;top:6px;right:8px;background:var(--amber);color:white;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 4px;font-family:'JetBrains Mono',monospace;"></span></div>
   <div class="sidebar-section">Finance</div>
   <div class="nav-item" onclick="switchPage('invoices')"><span class="nav-icon">🧾</span> Invoicing</div>
+      <div class="nav-item" onclick="switchPage('credit-apps')"><span class="nav-icon">📋</span><span>Credit Apps</span><span id="credit-apps-badge" style="display:none;margin-left:auto;background:var(--amber);color:#1a1a1a;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;"></span></div>
   <div class="sidebar-section">Insights</div>
   <div class="nav-item" onclick="switchPage('reports')"><span class="nav-icon">📊</span> Reports</div>
    <div class="nav-item" onclick="switchPage('lane-intel')"><span class="nav-icon">🧠</span> Lane Intelligence</div>
@@ -1046,7 +1047,23 @@ function loadGooglePlaces(apiKey){
 
 
   <!-- LANE INTELLIGENCE -->
-  <div class="content" id="page-lane-intel">
+  
+    <div class="content" id="page-credit-apps">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📋 Credit Applications</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px;">Review and approve customer credit applications</div>
+          </div>
+        </div>
+        <div style="padding:20px;">
+          <div id="credit-apps-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:20px;"></div>
+          <div id="credit-apps-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="page-lane-intel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div><div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text);">🧠 Lane Intelligence Engine</div><div style="font-size:13px;color:var(--text3);margin-top:4px;">AI-powered lane analytics — learns your network over time</div></div>
       <div style="display:flex;gap:8px;"><select id="li-period" onchange="renderLaneIntel()" style="font-size:12px;padding:6px 10px;"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last 12 months</option><option value="all">All time</option></select><button class="btn btn-primary btn-sm" onclick="renderLaneIntel()">↻ Refresh</button></div>
@@ -2296,6 +2313,54 @@ function loadGooglePlaces(apiKey){
   </div>
 </div>
 
+
+<!-- MODAL: Send Credit App -->
+<div class="modal-overlay" id="modal-send-credit-app">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📋 Send Credit Application</div>
+      <button class="modal-close" onclick="closeModal('send-credit-app')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:18px;">Send a secure credit application link to this company. They'll fill it out online and it will land in your Credit Applications queue.</p>
+      <div class="form-group">
+        <label>Recipient Email<span style="color:var(--red);">*</span></label>
+        <input type="email" id="sca-email" placeholder="ap@customer.com" />
+      </div>
+      <div class="form-group">
+        <label>Recipient Name (optional)</label>
+        <input type="text" id="sca-name" placeholder="Jane Smith, CFO" />
+      </div>
+      <div class="form-group">
+        <label>Personal Message (optional)</label>
+        <textarea id="sca-message" rows="4" placeholder="Add a personal note — e.g. 'Great talking today! Here's the credit app we discussed.'"></textarea>
+      </div>
+      <div style="background:var(--accent-dim);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent2);margin-top:8px;">
+        💡 The customer will receive a secure link that expires in 30 days.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('send-credit-app')">Cancel</button>
+      <button class="btn btn-primary" onclick="sendCreditApp()">Send Application →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Review Credit App -->
+<div class="modal-overlay" id="modal-review-credit-app">
+  <div class="modal" style="width:760px;max-height:90vh;">
+    <div class="modal-header">
+      <div class="modal-title">📋 Credit Application Review</div>
+      <button class="modal-close" onclick="closeModal('review-credit-app')">✕</button>
+    </div>
+    <div class="modal-body" id="review-ca-body" style="padding:24px;overflow-y:auto;max-height:calc(90vh - 160px);"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="declineCreditApp()" style="color:var(--red);border-color:rgba(239,68,68,0.3);">✕ Decline</button>
+      <button class="btn btn-primary" onclick="approveCreditApp()" style="background:var(--green);">✓ Approve &amp; Create Customer</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
 <iframe id="print-frame" style="display:none;"></iframe>
@@ -2434,7 +2499,7 @@ function switchPage(id){
 }
 
 function renderCurrentPage(){
-  const renderers={dashboard:renderDashboard,dispatch:renderDispatch,loads:renderLoads,carriers:renderCarriers,customers:renderCustomers,invoices:renderInvoices,quotes:renderQuotesPage,reports:renderReports,'lane-intel':renderLaneIntel,'academy':renderAcademy,users:renderUsersPage,settings:renderSettings,crm:renderCRM,integrations:()=>{}};
+  const renderers={dashboard:renderDashboard,dispatch:renderDispatch,loads:renderLoads,carriers:renderCarriers,customers:renderCustomers,invoices:renderInvoices,'credit-apps':renderCreditApps,quotes:renderQuotesPage,reports:renderReports,'lane-intel':renderLaneIntel,'academy':renderAcademy,users:renderUsersPage,settings:renderSettings,crm:renderCRM,integrations:()=>{}};
   if(renderers[currentPage])renderers[currentPage]();
 }
 
@@ -4400,7 +4465,7 @@ function openCrmCompanyDetail(companyId){
   const tasks=allCrmTasks.filter(t=>t.company_id===companyId&&t.status!=='Done').slice(0,5);
   const stageColors={'New Lead':'var(--text3)','Contacted':'var(--accent)','Qualified':'var(--amber)','Proposal Sent':'var(--purple)','Won':'var(--green)','Lost':'var(--red)'};
   const detail=document.getElementById('crm-company-detail');if(!detail)return;
-  detail.innerHTML=`<div style="padding:20px;"><div id="load-profit-box" style="margin-bottom:16px;"></div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);">${c.name}</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span style="width:10px;height:10px;border-radius:50%;background:${stageColors[c.stage]||'var(--text3)'};display:inline-block;"></span><span style="font-size:13px;color:var(--text2);">${c.stage}</span></div></div><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="editCrmCompany('${c.id}')">✏️ Edit</button>${currentUserRole === 'admin' ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.3);" onclick="deleteCrmCompany('${c.id}','${(c.name||'').replace(/'/g,"\\'")}')">🗑 Delete</button>` : ''}<button class="btn btn-primary btn-sm" onclick="document.getElementById('cact-company-id').value='${c.id}';openModal('crm-activity')">+ Log Activity</button></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;"><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Deal Value</div><div style="font-size:18px;font-weight:700;color:var(--green);">${fmt$(c.deal_value)}</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Probability</div><div style="font-size:18px;font-weight:700;color:var(--accent);">${c.probability||'—'}%</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Loads/Month</div><div style="font-size:18px;font-weight:700;color:var(--text);">${c.estimated_loads||'—'}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Contact Info</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.phone||'No phone'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.email||'No email'}</div><div style="font-size:13px;color:var(--text2);">${c.city?c.city+', '+c.state:'No location'}</div></div><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Details</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Industry: ${c.industry||'—'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Source: ${c.lead_source||'—'}</div><div style="font-size:13px;color:var(--text2);">Follow-up: ${c.next_followup?fmtDate(c.next_followup):'—'}</div></div></div>${c.notes?`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6;font-style:italic;">"${c.notes}"</div>`:''}<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Recent Activity</div>${!activities.length?'<div style="font-size:13px;color:var(--text3);padding:12px;background:var(--surface2);border-radius:8px;text-align:center;">No activity logged yet</div>':activities.map(a=>`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent);"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;"><span>${a.type||'Note'}</span><span>${fmtDate(a.created_at)}</span></div><div style="font-size:13px;font-weight:600;color:var(--text);">${a.subject||'—'}</div>${a.body?`<div style="font-size:12px;color:var(--text2);margin-top:4px;">${a.body}</div>`:''}</div>`).join('')}</div>`;
+  detail.innerHTML=`<div style="padding:20px;"><div id="load-profit-box" style="margin-bottom:16px;"></div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;"><div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);">${c.name}</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span style="width:10px;height:10px;border-radius:50%;background:${stageColors[c.stage]||'var(--text3)'};display:inline-block;"></span><span style="font-size:13px;color:var(--text2);">${c.stage}</span></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="editCrmCompany('${c.id}')">✏️ Edit</button>${currentUserRole === 'admin' ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,0.3);" onclick="deleteCrmCompany('${c.id}','${(c.name||'').replace(/'/g,"\\'")}')">🗑 Delete</button>` : ''}<button class="btn btn-ghost btn-sm" style="color:var(--accent);border-color:rgba(59,130,246,0.4);" onclick="openSendCreditApp('${c.id}')">📋 Send Credit App</button><button class="btn btn-primary btn-sm" onclick="document.getElementById('cact-company-id').value='${c.id}';openModal('crm-activity')">+ Log Activity</button></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;"><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Deal Value</div><div style="font-size:18px;font-weight:700;color:var(--green);">${fmt$(c.deal_value)}</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Probability</div><div style="font-size:18px;font-weight:700;color:var(--accent);">${c.probability||'—'}%</div></div><div style="background:var(--surface2);border-radius:8px;padding:12px;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:4px;">Loads/Month</div><div style="font-size:18px;font-weight:700;color:var(--text);">${c.estimated_loads||'—'}</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Contact Info</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.phone||'No phone'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">${c.email||'No email'}</div><div style="font-size:13px;color:var(--text2);">${c.city?c.city+', '+c.state:'No location'}</div></div><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Details</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Industry: ${c.industry||'—'}</div><div style="font-size:13px;color:var(--text2);margin-bottom:4px;">Source: ${c.lead_source||'—'}</div><div style="font-size:13px;color:var(--text2);">Follow-up: ${c.next_followup?fmtDate(c.next_followup):'—'}</div></div></div>${c.notes?`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.6;font-style:italic;">"${c.notes}"</div>`:''}<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">Recent Activity</div>${!activities.length?'<div style="font-size:13px;color:var(--text3);padding:12px;background:var(--surface2);border-radius:8px;text-align:center;">No activity logged yet</div>':activities.map(a=>`<div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent);"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px;"><span>${a.type||'Note'}</span><span>${fmtDate(a.created_at)}</span></div><div style="font-size:13px;font-weight:600;color:var(--text);">${a.subject||'—'}</div>${a.body?`<div style="font-size:12px;color:var(--text2);margin-top:4px;">${a.body}</div>`:''}</div>`).join('')}</div>`;
 }
 
 
@@ -8059,4 +8124,372 @@ async function runImport(type) {
 </html>
 <script>
 // ── PATCH: inject all new operations JS before </script> ──
+
+
+async function renderCreditApps() {
+  const list = document.getElementById('credit-apps-list');
+  const summary = document.getElementById('credit-apps-summary');
+  if(!list) return;
+
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Loading…</div>';
+  const apps = await loadCreditApplications();
+
+  // Summary KPIs
+  const sent = apps.filter(a => a.status === 'Sent').length;
+  const pending = apps.filter(a => a.status === 'Submitted').length;
+  const approved = apps.filter(a => a.status === 'Approved').length;
+  const declined = apps.filter(a => a.status === 'Declined').length;
+
+  if(summary) {
+    summary.innerHTML = `
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--accent);">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;">Sent</div>
+        <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--text);margin-top:4px;">${sent}</div>
+        <div style="font-size:11px;color:var(--text3);">Awaiting customer</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--amber);">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;">Needs Review</div>
+        <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--amber);margin-top:4px;">${pending}</div>
+        <div style="font-size:11px;color:var(--text3);">Submitted apps</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--green);">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;">Approved</div>
+        <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--green);margin-top:4px;">${approved}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:14px;border-top:3px solid var(--red);">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;">Declined</div>
+        <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--red);margin-top:4px;">${declined}</div>
+      </div>
+    `;
+  }
+
+  // Update nav badge if there are pending
+  const badge = document.getElementById('credit-apps-badge');
+  if(badge) {
+    if(pending > 0) { badge.style.display = 'inline-block'; badge.textContent = pending; }
+    else { badge.style.display = 'none'; }
+  }
+
+  if(!apps.length) {
+    list.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text3);"><div style="font-size:48px;margin-bottom:12px;">📋</div><div style="font-size:14px;font-weight:600;color:var(--text2);">No credit applications yet</div><div style="font-size:12px;margin-top:4px;">Send one from the CRM → company detail → "📋 Send Credit App"</div></div>';
+    return;
+  }
+
+  const statusBadge = (s) => {
+    const colors = { 'Sent': 'var(--accent)', 'Submitted': 'var(--amber)', 'Approved': 'var(--green)', 'Declined': 'var(--red)' };
+    return `<span style="padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;background:${colors[s]}22;color:${colors[s]};border:1px solid ${colors[s]};">${s}</span>`;
+  };
+
+  list.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Requested</th>
+          <th>Terms</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th style="text-align:right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${apps.map(a => `
+          <tr>
+            <td style="font-weight:600;">${a.legal_name || a.companies?.name || '—'}</td>
+            <td style="color:var(--green);font-weight:600;">${a.requested_credit ? fmt$(a.requested_credit) : '—'}</td>
+            <td>${a.requested_terms || '—'}</td>
+            <td>${statusBadge(a.status)}</td>
+            <td style="color:var(--text3);font-size:12px;">${a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : a.sent_at ? 'Sent ' + new Date(a.sent_at).toLocaleDateString() : '—'}</td>
+            <td style="text-align:right;">
+              ${a.status === 'Submitted' ? `<button class="btn btn-primary btn-sm" onclick="openReviewCreditApp('${a.id}')">Review →</button>` : a.status === 'Approved' ? '<span style="color:var(--green);font-size:12px;">✓ Customer created</span>' : a.status === 'Declined' ? '<span style="color:var(--text3);font-size:12px;">Declined</span>' : '<span style="color:var(--text3);font-size:12px;">Awaiting submission</span>'}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ── CREDIT APPLICATION SYSTEM ─────────────────────────────────
+let _currentReviewCaId = null;
+
+function openSendCreditApp(companyId) {
+  window._scaCompanyId = companyId;
+  const c = allCompanies.find(x => x.id === companyId);
+  if(!c) { toast('Company not found', 'error'); return; }
+  // Pre-fill email if we have one
+  const emailEl = document.getElementById('sca-email');
+  if(emailEl) emailEl.value = c.email || '';
+  const nameEl = document.getElementById('sca-name');
+  if(nameEl) nameEl.value = '';
+  const msgEl = document.getElementById('sca-message');
+  if(msgEl) msgEl.value = '';
+  openModal('send-credit-app');
+}
+
+async function sendCreditApp() {
+  const companyId = window._scaCompanyId;
+  if(!companyId) { toast('Missing company reference', 'error'); return; }
+  const email = document.getElementById('sca-email')?.value?.trim();
+  const name  = document.getElementById('sca-name')?.value?.trim();
+  const msg   = document.getElementById('sca-message')?.value?.trim();
+
+  if(!email) { toast('Email is required', 'error'); return; }
+  if(!email.includes('@')) { toast('Please enter a valid email', 'error'); return; }
+
+  if(_isDemoMode) {
+    toast('📧 Credit app would be sent to ' + email + ' (demo mode)', 'info');
+    closeModal('send-credit-app');
+    return;
+  }
+
+  toast('Sending credit application…', 'info');
+
+  // Generate unique token
+  const token = 'ca_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+  // Create credit_applications row
+  const company = allCompanies.find(x => x.id === companyId);
+  const payload = {
+    company_id: companyId,
+    token,
+    recipient_email: email,
+    recipient_name: name || null,
+    personal_message: msg || null,
+    status: 'Sent',
+    sent_at: new Date().toISOString(),
+    sent_by: currentUser?.id || null,
+    broker_company_id: currentCompanyId,
+  };
+
+  const { data, error } = await db.from('credit_applications').insert(payload).select().single();
+  if(error) { toast('Error creating application: ' + error.message, 'error'); return; }
+
+  // Log audit
+  logAction('send_credit_app', 'company', companyId, { recipient: email, company: company?.name });
+
+  // Send email via edge function
+  const s = window._companySettings || {};
+  const brokerName = s.company_name || 'FreightFlowHQ';
+  const appUrl = `${window.location.origin}/credit-app.html?token=${token}`;
+
+  const emailHtml = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#f0f4f8;margin:0;padding:20px;">
+<div style="max-width:600px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
+  <div style="background:linear-gradient(135deg,#1B2A4A 0%,#2563EB 100%);padding:32px 24px;text-align:center;">
+    <div style="font-size:22px;font-weight:900;color:white;letter-spacing:-0.5px;">Freight<span style="color:#60A5FA;">FlowHQ</span></div>
+    <h1 style="color:white;font-size:24px;margin-top:16px;font-weight:800;">Credit Application</h1>
+    <p style="color:#cbd5e1;font-size:14px;margin-top:8px;">From ${brokerName}</p>
+  </div>
+  <div style="padding:32px 24px;">
+    <p style="font-size:15px;color:#1a1a1a;margin-bottom:16px;">Hi${name ? ' ' + name.split(' ')[0] : ''},</p>
+    ${msg ? `<p style="font-size:14px;color:#1a1a1a;background:#f8fafc;padding:14px;border-radius:8px;border-left:4px solid #2563EB;margin-bottom:20px;line-height:1.6;">${msg.replace(/\n/g, '<br>')}</p>` : ''}
+    <p style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:20px;">Please complete our credit application to establish net terms for future shipments. The form takes about 5–10 minutes and only requires information about your company and three trade references.</p>
+    <div style="text-align:center;margin:30px 0;">
+      <a href="${appUrl}" style="display:inline-block;background:#2563EB;color:white;padding:14px 32px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 4px 12px rgba(37,99,235,0.3);">📋 Open Credit Application →</a>
+    </div>
+    <p style="font-size:12px;color:#94a3b8;text-align:center;margin-top:20px;">This secure link expires in 30 days. If you have questions, reply to this email.</p>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;"/>
+    <p style="font-size:11px;color:#94a3b8;text-align:center;">${brokerName}${s.mc_number ? ' · MC# ' + s.mc_number : ''}${s.phone ? ' · ' + s.phone : ''}</p>
+  </div>
+</div></body></html>`;
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+      body: JSON.stringify({
+        to: email,
+        subject: `Credit Application from ${brokerName}`,
+        html: emailHtml,
+        from: `${brokerName} <onboarding@resend.dev>`,
+      })
+    });
+    const result = await resp.json();
+    if(!resp.ok || result.error) {
+      toast('Application saved but email failed: ' + (result.error || result.message || 'Unknown'), 'error');
+    } else {
+      toast(`✅ Credit application sent to ${email}!`, 'success');
+    }
+  } catch(e) {
+    toast('Application saved but email error: ' + e.message, 'error');
+  }
+
+  closeModal('send-credit-app');
+}
+
+// Load all credit applications for the review queue
+async function loadCreditApplications() {
+  try {
+    const { data, error } = await db.from('credit_applications')
+      .select('*, companies(name, phone, email)')
+      .order('created_at', { ascending: false });
+    if(error) { console.warn('Error loading credit apps:', error); return []; }
+    return data || [];
+  } catch(e) { return []; }
+}
+
+async function openReviewCreditApp(caId) {
+  _currentReviewCaId = caId;
+  const { data: ca, error } = await db.from('credit_applications')
+    .select('*, companies(*)')
+    .eq('id', caId)
+    .single();
+  if(error || !ca) { toast('Error loading application', 'error'); return; }
+
+  const refs = ca.trade_refs ? (typeof ca.trade_refs === 'string' ? JSON.parse(ca.trade_refs) : ca.trade_refs) : [];
+  const body = document.getElementById('review-ca-body');
+  if(!body) return;
+
+  body.innerHTML = `
+    <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:18px;font-weight:800;color:var(--text);">${ca.legal_name || ca.companies?.name || '—'}</div>
+          ${ca.dba ? `<div style="font-size:12px;color:var(--text3);margin-top:2px;">DBA: ${ca.dba}</div>` : ''}
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;">${ca.billing_address || ''} · ${ca.city || ''}, ${ca.state || ''} ${ca.zip || ''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text3);">Submitted</div>
+          <div style="font-size:13px;color:var(--text);">${ca.submitted_at ? new Date(ca.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px;">Company</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">
+          <strong>EIN:</strong> ${ca.ein || '—'}<br>
+          <strong>Type:</strong> ${ca.business_type || '—'}<br>
+          <strong>Years in Business:</strong> ${ca.years_business || '—'}<br>
+          <strong>Phone:</strong> ${ca.phone || '—'}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px;">Requested Terms</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.8;">
+          <strong>Credit Limit:</strong> <span style="color:var(--green);font-weight:700;">${fmt$(ca.requested_credit)}</span><br>
+          <strong>Payment Terms:</strong> ${ca.requested_terms || '—'}<br>
+          <strong>Monthly Volume:</strong> ${ca.monthly_volume || '—'}
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px;">🏦 Bank Reference</div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);line-height:1.7;">
+        <strong>${ca.bank_name || '—'}</strong>${ca.bank_contact ? ' — ' + ca.bank_contact : ''}<br>
+        📞 ${ca.bank_phone || '—'}${ca.bank_years ? ' · ' + ca.bank_years + ' years with bank' : ''}
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px;">📞 Trade References</div>
+      ${refs.map((r, i) => `
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:8px;font-size:13px;color:var(--text2);">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px;">${i+1}. ${r.company || '—'}</div>
+          <div style="line-height:1.6;">
+            ${r.contact ? r.contact + ' · ' : ''}📞 ${r.phone || '—'}${r.email ? ' · ' + r.email : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="background:var(--amber-dim);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:14px;margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--amber);margin-bottom:8px;">✍️ E-Signature</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.7;">
+        <strong>${ca.signer_name || '—'}</strong>, ${ca.signer_title || '—'}<br>
+        ${ca.signer_email || '—'} · ${ca.signer_phone || '—'}<br>
+        <span style="color:var(--green);">✓ Certified on ${ca.certified_at ? new Date(ca.certified_at).toLocaleString() : '—'}</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">
+      <div class="form-group">
+        <label>Approved Credit Limit ($)</label>
+        <input type="number" id="review-approved-limit" value="${ca.requested_credit || ''}" />
+      </div>
+      <div class="form-group">
+        <label>Payment Terms</label>
+        <select id="review-approved-terms">
+          <option ${ca.requested_terms==='Net 15'?'selected':''}>Net 15</option>
+          <option ${ca.requested_terms==='Net 30'?'selected':''}>Net 30</option>
+          <option ${ca.requested_terms==='Net 45'?'selected':''}>Net 45</option>
+          <option ${ca.requested_terms==='Net 60'?'selected':''}>Net 60</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Internal Notes (not shared with customer)</label>
+      <textarea id="review-notes" rows="3" placeholder="References checked, D&B pulled, etc."></textarea>
+    </div>
+  `;
+
+  openModal('review-credit-app');
+}
+
+async function approveCreditApp() {
+  const caId = _currentReviewCaId;
+  if(!caId) return;
+  const approvedLimit = parseFloat(document.getElementById('review-approved-limit')?.value) || null;
+  const approvedTerms = document.getElementById('review-approved-terms')?.value || 'Net 30';
+  const notes = document.getElementById('review-notes')?.value || null;
+
+  const { data: ca } = await db.from('credit_applications').select('*').eq('id', caId).single();
+  if(!ca) { toast('Application not found', 'error'); return; }
+
+  // Create customer record from the credit app
+  const customerPayload = {
+    name: ca.legal_name,
+    contact_name: ca.signer_name,
+    email: ca.signer_email,
+    phone: ca.phone,
+    city: ca.city,
+    state: ca.state,
+    credit_limit: approvedLimit,
+    payment_terms: approvedTerms,
+    credit_status: 'Approved',
+    credit_notes: notes,
+    status: 'Active',
+  };
+
+  const { data: newCustomer, error: custErr } = await db.from('customers').insert(customerPayload).select().single();
+  if(custErr) { toast('Error creating customer: ' + custErr.message, 'error'); return; }
+
+  // Update credit_applications
+  await db.from('credit_applications').update({
+    status: 'Approved',
+    approved_at: new Date().toISOString(),
+    approved_by: currentUser?.id,
+    approved_limit: approvedLimit,
+    approved_terms: approvedTerms,
+    internal_notes: notes,
+    created_customer_id: newCustomer.id,
+  }).eq('id', caId);
+
+  logAction('approve_credit_app', 'customer', newCustomer.id, { approved_limit: approvedLimit, terms: approvedTerms, from_app: caId });
+
+  toast(`✅ ${ca.legal_name} approved and added as customer!`, 'success');
+  closeModal('review-credit-app');
+  await loadData();
+}
+
+async function declineCreditApp() {
+  const caId = _currentReviewCaId;
+  if(!caId) return;
+  const reason = prompt('Reason for decline (will be emailed to applicant):');
+  if(!reason) return;
+
+  await db.from('credit_applications').update({
+    status: 'Declined',
+    declined_at: new Date().toISOString(),
+    declined_by: currentUser?.id,
+    decline_reason: reason,
+  }).eq('id', caId);
+
+  logAction('decline_credit_app', 'credit_app', caId, { reason });
+  toast('Application declined', 'info');
+  closeModal('review-credit-app');
+}
+
 </script>
