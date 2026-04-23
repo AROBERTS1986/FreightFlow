@@ -1343,6 +1343,7 @@ function loadGooglePlaces(apiKey){
 
         <div class="form-group full" style="background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border);margin-top:4px;">
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:10px;">💳 Credit & Billing</div>
+          <div id="customer-payment-metrics" style="display:none;margin-bottom:14px;"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
             <div>
               <label style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Credit Limit</label>
@@ -2913,6 +2914,14 @@ async function saveLoad(){
         toast('⛔ Credit limit override requires admin approval', 'error');
         return;
       }
+      // Log the override
+      logAction('credit_override', 'customer', customerId, {
+        customer: customer.name,
+        limit: limit,
+        exposure: existingExposure,
+        this_load: customerRate,
+        over_by: over
+      });
     }
   }
   // ─────────────────────────────────────────────────────────────
@@ -3099,7 +3108,7 @@ async function editCustomer(id){
   document.getElementById('customer-id').value=c.id;document.getElementById('customer-modal-title').textContent=`Edit ${c.name}`;
   const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
   sv('customer-name',c.name);sv('customer-contact',c.contact_name);sv('customer-email',c.email);sv('customer-phone',c.phone);sv('customer-city',c.city);sv('customer-state',c.state);sv('customer-notes',c.notes);
-  [['notif-picked-up',c.notif_picked_up],['notif-in-transit',c.notif_in_transit],['notif-delivered',c.notif_delivered],['notif-pod-ready',c.notif_pod_ready],['notif-detention',c.notif_detention],['notif-late',c.notif_late]].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.checked=!!val;});
+  [['notif-picked-up',c.notif_picked_up],['notif-in-transit',c.notif_in_transit],['notif-delivered',c.notif_delivered],['notif-pod-ready',c.notif_pod],['notif-detention',c.notif_detention],['notif-late',c.notif_late]].forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.checked=!!val;});
   const freqEl = document.getElementById('cust-checkcall-freq') || document.getElementById('customer-checkcall-freq');
   if(freqEl) freqEl.value = c.checkcall_freq_hours || '0';
 
@@ -3108,6 +3117,34 @@ async function editCustomer(id){
   sv('customer-credit-notes', c.credit_notes||'');
   const ptEl=document.getElementById('customer-payment-terms'); if(ptEl) ptEl.value=c.payment_terms||'Net 30';
   const csEl=document.getElementById('customer-credit-status'); if(csEl) csEl.value=c.credit_status||'Approved';
+  
+  // Render payment metrics
+  const metrics = getCustomerPaymentMetrics(id);
+  const metricsEl = document.getElementById('customer-payment-metrics');
+  if(metricsEl) {
+    if(metrics.totalInvoices === 0) {
+      metricsEl.style.display = 'block';
+      metricsEl.innerHTML = `<div style="padding:10px 12px;background:var(--surface3);border-radius:8px;font-size:12px;color:var(--text3);">No payment history yet — metrics will appear after first invoice.</div>`;
+    } else {
+      metricsEl.style.display = 'block';
+      metricsEl.innerHTML = `
+        <div style="background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);">📊 Payment History</div>
+            <span style="padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;background:${metrics.healthColor}22;color:${metrics.healthColor};border:1px solid ${metrics.healthColor};">${metrics.healthRating}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+            <div><div style="font-size:10px;color:var(--text3);margin-bottom:2px;">Avg Days to Pay</div><div style="font-size:16px;font-weight:700;color:${metrics.avgDaysToPay && metrics.avgDaysToPay > 45 ? 'var(--amber)' : 'var(--text)'};">${metrics.avgDaysToPay !== null ? metrics.avgDaysToPay + ' days' : '—'}</div></div>
+            <div><div style="font-size:10px;color:var(--text3);margin-bottom:2px;">Lifetime Revenue</div><div style="font-size:16px;font-weight:700;color:var(--green);">${fmt$(metrics.lifetimeRevenue)}</div></div>
+            <div><div style="font-size:10px;color:var(--text3);margin-bottom:2px;">Outstanding</div><div style="font-size:16px;font-weight:700;color:${metrics.outstanding > 0 ? 'var(--amber)' : 'var(--text)'};">${fmt$(metrics.outstanding)}</div></div>
+            <div><div style="font-size:10px;color:var(--text3);margin-bottom:2px;">Overdue</div><div style="font-size:16px;font-weight:700;color:${metrics.overdueCount > 0 ? 'var(--red)' : 'var(--text)'};">${metrics.overdueCount > 0 ? fmt$(metrics.totalOverdue) : '$0'}</div></div>
+          </div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);">
+            ${metrics.totalInvoices} total invoices · ${metrics.paidCount} paid · ${metrics.overdueCount} overdue
+          </div>
+        </div>`;
+    }
+  }
   openModal('customer');
 }
 async function deleteCustomer(id){if(!confirm('Delete this customer?'))return;await db.from('customers').delete().eq('id',id);toast('Customer deleted','info');await loadData();}
@@ -3453,7 +3490,9 @@ async function confirmMilestone() {
   }
 
   // Save to DB
-  try { await db.from('check_calls').insert({load_id: currentDetailLoadId, status: pendingMilestone, notes, contact: milestone.label}); } catch(e){}
+  try { await db.from('check_calls').insert({load_id: currentDetailLoadId, status: pendingMilestone, notes, contact: milestone.label});
+  logAction('status_change', 'load', currentDetailLoadId, {milestone: pendingMilestone, status: pendingMilestoneStatus});
+ } catch(e){}
 
   // Update in-memory load so dispatch card refreshes immediately
   const liveLoad = allLoads.find(x=>x.id===currentDetailLoadId);
@@ -3906,6 +3945,7 @@ async function sendTender() {
     if(!resp.ok || result.error) {
       toast(`Email failed: ${result.error || result.message || 'Unknown error — check console'}`, 'error');
     } else {
+      logAction('tender', 'load', currentDetailLoadId, {carrier: carrier.name, carrier_id: carrierId, carrier_pay: parseFloat(pay), driver_name: driver, truck_number: truck});
       toast(`✅ Rate con sent to ${carrier.email}! Load is Pending Acceptance.`, 'success');
     }
   } catch(fetchErr) {
@@ -4215,6 +4255,70 @@ async function renderCRM(){
   await loadCRMData();updateCRMKPIs();switchCrmTab(activeCrmTab);
 }
 
+
+// ── PAYMENT METRICS ───────────────────────────────────────────
+// Calculate payment health metrics for a customer from their invoice history
+function getCustomerPaymentMetrics(customerId) {
+  const custInvoices = allInvoices.filter(i => i.customer_id === customerId);
+  const paidInvoices = custInvoices.filter(i => i.status === 'Paid' && i.paid_at && i.created_at);
+  const overdueInvoices = custInvoices.filter(i => {
+    if(i.status === 'Paid') return false;
+    if(!i.due_date) return false;
+    return new Date(i.due_date) < new Date();
+  });
+
+  // Avg days to pay = (paid_at - created_at) across all paid invoices
+  let avgDaysToPay = null;
+  if(paidInvoices.length > 0) {
+    const totalDays = paidInvoices.reduce((sum, inv) => {
+      const created = new Date(inv.created_at);
+      const paid = new Date(inv.paid_at);
+      return sum + Math.round((paid - created) / (1000 * 60 * 60 * 24));
+    }, 0);
+    avgDaysToPay = Math.round(totalDays / paidInvoices.length);
+  }
+
+  // Total lifetime revenue from this customer
+  const lifetimeRevenue = custInvoices.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const totalPaid = paidInvoices.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const totalOverdue = overdueInvoices.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const outstanding = custInvoices
+    .filter(i => i.status !== 'Paid')
+    .reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+  // Payment health rating
+  let healthRating = 'Unknown';
+  let healthColor = 'var(--text3)';
+  if(paidInvoices.length >= 3) {
+    if(avgDaysToPay <= 30 && overdueInvoices.length === 0) {
+      healthRating = 'Excellent';
+      healthColor = 'var(--green)';
+    } else if(avgDaysToPay <= 45 && overdueInvoices.length <= 1) {
+      healthRating = 'Good';
+      healthColor = 'var(--accent)';
+    } else if(avgDaysToPay <= 60) {
+      healthRating = 'Fair';
+      healthColor = 'var(--amber)';
+    } else {
+      healthRating = 'Slow Pay';
+      healthColor = 'var(--red)';
+    }
+  }
+
+  return {
+    avgDaysToPay,
+    totalInvoices: custInvoices.length,
+    paidCount: paidInvoices.length,
+    overdueCount: overdueInvoices.length,
+    lifetimeRevenue,
+    totalPaid,
+    totalOverdue,
+    outstanding,
+    healthRating,
+    healthColor,
+  };
+}
+
 async function loadCRMData(){
   // In demo mode, keep demo CRM data and skip DB fetch
   if(_isDemoMode && typeof DEMO_CRM_COMPANIES !== 'undefined') {
@@ -4453,7 +4557,45 @@ function checkAuth(){
   });
 }
 
- async function onSignedIn(user){
+ 
+// ── AUDIT LOG SYSTEM ──────────────────────────────────────────
+// Tracks every significant action: load create/edit/delete, status changes,
+// carrier tenders, invoices, customer edits, credit overrides, etc.
+async function logAction(action_type, entity_type, entity_id, details = {}) {
+  if(_isDemoMode) return; // Don't log in demo mode
+  try {
+    await db.from('audit_log').insert({
+      user_id: currentUser?.id || null,
+      user_email: currentUser?.email || 'system',
+      user_role: currentUserRole || null,
+      action_type,  // 'create' | 'update' | 'delete' | 'status_change' | 'tender' | 'override' | 'login' | ...
+      entity_type,  // 'load' | 'customer' | 'carrier' | 'invoice' | 'quote' | 'company' | ...
+      entity_id,
+      details: JSON.stringify(details),
+      company_id: currentCompanyId,
+    });
+  } catch(e) {
+    console.warn('[audit] failed to log:', e.message);
+  }
+}
+
+// Load audit log for a specific entity
+async function loadAuditLog(entityType, entityId, limit = 50) {
+  try {
+    const { data, error } = await db.from('audit_log')
+      .select('*')
+      .eq('entity_type', entityType)
+      .eq('entity_id', entityId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if(error) return [];
+    return data || [];
+  } catch(e) {
+    return [];
+  }
+}
+
+async function onSignedIn(user){
   console.log('[FF] onSignedIn:', user.email);
   currentUser = user;
   document.getElementById('auth-overlay').className = 'auth-overlay';
