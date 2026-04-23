@@ -3217,6 +3217,7 @@ async function saveCustomer(){
     payment_terms: document.getElementById('customer-payment-terms')?.value || 'Net 30',
     credit_status: document.getElementById('customer-credit-status')?.value || 'Approved',
     credit_notes:  document.getElementById('customer-credit-notes')?.value || null,
+    company_id: currentCompanyId,
   };
 
   const {error} = id
@@ -8590,6 +8591,7 @@ async function approveCreditApp() {
     credit_status: 'Approved',
     credit_notes: notes,
     status: 'Active',
+    company_id: currentCompanyId,
   };
 
   const { data: newCustomer, error: custErr } = await db.from('customers').insert(customerPayload).select().single();
