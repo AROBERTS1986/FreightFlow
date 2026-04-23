@@ -2835,8 +2835,6 @@ async function saveLoad(){
     hot_load:document.getElementById('load-hot')?.checked||false,
     appointment_required:document.getElementById('load-appt-required')?.checked||false,
     appointment_notes:document.getElementById('load-appt-notes')?.value||null,
-    appointment_required:document.getElementById('load-appt-required')?.checked||false,
-    appointment_notes:document.getElementById('load-appt-notes')?.value||null,
     pickup_date:document.getElementById('load-pickup')?.value||null,
     pickup_window_start:document.getElementById('load-pickup-window-start')?.value||null,
     pickup_window_end:document.getElementById('load-pickup-window-end')?.value||null,
@@ -2885,8 +2883,7 @@ async function editLoad(id){
   sv('load-delivery-window-end', l.delivery_window_end || '');
   const hotCb=document.getElementById('load-hot');if(hotCb)hotCb.checked=!!l.hot_load;
   const apptCb=document.getElementById('load-appt-required');if(apptCb){apptCb.checked=!!l.appointment_required;const apptRow=document.getElementById('appt-details-row');if(apptRow)apptRow.style.display=l.appointment_required?'block':'none';}
-  sv('load-appt-notes',l.appointment_notes);
-  sv('load-appt-notes',l.appointment_notes);
+  sv('load-appt-notes',l.appointment_notes||'');
   sv('load-delivery',l.delivery_date?l.delivery_date.slice(0,16):'');
   sv('load-rate',l.customer_rate||'');sv('load-carrier-pay',l.carrier_pay||'');
   sv('load-status',l.status||'Available');sv('load-ref',l.reference_number||'');
@@ -3737,6 +3734,8 @@ async function sendTender() {
       <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">ORIGIN</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.origin_city||'—'}, ${l.origin_state||''}</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">PICKUP</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.pickup_date?new Date(l.pickup_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</td></tr>
       <tr style="background:#f8fafc;"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">DESTINATION</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.destination_city||'—'}, ${l.destination_state||''}</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">DELIVERY</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.delivery_date?new Date(l.delivery_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</td></tr>
       <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">COMMODITY</td><td style="padding:10px;border:1px solid #e2e8f0;" colspan="3">${l.commodity||'General Freight'}${l.weight?' · '+Number(l.weight).toLocaleString()+' lbs':''}</td></tr>
+      ${l.appointment_notes ? `<tr style="background:#fffbeb;"><td style="padding:10px;border:1px solid #fbbf24;font-weight:600;color:#d97706;font-size:12px;vertical-align:top;">📅 APPT NOTES</td><td style="padding:10px;border:1px solid #fbbf24;" colspan="3"><strong>${l.appointment_notes}</strong></td></tr>` : ''}
+      ${l.pickup_window_start && l.pickup_window_end ? `<tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">PICKUP WINDOW</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.pickup_window_start} – ${l.pickup_window_end}</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">DELIVERY WINDOW</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.delivery_window_start && l.delivery_window_end ? l.delivery_window_start+' – '+l.delivery_window_end : '—'}</td></tr>` : ''}
       ${(l.notes || notes) ? `<tr style="background:#f8fafc;"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;vertical-align:top;">SPECIAL INSTRUCTIONS</td><td style="padding:10px;border:1px solid #e2e8f0;" colspan="3">${[l.notes, notes].filter(Boolean).join('<br><br>')}</td></tr>` : ''}
     </table>
     <div style="background:#1B2A4A;border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
@@ -3941,6 +3940,12 @@ function buildRateCon(){
     </div>
   </div>`:''}
 
+  ${l.appointment_notes ? `
+  <!-- APPOINTMENT NOTES -->
+  <div style="border:2px solid #d97706;background:#fffbeb;border-radius:8px;padding:14px;margin-bottom:16px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#d97706;margin-bottom:8px;">📅 Appointment Notes — Important</div>
+    <div style="font-size:14px;font-weight:600;color:#1a1a1a;line-height:1.6;white-space:pre-wrap;">${l.appointment_notes}</div>
+  </div>` : ''}
   ${l.notes ? `
   <!-- SPECIAL INSTRUCTIONS -->
   <div style="border:1px solid #fbbf24;background:#fffbeb;border-radius:8px;padding:14px;margin-bottom:16px;">
