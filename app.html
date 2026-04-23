@@ -4032,6 +4032,15 @@ async function renderCRM(){
 }
 
 async function loadCRMData(){
+  // In demo mode, keep demo CRM data and skip DB fetch
+  if(_isDemoMode && typeof DEMO_CRM_COMPANIES !== 'undefined') {
+    allCompanies = DEMO_CRM_COMPANIES;
+    allContacts = [];
+    allCrmActivities = [];
+    allCrmTasks = [];
+    allCrmTemplates = [];
+    return;
+  }
   try{
     const[co,ct,ac,ta,te]=await Promise.all([db.from('crm_companies').select('*').order('created_at',{ascending:false}),db.from('crm_contacts').select('*').order('name'),db.from('crm_activities').select('*').order('created_at',{ascending:false}),db.from('crm_tasks').select('*').order('due_date'),db.from('crm_templates').select('*').order('name')]);
     allCompanies=co.data||[];allContacts=ct.data||[];allCrmActivities=ac.data||[];allCrmTasks=ta.data||[];allCrmTemplates=te.data||[];
