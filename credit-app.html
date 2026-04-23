@@ -392,7 +392,7 @@
     if (!token) return;
     try {
       const { data, error } = await db.from('credit_applications')
-        .select('*, companies(*)')
+        .select('*')
         .eq('token', token)
         .maybeSingle();
 
@@ -410,7 +410,23 @@
       }
 
       // Populate broker info
-      const company = data.companies || {};
+      // Fetch broker's company_settings separately since there's no FK join
+      let company = {};
+      if(data.broker_company_id) {
+        const { data: settings } = await db.from('company_settings')
+          .select('company_name, mc_number, dot_number, phone, dispatch_email')
+          .eq('company_id', data.broker_company_id)
+          .maybeSingle();
+        if(settings) {
+          company = {
+            name: settings.company_name,
+            mc_number: settings.mc_number,
+            dot_number: settings.dot_number,
+            phone: settings.phone,
+            dispatch_email: settings.dispatch_email,
+          };
+        }
+      }
       const brokerName = company.name || 'the broker';
       document.getElementById('broker-name').textContent = brokerName;
       document.getElementById('broker-name-2').textContent = brokerName;
