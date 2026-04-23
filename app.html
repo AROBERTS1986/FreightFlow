@@ -3054,7 +3054,7 @@ async function editCarrier(id){
 async function deleteCarrier(id){if(!confirm('Delete this carrier?'))return;await db.from('carriers').delete().eq('id',id);toast('Carrier deleted','info');await loadData();}
 
 // ── SAVE CUSTOMER ─────────────────────────────────────────────
-async async function saveCustomer(){
+async function saveCustomer(){
   const id=document.getElementById('customer-id')?.value;
   // Helper — try multiple possible ID variants for notification toggles
   const pickBool = (...ids) => {
