@@ -1984,6 +1984,7 @@ function loadGooglePlaces(apiKey){
           <select id="tender-carrier-select" onchange="populateTenderCarrierInfo()">
             <option value="">Choose carrier…</option>
           </select>
+        <div id="tender-hint" style="display:none;margin-top:6px;font-size:11px;color:var(--amber);"></div>
         </div>
         <div id="tender-carrier-info" style="display:none;grid-column:1/-1;background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border);">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
@@ -3654,8 +3655,25 @@ function resetMilestonesForLoad(loadId) {
 function openTenderModal() {
   const l = allLoads.find(x => x.id === currentDetailLoadId); if(!l) return;
   const sel = document.getElementById('tender-carrier-select');
-  if(sel) sel.innerHTML = '<option value="">Choose carrier…</option>' +
-    allCarriers.filter(c => !c.do_not_use).map(c => `<option value="${c.id}">${c.name}${c.onboarding_status==='Active'?' ✅':''}</option>`).join('');
+  // Only show fully onboarded (Active) carriers — block tendering to pending/W9/insurance verified
+  const tenderable = allCarriers.filter(c => !c.do_not_use && c.onboarding_status === 'Active');
+  if(sel) {
+    if(tenderable.length === 0) {
+      sel.innerHTML = '<option value="">No Active carriers — finish onboarding in Carriers tab</option>';
+    } else {
+      sel.innerHTML = '<option value="">Choose carrier…</option>' +
+        tenderable.map(c => `<option value="${c.id}">${c.name} ✅</option>`).join('');
+    }
+  }
+  // Show count of blocked carriers
+  const blocked = allCarriers.filter(c => !c.do_not_use && c.onboarding_status !== 'Active').length;
+  const hint = document.getElementById('tender-hint');
+  if(hint) {
+    hint.textContent = blocked > 0
+      ? `⚠️ ${blocked} carrier${blocked!==1?'s':''} hidden — not fully onboarded (complete W9 + Insurance + MSA)`
+      : '';
+    hint.style.display = blocked > 0 ? 'block' : 'none';
+  }
   const lbl = document.getElementById('tender-load-label');
   if(lbl) lbl.textContent = `${l.load_number} · ${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}`;
   const pay = document.getElementById('tender-pay');
@@ -3719,7 +3737,7 @@ async function sendTender() {
       <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">ORIGIN</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.origin_city||'—'}, ${l.origin_state||''}</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">PICKUP</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.pickup_date?new Date(l.pickup_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</td></tr>
       <tr style="background:#f8fafc;"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">DESTINATION</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.destination_city||'—'}, ${l.destination_state||''}</td><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">DELIVERY</td><td style="padding:10px;border:1px solid #e2e8f0;">${l.delivery_date?new Date(l.delivery_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</td></tr>
       <tr><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">COMMODITY</td><td style="padding:10px;border:1px solid #e2e8f0;" colspan="3">${l.commodity||'General Freight'}${l.weight?' · '+Number(l.weight).toLocaleString()+' lbs':''}</td></tr>
-      ${notes?`<tr style="background:#f8fafc;"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;">INSTRUCTIONS</td><td style="padding:10px;border:1px solid #e2e8f0;" colspan="3">${notes}</td></tr>`:''}
+      ${(l.notes || notes) ? `<tr style="background:#f8fafc;"><td style="padding:10px;border:1px solid #e2e8f0;font-weight:600;color:#64748b;font-size:12px;vertical-align:top;">SPECIAL INSTRUCTIONS</td><td style="padding:10px;border:1px solid #e2e8f0;" colspan="3">${[l.notes, notes].filter(Boolean).join('<br><br>')}</td></tr>` : ''}
     </table>
     <div style="background:#1B2A4A;border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <div><div style="color:#94a3b8;font-size:12px;">ALL-IN CARRIER PAY</div><div style="color:#94a3b8;font-size:11px;margin-top:2px;">Upon receipt of signed BOL & POD</div></div>
@@ -3890,6 +3908,8 @@ function buildRateCon(){
       <div class="rate-con-field"><span class="rate-con-field-label">Reference #</span><span class="rate-con-field-val">${l.reference_number||'—'}</span></div>
       <div class="rate-con-field"><span class="rate-con-field-label">BOL #</span><span class="rate-con-field-val">${l.bol_number||'TBD'}</span></div>
       ${l.hazmat?'<div class="rate-con-field"><span class="rate-con-field-label" style="color:#dc2626;font-weight:700;">⚠️ HAZMAT</span><span class="rate-con-field-val" style="color:#dc2626;font-weight:700;">YES — Placards Required</span></div>':''}
+      ${l.pickup_window_start && l.pickup_window_end ? `<div class="rate-con-field"><span class="rate-con-field-label">Pickup Window</span><span class="rate-con-field-val">${l.pickup_window_start} – ${l.pickup_window_end}</span></div>` : ''}
+      ${l.delivery_window_start && l.delivery_window_end ? `<div class="rate-con-field"><span class="rate-con-field-label">Delivery Window</span><span class="rate-con-field-val">${l.delivery_window_start} – ${l.delivery_window_end}</span></div>` : ''}
     </div>
   </div>
 
@@ -3920,6 +3940,13 @@ function buildRateCon(){
       ${l.trailer_number?`<div><div style="font-size:10px;color:#94a3b8;margin-bottom:2px;">Trailer #</div><div style="font-size:12px;font-weight:600;">${l.trailer_number}</div></div>`:''}
     </div>
   </div>`:''}
+
+  ${l.notes ? `
+  <!-- SPECIAL INSTRUCTIONS -->
+  <div style="border:1px solid #fbbf24;background:#fffbeb;border-radius:8px;padding:14px;margin-bottom:16px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#d97706;margin-bottom:8px;">📝 Special Instructions</div>
+    <div style="font-size:13px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap;">${l.notes}</div>
+  </div>` : ''}
 
   <!-- PAY BREAKDOWN -->
   <div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:16px;">
