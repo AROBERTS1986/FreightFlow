@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit Application — FreightFlowHQ</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    min-height: 100vh;
+    color: #1a1a1a;
+    padding: 20px;
+  }
+  .container {
+    max-width: 820px;
+    margin: 40px auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+  .header {
+    background: linear-gradient(135deg, #1B2A4A 0%, #2563EB 100%);
+    padding: 32px 40px;
+    color: white;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: #60A5FA; }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-top: 12px;
+  }
+  .header p {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-top: 6px;
+  }
+  .broker-info {
+    background: #f8fafc;
+    padding: 16px 40px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #475569;
+  }
+  .broker-info strong { color: #1B2A4A; }
+  form { padding: 32px 40px; }
+  .section {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .section:last-of-type { border-bottom: none; }
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #2563EB;
+    margin-bottom: 16px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; }
+  .field { margin-bottom: 14px; }
+  .field.full { grid-column: 1/-1; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+  }
+  label .req { color: #dc2626; margin-left: 2px; }
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.15s;
+    background: white;
+    color: #1a1a1a;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .ref-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .ref-card .ref-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+  }
+  .cert-box {
+    background: #fffbeb;
+    border: 2px solid #fbbf24;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .cert-box label {
+    display: flex;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #1a1a1a;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+  .cert-box input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: #2563EB;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .submit-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(37,99,235,0.3); }
+  .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
+  .success, .error {
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  .success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .footer {
+    padding: 20px 40px;
+    background: #f8fafc;
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+    border-top: 1px solid #e2e8f0;
+  }
+  @media (max-width: 640px) {
+    .grid, .grid-3 { grid-template-columns: 1fr; }
+    form { padding: 20px; }
+    .header { padding: 24px 20px; }
+    .broker-info { padding: 12px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">Freight<span>FlowHQ</span></div>
+    <h1>Credit Application</h1>
+    <p id="header-subtitle">Complete the form below to establish credit with <span id="broker-name">our brokerage</span></p>
+  </div>
+
+  <div class="broker-info" id="broker-info"></div>
+
+  <div id="already-submitted" style="display:none;padding:40px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">✅</div>
+    <h2 style="color:#1B2A4A;margin-bottom:8px;">Application Already Submitted</h2>
+    <p style="color:#64748b;font-size:14px;">This credit application has already been submitted. The broker will contact you shortly.</p>
+  </div>
+
+  <form id="credit-app-form">
+
+    <!-- COMPANY INFORMATION -->
+    <div class="section">
+      <div class="section-title">1. Company Information</div>
+      <div class="grid">
+        <div class="field full">
+          <label>Legal Business Name<span class="req">*</span></label>
+          <input type="text" id="legal_name" required />
+        </div>
+        <div class="field full">
+          <label>DBA / Trade Name (if different)</label>
+          <input type="text" id="dba" />
+        </div>
+        <div class="field full">
+          <label>Billing Address<span class="req">*</span></label>
+          <input type="text" id="billing_address" placeholder="Street address" required />
+        </div>
+        <div class="field">
+          <label>City<span class="req">*</span></label>
+          <input type="text" id="city" required />
+        </div>
+        <div class="field">
+          <label>State<span class="req">*</span></label>
+          <input type="text" id="state" maxlength="2" style="text-transform:uppercase;" required />
+        </div>
+        <div class="field">
+          <label>ZIP<span class="req">*</span></label>
+          <input type="text" id="zip" maxlength="10" required />
+        </div>
+        <div class="field">
+          <label>Phone<span class="req">*</span></label>
+          <input type="tel" id="phone" required />
+        </div>
+        <div class="field">
+          <label>Federal Tax ID (EIN)<span class="req">*</span></label>
+          <input type="text" id="ein" placeholder="XX-XXXXXXX" required />
+        </div>
+        <div class="field">
+          <label>Years in Business<span class="req">*</span></label>
+          <input type="number" id="years_business" min="0" required />
+        </div>
+        <div class="field">
+          <label>Business Type<span class="req">*</span></label>
+          <select id="business_type" required>
+            <option value="">Select type…</option>
+            <option>LLC</option>
+            <option>Corporation</option>
+            <option>S-Corp</option>
+            <option>Partnership</option>
+            <option>Sole Proprietorship</option>
+            <option>Non-Profit</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUESTED TERMS -->
+    <div class="section">
+      <div class="section-title">2. Requested Credit Terms</div>
+      <div class="grid">
+        <div class="field">
+          <label>Requested Credit Limit ($)<span class="req">*</span></label>
+          <input type="number" id="requested_credit" min="0" required placeholder="e.g. 50000" />
+        </div>
+        <div class="field">
+          <label>Requested Payment Terms<span class="req">*</span></label>
+          <select id="requested_terms" required>
+            <option value="">Select…</option>
+            <option>Net 15</option>
+            <option>Net 30</option>
+            <option>Net 45</option>
+            <option>Net 60</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label>Estimated Monthly Volume</label>
+          <input type="text" id="monthly_volume" placeholder="e.g. 15 loads/month, $30K/month" />
+        </div>
+      </div>
+    </div>
+
+    <!-- BANK REFERENCE -->
+    <div class="section">
+      <div class="section-title">3. Bank Reference</div>
+      <p style="font-size:12px;color:#64748b;margin-bottom:12px;">
+        We do <strong>not</strong> collect account numbers. This is for our AP team to verify your account is in good standing.
+      </p>
+      <div class="grid">
+        <div class="field">
+          <label>Bank Name<span class="req">*</span></label>
+          <input type="text" id="bank_name" required />
+        </div>
+        <div class="field">
+          <label>Banker / Contact Name</label>
+          <input type="text" id="bank_contact" />
+        </div>
+        <div class="field">
+          <label>Bank Phone<span class="req">*</span></label>
+          <input type="tel" id="bank_phone" required />
+        </div>
+        <div class="field">
+          <label>Years with Bank</label>
+          <input type="number" id="bank_years" min="0" />
+        </div>
+      </div>
+    </div>
+
+    <!-- TRADE REFERENCES -->
+    <div class="section">
+      <div class="section-title">4. Trade References (3 Required)</div>
+      <p style="font-size:12px;color:#64748b;margin-bottom:14px;">
+        Please provide three freight brokers or carriers you have done business with in the past 12 months.
+      </p>
+      <div class="ref-card">
+        <div class="ref-label">Reference #1</div>
+        <div class="grid-3">
+          <div class="field"><label>Company Name<span class="req">*</span></label><input type="text" id="ref1_company" required/></div>
+          <div class="field"><label>Contact Name</label><input type="text" id="ref1_contact"/></div>
+          <div class="field"><label>Phone<span class="req">*</span></label><input type="tel" id="ref1_phone" required/></div>
+          <div class="field" style="grid-column:1/-1;"><label>Email</label><input type="email" id="ref1_email"/></div>
+        </div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-label">Reference #2</div>
+        <div class="grid-3">
+          <div class="field"><label>Company Name<span class="req">*</span></label><input type="text" id="ref2_company" required/></div>
+          <div class="field"><label>Contact Name</label><input type="text" id="ref2_contact"/></div>
+          <div class="field"><label>Phone<span class="req">*</span></label><input type="tel" id="ref2_phone" required/></div>
+          <div class="field" style="grid-column:1/-1;"><label>Email</label><input type="email" id="ref2_email"/></div>
+        </div>
+      </div>
+      <div class="ref-card">
+        <div class="ref-label">Reference #3</div>
+        <div class="grid-3">
+          <div class="field"><label>Company Name<span class="req">*</span></label><input type="text" id="ref3_company" required/></div>
+          <div class="field"><label>Contact Name</label><input type="text" id="ref3_contact"/></div>
+          <div class="field"><label>Phone<span class="req">*</span></label><input type="tel" id="ref3_phone" required/></div>
+          <div class="field" style="grid-column:1/-1;"><label>Email</label><input type="email" id="ref3_email"/></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTHORIZED SIGNER -->
+    <div class="section">
+      <div class="section-title">5. Authorized Signer &amp; E-Signature</div>
+      <div class="grid">
+        <div class="field">
+          <label>Full Name<span class="req">*</span></label>
+          <input type="text" id="signer_name" required />
+        </div>
+        <div class="field">
+          <label>Title<span class="req">*</span></label>
+          <input type="text" id="signer_title" placeholder="e.g. CEO, CFO, Owner" required />
+        </div>
+        <div class="field">
+          <label>Email<span class="req">*</span></label>
+          <input type="email" id="signer_email" required />
+        </div>
+        <div class="field">
+          <label>Phone<span class="req">*</span></label>
+          <input type="tel" id="signer_phone" required />
+        </div>
+      </div>
+
+      <div class="cert-box">
+        <label>
+          <input type="checkbox" id="certification" required />
+          <span>
+            I certify that I am an authorized representative of the applicant company and that all information provided in this application is true, accurate, and complete to the best of my knowledge. I authorize <strong id="broker-name-2">the broker</strong> to contact the references listed above, verify the information provided, and obtain credit information from any source deemed necessary to evaluate this application. I understand that providing false information may result in denial of credit and potential legal action.
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div id="form-message" style="display:none;"></div>
+    <button type="submit" class="submit-btn" id="submit-btn">Submit Credit Application →</button>
+  </form>
+
+  <div class="footer">
+    Secure application powered by <strong>FreightFlowHQ</strong> · Your information is encrypted and only shared with the broker you are applying to.
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://vbkxsenqnjvdmaabsnmz.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZia3hzZW5xbmp2ZG1hYWJzbm16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjczODMwOTQsImV4cCI6MjA0Mjk1OTA5NH0.rpMSdJLZRM0wXvqxkYBiGyiSLzKN8_VCgd2MhQ1hA2w';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Parse token from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+
+  if (!token) {
+    document.querySelector('form').style.display = 'none';
+    document.getElementById('broker-info').innerHTML = '<div style="color:#dc2626;">⚠️ Invalid application link. Please contact your broker for a new link.</div>';
+  }
+
+  // Load broker info from token
+  async function loadBrokerInfo() {
+    if (!token) return;
+    try {
+      const { data, error } = await db.from('credit_applications')
+        .select('*, companies(*)')
+        .eq('token', token)
+        .maybeSingle();
+
+      if (error || !data) {
+        document.getElementById('broker-info').innerHTML = '<div style="color:#dc2626;">⚠️ Application link not found or expired.</div>';
+        document.querySelector('form').style.display = 'none';
+        return;
+      }
+
+      // Already submitted?
+      if (data.status !== 'Sent') {
+        document.querySelector('form').style.display = 'none';
+        document.getElementById('already-submitted').style.display = 'block';
+        return;
+      }
+
+      // Populate broker info
+      const company = data.companies || {};
+      const brokerName = company.name || 'the broker';
+      document.getElementById('broker-name').textContent = brokerName;
+      document.getElementById('broker-name-2').textContent = brokerName;
+
+      const brokerDetails = [];
+      if (company.mc_number) brokerDetails.push(`MC# ${company.mc_number}`);
+      if (company.dot_number) brokerDetails.push(`DOT# ${company.dot_number}`);
+      if (company.phone) brokerDetails.push(company.phone);
+      if (company.dispatch_email) brokerDetails.push(company.dispatch_email);
+
+      document.getElementById('broker-info').innerHTML = `
+        <strong>Applying to:</strong> ${brokerName}${brokerDetails.length ? ' · ' + brokerDetails.join(' · ') : ''}
+      `;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  loadBrokerInfo();
+
+  // Submit handler
+  document.getElementById('credit-app-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    const msg = document.getElementById('form-message');
+    btn.disabled = true;
+    btn.textContent = '⏳ Submitting…';
+
+    const payload = {
+      // Company
+      legal_name: document.getElementById('legal_name').value,
+      dba: document.getElementById('dba').value || null,
+      billing_address: document.getElementById('billing_address').value,
+      city: document.getElementById('city').value,
+      state: document.getElementById('state').value.toUpperCase(),
+      zip: document.getElementById('zip').value,
+      phone: document.getElementById('phone').value,
+      ein: document.getElementById('ein').value,
+      years_business: parseInt(document.getElementById('years_business').value) || null,
+      business_type: document.getElementById('business_type').value,
+
+      // Terms
+      requested_credit: parseFloat(document.getElementById('requested_credit').value) || null,
+      requested_terms: document.getElementById('requested_terms').value,
+      monthly_volume: document.getElementById('monthly_volume').value || null,
+
+      // Bank
+      bank_name: document.getElementById('bank_name').value,
+      bank_contact: document.getElementById('bank_contact').value || null,
+      bank_phone: document.getElementById('bank_phone').value,
+      bank_years: parseInt(document.getElementById('bank_years').value) || null,
+
+      // References (stored as JSONB)
+      trade_refs: JSON.stringify([
+        { company: document.getElementById('ref1_company').value, contact: document.getElementById('ref1_contact').value, phone: document.getElementById('ref1_phone').value, email: document.getElementById('ref1_email').value },
+        { company: document.getElementById('ref2_company').value, contact: document.getElementById('ref2_contact').value, phone: document.getElementById('ref2_phone').value, email: document.getElementById('ref2_email').value },
+        { company: document.getElementById('ref3_company').value, contact: document.getElementById('ref3_contact').value, phone: document.getElementById('ref3_phone').value, email: document.getElementById('ref3_email').value },
+      ]),
+
+      // Signer
+      signer_name: document.getElementById('signer_name').value,
+      signer_title: document.getElementById('signer_title').value,
+      signer_email: document.getElementById('signer_email').value,
+      signer_phone: document.getElementById('signer_phone').value,
+
+      // E-sig
+      certified: document.getElementById('certification').checked,
+      certified_at: new Date().toISOString(),
+      status: 'Submitted',
+      submitted_at: new Date().toISOString(),
+    };
+
+    try {
+      const { error } = await db.from('credit_applications')
+        .update(payload)
+        .eq('token', token);
+
+      if (error) {
+        msg.className = 'error';
+        msg.style.display = 'block';
+        msg.textContent = 'Error submitting: ' + error.message;
+        btn.disabled = false;
+        btn.textContent = 'Submit Credit Application →';
+        return;
+      }
+
+      // Success
+      document.querySelector('form').style.display = 'none';
+      const successDiv = document.createElement('div');
+      successDiv.style.cssText = 'padding:40px;text-align:center;';
+      successDiv.innerHTML = `
+        <div style="font-size:64px;margin-bottom:16px;">✅</div>
+        <h2 style="color:#1B2A4A;margin-bottom:12px;font-size:24px;">Application Submitted!</h2>
+        <p style="color:#64748b;font-size:15px;line-height:1.6;max-width:440px;margin:0 auto;">
+          Thank you. Your credit application has been received. The broker will review your information, verify your references, and respond within 2–3 business days.
+        </p>
+      `;
+      document.querySelector('.container').insertBefore(successDiv, document.querySelector('.footer'));
+    } catch (e) {
+      msg.className = 'error';
+      msg.style.display = 'block';
+      msg.textContent = 'Error: ' + e.message;
+      btn.disabled = false;
+      btn.textContent = 'Submit Credit Application →';
+    }
+  });
+</script>
+</body>
+</html>
