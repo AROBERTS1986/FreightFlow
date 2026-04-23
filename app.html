@@ -8249,7 +8249,7 @@ async function renderCreditApps() {
       <tbody>
         ${apps.map(a => `
           <tr>
-            <td style="font-weight:600;">${a.legal_name || a.companies?.name || '—'}</td>
+            <td style="font-weight:600;">${a.legal_name || '—'}</td>
             <td style="color:var(--green);font-weight:600;">${a.requested_credit ? fmt$(a.requested_credit) : '—'}</td>
             <td>${a.requested_terms || '—'}</td>
             <td>${statusBadge(a.status)}</td>
@@ -8461,7 +8461,7 @@ async function sendCreditApp() {
 async function loadCreditApplications() {
   try {
     const { data, error } = await db.from('credit_applications')
-      .select('*, companies(name, phone, email)')
+      .select('*')
       .order('created_at', { ascending: false });
     if(error) { console.warn('Error loading credit apps:', error); return []; }
     return data || [];
@@ -8471,7 +8471,7 @@ async function loadCreditApplications() {
 async function openReviewCreditApp(caId) {
   _currentReviewCaId = caId;
   const { data: ca, error } = await db.from('credit_applications')
-    .select('*, companies(*)')
+    .select('*')
     .eq('id', caId)
     .single();
   if(error || !ca) { toast('Error loading application', 'error'); return; }
@@ -8484,7 +8484,7 @@ async function openReviewCreditApp(caId) {
     <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div>
-          <div style="font-size:18px;font-weight:800;color:var(--text);">${ca.legal_name || ca.companies?.name || '—'}</div>
+          <div style="font-size:18px;font-weight:800;color:var(--text);">${ca.legal_name || '—'}</div>
           ${ca.dba ? `<div style="font-size:12px;color:var(--text3);margin-top:2px;">DBA: ${ca.dba}</div>` : ''}
           <div style="font-size:12px;color:var(--text3);margin-top:4px;">${ca.billing_address || ''} · ${ca.city || ''}, ${ca.state || ''} ${ca.zip || ''}</div>
         </div>
