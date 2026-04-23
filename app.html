@@ -724,6 +724,7 @@ function loadGooglePlaces(apiKey){
         <div class="settings-tab" onclick="switchSettingsTab('branding')">🎨 Branding</div>
         <div class="settings-tab" onclick="switchSettingsTab('permissions')">🔐 Permissions</div>
         <div class="settings-tab" onclick="switchSettingsTab('portal')">👥 Customer Portal</div>
+        <div class="settings-tab" onclick="switchSettingsTab('import')">📥 Import Data</div>
         <div class="settings-tab" onclick="switchSettingsTab('subscription')">💳 Subscription</div>
       </div>
     </div>
@@ -844,6 +845,104 @@ function loadGooglePlaces(apiKey){
           <div class="form-group">
             <label>Support Email (shown in portal)</label>
             <input type="email" id="ps-support-email" placeholder="dispatch@yourcompany.com" style="font-size:13px;"/>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="stab-import" class="card" style="display:none;border-top-left-radius:0;border-top-right-radius:0;border-top:none;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📥 Import Data</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">Bulk upload customers, carriers, and users via CSV</div>
+        </div>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:20px;">
+
+        <!-- INFO BANNER -->
+        <div style="background:var(--accent-dim);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--accent2);">
+          💡 Download a template, fill it in, then upload to bulk-import. Existing records won't be duplicated — imports match on email or MC number.
+        </div>
+
+        <!-- CUSTOMERS -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;background:var(--accent-dim);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;">🏢</div>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--text);">Customers</div>
+                <div style="font-size:11px;color:var(--text3);">Company name, contact, email, phone, city, state, payment terms, credit limit</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('customers')" style="color:var(--accent2);border-color:var(--accent2);">⬇ Download Template</button>
+          </div>
+          <div style="padding:16px 20px;">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <label style="flex:1;border:2px dashed var(--border2);border-radius:8px;padding:12px 16px;cursor:pointer;text-align:center;font-size:13px;color:var(--text3);transition:all 0.15s;" id="customers-drop-zone" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor=''" ondrop="handleFileDrop(event,'customers')">
+                <input type="file" accept=".csv" id="customers-csv-input" style="display:none;" onchange="handleCsvUpload(this,'customers')"/>
+                <span id="customers-file-label">📂 Click to select or drag a CSV file</span>
+              </label>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('customers-csv-input').click()">Browse</button>
+            </div>
+            <div id="customers-import-preview" style="margin-top:12px;display:none;"></div>
+            <div id="customers-import-btn-row" style="display:none;margin-top:10px;text-align:right;">
+              <button class="btn btn-primary" onclick="runImport('customers')">Import Customers →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARRIERS -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;background:var(--green-dim);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;">🚚</div>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--text);">Carriers</div>
+                <div style="font-size:11px;color:var(--text3);">Carrier name, MC#, DOT#, contact, email, phone, insurance expiry, equipment types</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('carriers')" style="color:var(--green);border-color:var(--green);">⬇ Download Template</button>
+          </div>
+          <div style="padding:16px 20px;">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <label style="flex:1;border:2px dashed var(--border2);border-radius:8px;padding:12px 16px;cursor:pointer;text-align:center;font-size:13px;color:var(--text3);transition:all 0.15s;" id="carriers-drop-zone" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleFileDrop(event,'carriers')">
+                <input type="file" accept=".csv" id="carriers-csv-input" style="display:none;" onchange="handleCsvUpload(this,'carriers')"/>
+                <span id="carriers-file-label">📂 Click to select or drag a CSV file</span>
+              </label>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('carriers-csv-input').click()" style="background:var(--green);">Browse</button>
+            </div>
+            <div id="carriers-import-preview" style="margin-top:12px;display:none;"></div>
+            <div id="carriers-import-btn-row" style="display:none;margin-top:10px;text-align:right;">
+              <button class="btn btn-primary" onclick="runImport('carriers')" style="background:var(--green);">Import Carriers →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- USERS -->
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;background:var(--purple-dim);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--text);">Users / Team Members</div>
+                <div style="font-size:11px;color:var(--text3);">Full name, email, role (admin / dispatcher / accounting / sales / readonly)</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('users')" style="color:var(--purple);border-color:var(--purple);">⬇ Download Template</button>
+          </div>
+          <div style="padding:16px 20px;">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <label style="flex:1;border:2px dashed var(--border2);border-radius:8px;padding:12px 16px;cursor:pointer;text-align:center;font-size:13px;color:var(--text3);transition:all 0.15s;" id="users-drop-zone" ondragover="event.preventDefault();this.style.borderColor='var(--purple)'" ondragleave="this.style.borderColor=''" ondrop="handleFileDrop(event,'users')">
+                <input type="file" accept=".csv" id="users-csv-input" style="display:none;" onchange="handleCsvUpload(this,'users')"/>
+                <span id="users-file-label">📂 Click to select or drag a CSV file</span>
+              </label>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('users-csv-input').click()" style="background:var(--purple);">Browse</button>
+            </div>
+            <div id="users-import-preview" style="margin-top:12px;display:none;"></div>
+            <div id="users-import-btn-row" style="display:none;margin-top:10px;text-align:right;">
+              <button class="btn btn-primary" onclick="runImport('users')" style="background:var(--purple);">Import Users →</button>
+            </div>
           </div>
         </div>
 
@@ -4020,7 +4119,7 @@ function renderSettings(){
   });
 }
 function switchSettingsTab(tab){
-  ['profile','branding','permissions','portal','subscription'].forEach(t=>{const el=document.getElementById('stab-'+t);if(el)el.style.display=t===tab?'block':'none';document.querySelectorAll('.settings-tab').forEach((btn,i)=>btn.classList.toggle('active',['profile','branding','permissions','subscription'][i]===tab));});
+  ['profile','branding','permissions','portal','import','subscription'].forEach(t=>{const el=document.getElementById('stab-'+t);if(el)el.style.display=t===tab?'block':'none';document.querySelectorAll('.settings-tab').forEach((btn,i)=>btn.classList.toggle('active',['profile','branding','permissions','subscription'][i]===tab));});
   if(tab==='permissions'){initRolePerms();renderPermMatrix();}
 }
 // saveCompanySettings — see enhanced version below
@@ -7200,6 +7299,305 @@ function renderLateAlertBanner() {
     </div>`;
 }
 
+
+
+// ── CSV IMPORT SYSTEM ─────────────────────────────────────────
+
+const CSV_TEMPLATES = {
+  customers: {
+    headers: ['company_name','contact_name','email','phone','city','state','notes','payment_terms','credit_limit','credit_status'],
+    sample: [
+      ['Acme Freight LLC','John Smith','john@acmefreight.com','(214) 555-0101','Dallas','TX','Key account','Net 30','50000','Approved'],
+      ['Prairie Logistics','Sarah Jones','sarah@prairielogistics.com','(312) 555-0202','Chicago','IL','','Net 45','25000','Approved'],
+    ],
+    filename: 'freightflowhq_customers_template.csv',
+  },
+  carriers: {
+    headers: ['carrier_name','mc_number','dot_number','contact_name','email','phone','insurance_expiry','safety_score','equipment_types','onboarding_status'],
+    sample: [
+      ['Swift Transportation','MC107949','281728','Dispatch Team','dispatch@swift.com','(800) 555-0100','2026-12-31','96','Dry Van,Reefer','Active'],
+      ['Werner Enterprises','MC76747','137647','Load Control','loads@werner.com','(800) 555-0200','2026-06-30','97','Dry Van,Flatbed','Active'],
+    ],
+    filename: 'freightflowhq_carriers_template.csv',
+  },
+  users: {
+    headers: [
+      'full_name',
+      'email',
+      'role',
+      // --- Role options (pick ONE per user) ---
+      // admin       = Full access to everything including settings & billing
+      // dispatcher  = Loads, dispatch board, carriers, check calls
+      // accounting  = Invoicing, reports, aging receivables
+      // sales       = CRM pipeline, quotes, customer management
+      // readonly    = View only — no create/edit/delete
+      'portal_loads',
+      'portal_invoices',
+      'portal_quotes',
+      'portal_crm',
+    ],
+    sample: [
+      ['Jane Smith','jane@yourbrokerage.com','dispatcher','true','false','true','false'],
+      ['Bob Johnson','bob@yourbrokerage.com','accounting','false','true','false','false'],
+      ['Alice Lee','alice@yourbrokerage.com','sales','false','false','true','true'],
+      ['Mike Davis','mike@yourbrokerage.com','admin','true','true','true','true'],
+      ['Sara White','sara@yourbrokerage.com','readonly','true','false','false','false'],
+    ],
+    filename: 'freightflowhq_users_template.csv',
+    notes: 'role options: admin | dispatcher | accounting | sales | readonly. Portal columns: true = can see, false = hidden',
+  },
+};
+
+// Parsed CSV rows waiting to be imported
+const _importData = { customers: [], carriers: [], users: [] };
+
+function downloadTemplate(type) {
+  const t = CSV_TEMPLATES[type];
+  if(!t) return;
+  const rows = [t.headers, ...t.sample];
+  if(t.notes) rows.push(['# ' + t.notes]);
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = t.filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Template downloaded: ${t.filename}`, 'success');
+}
+
+function handleFileDrop(event, type) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if(!file || !file.name.endsWith('.csv')) { toast('Please drop a .csv file', 'error'); return; }
+  parseCSVFile(file, type);
+  const zone = document.getElementById(type + '-drop-zone');
+  if(zone) zone.style.borderColor = '';
+}
+
+function handleCsvUpload(input, type) {
+  const file = input.files[0];
+  if(!file) return;
+  parseCSVFile(file, type);
+}
+
+function parseCSVFile(file, type) {
+  const label = document.getElementById(type + '-file-label');
+  if(label) label.textContent = '⏳ Parsing ' + file.name + '…';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const rows = text.trim().split('\n').map(r =>
+      r.split(',').map(v => v.trim().replace(/^"|"$/g, '').replace(/""/g, '"'))
+    );
+
+    // Skip header row and comment rows
+    const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9_]/g,'_'));
+    const dataRows = rows.slice(1).filter(r => r.length > 1 && !r[0].startsWith('#'));
+
+    const parsed = dataRows.map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = row[i] || ''; });
+      return obj;
+    }).filter(obj => Object.values(obj).some(v => v)); // skip empty rows
+
+    _importData[type] = parsed;
+
+    if(label) label.textContent = `✅ ${file.name} — ${parsed.length} rows ready`;
+
+    showImportPreview(type, parsed);
+  };
+  reader.readAsText(file);
+}
+
+function showImportPreview(type, rows) {
+  const preview = document.getElementById(type + '-import-preview');
+  const btnRow = document.getElementById(type + '-import-btn-row');
+  if(!preview) return;
+
+  if(!rows.length) {
+    preview.style.display = 'block';
+    preview.innerHTML = '<div style="color:var(--red);font-size:13px;">No valid rows found. Check your CSV matches the template format.</div>';
+    return;
+  }
+
+  // Show first 5 rows as a preview table
+  const keys = Object.keys(rows[0]);
+  const sample = rows.slice(0, 5);
+  const moreCount = rows.length - 5;
+
+  preview.style.display = 'block';
+  preview.innerHTML = `
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:8px;">
+      Preview — ${rows.length} row${rows.length!==1?'s':''} detected${moreCount>0?' (showing first 5)':''}
+    </div>
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border);">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:var(--surface3);">
+            ${keys.map(k=>`<th style="padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;white-space:nowrap;">${k}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${sample.map((row,i)=>`
+            <tr style="border-top:1px solid var(--border);${i%2===1?'background:var(--surface3);':''}">
+              ${keys.map(k=>`<td style="padding:6px 10px;color:var(--text2);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;">${row[k]||'—'}</td>`).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    ${moreCount>0?`<div style="font-size:11px;color:var(--text3);margin-top:6px;">… and ${moreCount} more row${moreCount!==1?'s':''}</div>`:''}`;
+
+  if(btnRow) btnRow.style.display = 'block';
+}
+
+async function runImport(type) {
+  const rows = _importData[type];
+  if(!rows.length) { toast('No data to import', 'error'); return; }
+
+  const btn = document.querySelector(`[onclick="runImport('${type}')"]`);
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ Importing…'; }
+
+  let imported = 0, skipped = 0, failed = 0;
+
+  if(type === 'customers') {
+    for(const r of rows) {
+      const name = r.company_name || r.name || '';
+      if(!name) { skipped++; continue; }
+      // Skip if already exists (match by email or name)
+      const exists = allCustomers.find(c =>
+        (r.email && c.email?.toLowerCase() === r.email.toLowerCase()) ||
+        c.name?.toLowerCase() === name.toLowerCase()
+      );
+      if(exists) { skipped++; continue; }
+      const payload = {
+        name,
+        contact_name: r.contact_name || null,
+        email: r.email || null,
+        phone: r.phone || null,
+        city: r.city || null,
+        state: r.state?.toUpperCase() || null,
+        notes: r.notes || null,
+        payment_terms: r.payment_terms || 'Net 30',
+        credit_limit: parseFloat(r.credit_limit) || null,
+        credit_status: r.credit_status || 'Approved',
+        status: 'Active',
+      };
+      const { error } = await db.from('customers').insert(payload);
+      if(error) failed++;
+      else imported++;
+    }
+  }
+
+  else if(type === 'carriers') {
+    for(const r of rows) {
+      const name = r.carrier_name || r.name || '';
+      const mc = r.mc_number || '';
+      if(!name) { skipped++; continue; }
+      // Skip if MC# already exists
+      const exists = allCarriers.find(c =>
+        (mc && c.mc_number?.replace(/\D/g,'') === mc.replace(/\D/g,'')) ||
+        c.name?.toLowerCase() === name.toLowerCase()
+      );
+      if(exists) { skipped++; continue; }
+      const equip = r.equipment_types
+        ? r.equipment_types.split(',').map(s=>s.trim()).filter(Boolean)
+        : [];
+      const payload = {
+        name,
+        mc_number: mc || null,
+        dot_number: r.dot_number || null,
+        contact_name: r.contact_name || null,
+        email: r.email || null,
+        phone: r.phone || null,
+        insurance_expiry: r.insurance_expiry || null,
+        safety_score: parseFloat(r.safety_score) || null,
+        equipment_types: equip,
+        onboarding_status: r.onboarding_status || 'Pending',
+        do_not_use: false,
+      };
+      const { error } = await db.from('carriers').insert(payload);
+      if(error) failed++;
+      else imported++;
+    }
+  }
+
+  else if(type === 'users') {
+    const validRoles = ['admin','dispatcher','accounting','sales','readonly'];
+    for(const r of rows) {
+      const email = r.email?.trim().toLowerCase();
+      const name  = r.full_name || r.name || '';
+      const role  = validRoles.includes(r.role?.toLowerCase()) ? r.role.toLowerCase() : 'dispatcher';
+      if(!email) { skipped++; continue; }
+
+      // Parse portal access toggles from CSV (true/false strings)
+      const parseBool = v => v?.toString().toLowerCase() === 'true';
+      const portalLoads    = r.portal_loads    !== undefined ? parseBool(r.portal_loads)    : true;
+      const portalInvoices = r.portal_invoices !== undefined ? parseBool(r.portal_invoices) : (role === 'accounting' || role === 'admin');
+      const portalQuotes   = r.portal_quotes   !== undefined ? parseBool(r.portal_quotes)   : (role !== 'accounting');
+      const portalCrm      = r.portal_crm      !== undefined ? parseBool(r.portal_crm)      : (role === 'sales' || role === 'admin');
+
+      // Auto-set sensible defaults by role if portal columns not specified in CSV
+      const profilePayload = {
+        email,
+        full_name: name,
+        role,
+        status: 'Active',
+        company_id: currentCompanyId,
+        portal_loads:    portalLoads,
+        portal_invoices: portalInvoices,
+        portal_quotes:   portalQuotes,
+        portal_crm:      portalCrm,
+      };
+
+      // Create auth user + profile
+      try {
+        const tempPw = Math.random().toString(36).slice(2,10) + 'Aa1!';
+        const { data, error: authErr } = await db.auth.signUp({
+          email,
+          password: tempPw,
+          options: { data: { full_name: name } }
+        });
+        if(authErr && !authErr.message.includes('already')) { failed++; continue; }
+        if(data?.user) {
+          await db.from('user_profiles').upsert({
+            id: data.user.id,
+            ...profilePayload,
+          }, { onConflict: 'id' });
+        } else {
+          // User may already exist — update their profile
+          const { data: existing } = await db.from('user_profiles')
+            .select('id').eq('email', email).maybeSingle();
+          if(existing) {
+            await db.from('user_profiles').update(profilePayload).eq('id', existing.id);
+          }
+        }
+        imported++;
+      } catch(e) { failed++; }
+    }
+  }
+
+  if(btn) { btn.disabled = false; btn.textContent = type === 'users' ? 'Import Users →' : `Import ${type.charAt(0).toUpperCase()+type.slice(1)} →`; }
+
+  // Show result
+  const summary = `✅ ${imported} imported${skipped>0?' · '+skipped+' skipped (already exist)':''}${failed>0?' · '+failed+' failed':''}`;
+  toast(summary, imported > 0 ? 'success' : 'error');
+
+  // Refresh data
+  await loadData();
+
+  // Reset
+  _importData[type] = [];
+  const preview = document.getElementById(type + '-import-preview');
+  const btnRow = document.getElementById(type + '-import-btn-row');
+  const label = document.getElementById(type + '-file-label');
+  const input = document.getElementById(type + '-csv-input');
+  if(preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+  if(btnRow) btnRow.style.display = 'none';
+  if(label) label.textContent = '📂 Click to select or drag a CSV file';
+  if(input) input.value = '';
+}
 
 
 </script>
