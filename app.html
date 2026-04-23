@@ -4073,7 +4073,7 @@ function renderCRMPipeline(){
   const stageProbability={'New Lead':10,'Contacted':25,'Qualified':50,'Proposal Sent':75,'Won':100};
   const stageColors={'New Lead':'var(--text3)','Contacted':'var(--accent)','Qualified':'var(--amber)','Proposal Sent':'var(--purple)','Won':'var(--green)'};
   const pipeline=document.getElementById('crm-pipeline');if(!pipeline)return;
-  pipeline.innerHTML=stages.map(stage=>{const companies=allCompanies.filter(c=>c.stage===stage),total=companies.reduce((s,c)=>s+(Number(c.deal_value)||0),0);return`<div style="display:flex;flex-direction:column;gap:8px;"><div style="background:var(--surface2);border:1px solid var(--border);border-top:3px solid ${stageColors[stage]};border-radius:8px;padding:10px 12px;"><div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">${stage}</div><div style="display:flex;align-items:baseline;gap:6px;margin-top:4px;"><span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);">${fmt$(total)}</span><span class="pipeline-count">${companies.length}</span></div></div>${companies.map(c=>`<div class="crm-card" onclick="openCrmCompanyDetail('${c.id}')"><div class="crm-card-company">${c.name}</div><div class="crm-card-contact">${c.city?c.city+', '+c.state:c.industry||'—'}</div><div class="crm-card-meta"><span>${fmt$(c.deal_value)}</span><span>${c.probability||stageProbability[stage]}%</span></div></div>`).join('')}</div>`;}).join('');
+  pipeline.innerHTML=stages.map(stage=>{const companies=allCompanies.filter(c=>c.stage===stage),total=companies.reduce((s,c)=>s+(Number(c.deal_value)||0),0);return`<div style="display:flex;flex-direction:column;gap:8px;"><div style="background:var(--surface2);border:1px solid var(--border);border-top:3px solid ${stageColors[stage]};border-radius:8px;padding:10px 12px;"><div style="font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text3);">${stage}</div><div style="display:flex;align-items:baseline;gap:6px;margin-top:4px;"><span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);">${fmt$(total)}</span><span class="pipeline-count">${companies.length}</span></div></div>${companies.map(c=>`<div class="crm-card" onclick="openCrmCardFromPipeline('${c.id}')"><div class="crm-card-company">${c.name}</div><div class="crm-card-contact">${c.city?c.city+', '+c.state:c.industry||'—'}</div><div class="crm-card-meta"><span>${fmt$(c.deal_value)}</span><span>${c.probability||stageProbability[stage]}%</span></div></div>`).join('')}</div>`;}).join('');
 }
 
 function renderCRMCompanies(){
@@ -4089,6 +4089,21 @@ function filterCompanies(){
   const list=document.getElementById('crm-company-list');if(!list)return;
   const stageColors={'New Lead':'var(--text3)','Contacted':'var(--accent)','Qualified':'var(--amber)','Proposal Sent':'var(--purple)','Won':'var(--green)','Lost':'var(--red)'};
   list.innerHTML=!filtered.length?'<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No results</div>':filtered.map(c=>`<div onclick="openCrmCompanyDetail('${c.id}')" style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'"><div style="display:flex;align-items:center;gap:8px;"><div style="width:8px;height:8px;border-radius:50%;background:${stageColors[c.stage]||'var(--text3)'};"></div><div style="font-size:13px;font-weight:600;color:var(--text);flex:1;">${c.name}</div><div style="font-size:11px;color:var(--text3);">${fmt$(c.deal_value)}</div></div><div style="font-size:11px;color:var(--text3);padding-left:16px;margin-top:2px;">${c.stage}</div></div>`).join('');
+}
+
+
+function openCrmCardFromPipeline(companyId) {
+  // Switch to Companies tab inside CRM
+  const companiesTab = document.querySelector('[onclick*="switchCrmTab"][onclick*="companies"]');
+  if(companiesTab) companiesTab.click();
+  // Small delay to let tab render, then select + open
+  setTimeout(() => {
+    openCrmCompanyDetail(companyId);
+    // Also highlight it in the company list
+    document.querySelectorAll('.crm-company-item').forEach(el => el.classList.remove('active'));
+    const item = document.querySelector(`.crm-company-item[onclick*="'${companyId}'"]`);
+    if(item) item.classList.add('active');
+  }, 100);
 }
 
 function openCrmCompanyDetail(companyId){
