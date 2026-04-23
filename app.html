@@ -1153,8 +1153,26 @@ function loadGooglePlaces(apiKey){
             <input type="text" id="load-dest-zip" placeholder="ZIP" maxlength="10"/>
           </div>
         </div>
-        <div class="form-group"><label>Pickup Date</label><input type="datetime-local" id="load-pickup"/></div>
-        <div class="form-group"><label>Delivery Date</label><input type="datetime-local" id="load-delivery"/></div>
+        <div class="form-group">
+          <label>Pickup Date</label>
+          <input type="datetime-local" id="load-pickup"/>
+          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+            <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;white-space:nowrap;">Window:</span>
+            <input type="time" id="load-pickup-window-start" style="flex:1;font-size:12px;padding:5px 8px;"/>
+            <span style="color:var(--text3);font-size:11px;">to</span>
+            <input type="time" id="load-pickup-window-end" style="flex:1;font-size:12px;padding:5px 8px;"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Delivery Date</label>
+          <input type="datetime-local" id="load-delivery"/>
+          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+            <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;white-space:nowrap;">Window:</span>
+            <input type="time" id="load-delivery-window-start" style="flex:1;font-size:12px;padding:5px 8px;"/>
+            <span style="color:var(--text3);font-size:11px;">to</span>
+            <input type="time" id="load-delivery-window-end" style="flex:1;font-size:12px;padding:5px 8px;"/>
+          </div>
+        </div>
         <div class="form-group" style="display:flex;align-items:center;gap:12px;padding:8px 14px;background:var(--red-dim);border:1px solid rgba(239,68,68,0.3);border-radius:10px;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-weight:700;color:var(--red);">
             <input type="checkbox" id="load-hot" style="width:16px;height:16px;accent-color:var(--red);cursor:pointer;"/>
@@ -1464,7 +1482,9 @@ function loadGooglePlaces(apiKey){
           <div class="detail-row"><span class="detail-label">Weight</span><span class="detail-val" id="d-weight">—</span></div>
           <div class="detail-row"><span class="detail-label">Commodity</span><span class="detail-val" id="d-commodity">—</span></div>
           <div class="detail-row"><span class="detail-label">Pickup</span><span class="detail-val" id="d-pickup">—</span></div>
+          <div class="detail-row"><span class="detail-label">Pickup Window</span><span class="detail-val" id="d-pickup-window" style="font-family:'JetBrains Mono',monospace;">—</span></div>
           <div class="detail-row"><span class="detail-label">Delivery</span><span class="detail-val" id="d-delivery">—</span></div>
+          <div class="detail-row"><span class="detail-label">Delivery Window</span><span class="detail-val" id="d-delivery-window" style="font-family:'JetBrains Mono',monospace;">—</span></div>
         </div>
         <div>
           <div class="detail-section" style="margin-bottom:12px;">
@@ -2817,7 +2837,11 @@ async function saveLoad(){
     appointment_required:document.getElementById('load-appt-required')?.checked||false,
     appointment_notes:document.getElementById('load-appt-notes')?.value||null,
     pickup_date:document.getElementById('load-pickup')?.value||null,
+    pickup_window_start:document.getElementById('load-pickup-window-start')?.value||null,
+    pickup_window_end:document.getElementById('load-pickup-window-end')?.value||null,
     delivery_date:document.getElementById('load-delivery')?.value||null,
+    delivery_window_start:document.getElementById('load-delivery-window-start')?.value||null,
+    delivery_window_end:document.getElementById('load-delivery-window-end')?.value||null,
     customer_rate:document.getElementById('load-rate')?.value||null,
     carrier_pay:document.getElementById('load-carrier-pay')?.value||null,
     status:currentStatus||'Available',
@@ -2854,6 +2878,10 @@ async function editLoad(id){
   sv('load-equipment',l.equipment_type||'Dry Van');sv('load-weight',l.weight||'');
   sv('load-commodity',l.commodity||'');
   sv('load-pickup',l.pickup_date?l.pickup_date.slice(0,16):'');
+  sv('load-pickup-window-start', l.pickup_window_start || '');
+  sv('load-pickup-window-end', l.pickup_window_end || '');
+  sv('load-delivery-window-start', l.delivery_window_start || '');
+  sv('load-delivery-window-end', l.delivery_window_end || '');
   const hotCb=document.getElementById('load-hot');if(hotCb)hotCb.checked=!!l.hot_load;
   const apptCb=document.getElementById('load-appt-required');if(apptCb){apptCb.checked=!!l.appointment_required;const apptRow=document.getElementById('appt-details-row');if(apptRow)apptRow.style.display=l.appointment_required?'block':'none';}
   sv('load-appt-notes',l.appointment_notes);
@@ -2995,6 +3023,10 @@ function openLoadDetail(loadId){
   setEl('d-commodity',l.commodity||'—');
   setEl('d-pickup',fmtDate(l.pickup_date));
   setEl('d-delivery',fmtDate(l.delivery_date));
+  const pwEl = document.getElementById('d-pickup-window');
+  if(pwEl) pwEl.textContent = (l.pickup_window_start && l.pickup_window_end) ? `${l.pickup_window_start} – ${l.pickup_window_end}` : '—';
+  const dwEl = document.getElementById('d-delivery-window');
+  if(dwEl) dwEl.textContent = (l.delivery_window_start && l.delivery_window_end) ? `${l.delivery_window_start} – ${l.delivery_window_end}` : '—';
 
   const rateEl=document.getElementById('d-rate');if(rateEl)rateEl.textContent=fmt$(l.customer_rate);
   const cpEl=document.getElementById('d-carrier-pay');if(cpEl)cpEl.textContent=fmt$(l.carrier_pay);
@@ -7128,12 +7160,12 @@ const DEMO_QUOTES = [
 
 // CRM demo data
 const DEMO_CRM_COMPANIES = [
-  { id:'crm1', name:'Gulf Coast Freight Brokers', stage:'Proposal Sent', deal_value:180000, probability:65, industry:'Freight Broker', city:'Houston', state:'TX', phone:'(713) 555-0881', email:'info@gulfcoastfreight.com', lead_source:'Cold Call', priority:'High', assigned_to:'Adam Roberts', next_followup:'2026-04-25', estimated_loads:45, notes:'Very interested in the dispatch board feature. Running Aljex currently, frustrated with the UI. Demo scheduled for next week.' },
-  { id:'crm2', name:'Midwest Brokerage Partners', stage:'Qualified', deal_value:240000, probability:45, industry:'Freight Broker', city:'Chicago', state:'IL', phone:'(312) 555-0442', email:'ops@midwestbrokerage.com', lead_source:'Referral', priority:'High', assigned_to:'Adam Roberts', next_followup:'2026-04-26', estimated_loads:60, notes:'Referred by BlueStar. Team of 12 dispatchers. Looking to replace Rose Rocket. Budget approved.' },
-  { id:'crm3', name:'Lone Star Logistics Group', stage:'Contacted', deal_value:120000, probability:25, industry:'Freight Broker', city:'Dallas', state:'TX', phone:'(214) 555-0773', email:'sales@lonestarlg.com', lead_source:'LinkedIn', priority:'Medium', assigned_to:'Adam Roberts', next_followup:'2026-04-28', estimated_loads:30, notes:'Initial call went well. They want carrier vetting features specifically. Following up with feature sheet.' },
-  { id:'crm4', name:'Atlantic Freight Solutions', stage:'Won', deal_value:96000, probability:100, industry:'Freight Broker', city:'Charlotte', state:'NC', phone:'(704) 555-0334', email:'info@atlanticfreight.com', lead_source:'Conference', priority:'High', assigned_to:'Adam Roberts', next_followup:null, estimated_loads:24, notes:'Closed! Onboarding April 30. 8 users, Growth plan.' },
-  { id:'crm5', name:'Pacific Rim Transport Co', stage:'New Lead', deal_value:60000, probability:10, industry:'Asset Carrier', city:'Los Angeles', state:'CA', phone:'(310) 555-0219', email:'contact@pacificrimtransport.com', lead_source:'Load Board', priority:'Low', assigned_to:'Adam Roberts', next_followup:'2026-05-01', estimated_loads:15, notes:'Found them on DAT. Small carrier looking to add brokerage arm.' },
-  { id:'crm6', name:'Pinnacle 3PL Services', stage:'Proposal Sent', deal_value:300000, probability:55, industry:'3PL', city:'Memphis', state:'TN', phone:'(901) 555-0667', email:'tech@pinnacle3pl.com', lead_source:'Website', priority:'High', assigned_to:'Adam Roberts', next_followup:'2026-04-24', estimated_loads:80, notes:'Massive opportunity — 80 users. Currently on custom-built system that is falling apart. Want full white-label.' },
+  { id:'crm1', name:'Cornerstone Building Products', stage:'Proposal Sent', deal_value:180000, probability:65, industry:'Building Materials Manufacturer', city:'Houston', state:'TX', phone:'(713) 555-0881', email:'logistics@cornerstonebp.com', lead_source:'Cold Call', priority:'High', assigned_to:'Adam Roberts', next_followup:'2026-04-25', estimated_loads:45, notes:'Ship roofing, siding, and windows nationwide. Currently using 3 different brokers. Want to consolidate. Frustrated with tracking visibility.' },
+  { id:'crm2', name:'Heartland Grain Co', stage:'Qualified', deal_value:240000, probability:45, industry:'Food & Agriculture', city:'Des Moines', state:'IA', phone:'(515) 555-0442', email:'shipping@heartlandgrain.com', lead_source:'Referral', priority:'High', assigned_to:'Adam Roberts', next_followup:'2026-04-26', estimated_loads:60, notes:'Major grain processor shipping flour, corn products, animal feed. 60+ outbound loads/week during peak. Need bulk hopper + van capacity.' },
+  { id:'crm3', name:'Texan Oil & Chemical', stage:'Contacted', deal_value:120000, probability:25, industry:'Chemical Manufacturing', city:'Dallas', state:'TX', phone:'(214) 555-0773', email:'transport@texanoilchem.com', lead_source:'LinkedIn', priority:'Medium', assigned_to:'Adam Roberts', next_followup:'2026-04-28', estimated_loads:30, notes:'Hazmat shipper — needs carriers with hazmat endorsements. Looking for reliable tanker capacity. Current broker missing pickups.' },
+  { id:'crm4', name:'Carolina Home Goods', stage:'Won', deal_value:96000, probability:100, industry:'Furniture Manufacturing', city:'Charlotte', state:'NC', phone:'(704) 555-0334', email:'shipping@carolinahomegoods.com', lead_source:'Conference', priority:'High', assigned_to:'Adam Roberts', next_followup:null, estimated_loads:24, notes:'Closed! Furniture shipper needing dry van capacity to major retailers. Onboarding April 30. 24 loads/month commitment.' },
+  { id:'crm5', name:'SunWest Produce Growers', stage:'New Lead', deal_value:60000, probability:10, industry:'Produce & Agriculture', city:'Salinas', state:'CA', phone:'(831) 555-0219', email:'ops@sunwestproduce.com', lead_source:'Trade Show', priority:'Low', assigned_to:'Adam Roberts', next_followup:'2026-05-01', estimated_loads:15, notes:'Fresh produce shipper — lettuce, berries, leafy greens. Strict temp requirements. Currently using spot market, want dedicated capacity.' },
+  { id:'crm6', name:'Mid-South Beverage Distributors', stage:'Proposal Sent', deal_value:300000, probability:55, industry:'Beverage Distribution', city:'Memphis', state:'TN', phone:'(901) 555-0667', email:'logistics@midsouthbev.com', lead_source:'Website', priority:'High', assigned_to:'Adam Roberts', next_followup:'2026-04-24', estimated_loads:80, notes:'Massive opportunity — 80+ loads/month. Distributes beer, soda, water across 8 states. Current TMS is outdated. Want full real-time visibility for their customers.' },
 ];
 
 const DEMO_COMPANY_SETTINGS = {
