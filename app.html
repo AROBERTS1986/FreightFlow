@@ -1119,7 +1119,8 @@ function loadGooglePlaces(apiKey){
       <input type="hidden" id="load-id"/>
       <div class="form-section-title">📦 Shipment Details</div>
       <div class="form-grid" style="margin-bottom:16px;">
-        <div class="form-group"><label>Customer</label><select id="load-customer"><option value="">Select customer…</option></select></div>
+        <div class="form-group"><label>Customer</label><select id="load-customer" onchange="showCustomerCreditInfo()"><option value="">Select customer…</option></select>
+          <div id="customer-credit-info" style="display:none;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;"></div></div>
         <div class="form-group"><label>Equipment Type</label><select id="load-equipment"><option>Dry Van</option><option>Reefer</option><option>Flatbed</option><option>LTL</option><option>Step Deck</option><option>Tanker</option></select></div>
         <div class="form-group full" style="grid-column:1/-1;">
           <label>Shipper Company Name</label>
@@ -2813,10 +2814,109 @@ function renderReports(){
 }
 
 // ── SAVE LOAD ─────────────────────────────────────────────────
+function showCustomerCreditInfo() {
+  const customerId = document.getElementById('load-customer')?.value;
+  const info = document.getElementById('customer-credit-info');
+  if(!info) return;
+  if(!customerId) { info.style.display = 'none'; return; }
+  const c = allCustomers.find(x => x.id === customerId);
+  if(!c) { info.style.display = 'none'; return; }
+
+  const status = c.credit_status || 'Approved';
+  const limit = Number(c.credit_limit) || 0;
+  const terms = c.payment_terms || 'Net 30';
+
+  // Calculate current exposure
+  const loadId = document.getElementById('load-id')?.value;
+  const exposure = allLoads
+    .filter(l => l.customer_id === customerId && l.id !== loadId && l.status !== 'Delivered')
+    .reduce((sum, l) => sum + (Number(l.customer_rate) || 0), 0);
+  const available = limit - exposure;
+  const pct = limit > 0 ? (exposure / limit * 100) : 0;
+
+  // Color based on status + utilization
+  let bg, color, icon;
+  if(status !== 'Approved') {
+    bg = 'var(--red-dim)'; color = 'var(--red)'; icon = '⛔';
+  } else if(pct > 100) {
+    bg = 'var(--red-dim)'; color = 'var(--red)'; icon = '⚠️';
+  } else if(pct > 80) {
+    bg = 'var(--amber-dim)'; color = 'var(--amber)'; icon = '⚠️';
+  } else {
+    bg = 'var(--green-dim)'; color = 'var(--green)'; icon = '✅';
+  }
+
+  info.style.display = 'block';
+  info.style.background = bg;
+  info.style.color = color;
+  info.style.border = `1px solid ${color}`;
+  info.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+      <div>
+        <strong>${icon} ${status}</strong> · ${terms}
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;">
+        ${limit > 0 ? `$${available.toLocaleString()} available of $${limit.toLocaleString()} (${pct.toFixed(0)}% used)` : 'No credit limit set'}
+      </div>
+    </div>
+  `;
+}
+
 async function saveLoad(){
   const id=document.getElementById('load-id')?.value;
   const carrierId=document.getElementById('load-carrier')?.value;
   const currentStatus=document.getElementById('load-status')?.value;
+  const customerId = document.getElementById('load-customer')?.value || null;
+  const customerRate = parseFloat(document.getElementById('load-rate')?.value) || 0;
+
+  // ── CREDIT ENFORCEMENT ──────────────────────────────────────
+  if(!customerId) {
+    toast('⚠️ Please select a customer before saving the load', 'error');
+    document.getElementById('load-customer')?.focus();
+    return;
+  }
+  const customer = allCustomers.find(c => c.id === customerId);
+  if(!customer) {
+    toast('Customer not found — please re-select', 'error');
+    return;
+  }
+  // Block if credit status isn't approved
+  if(customer.credit_status && customer.credit_status !== 'Approved') {
+    toast(`⛔ Cannot create load — ${customer.name} credit status is "${customer.credit_status}". Update customer first.`, 'error');
+    return;
+  }
+  // Check credit limit against existing unpaid exposure + this load
+  if(customer.credit_limit && customerRate > 0) {
+    const existingExposure = allLoads
+      .filter(l =>
+        l.customer_id === customerId &&
+        l.id !== id &&  // exclude current load if editing
+        l.status !== 'Delivered'  // only count unpaid/in-progress
+      )
+      .reduce((sum, l) => sum + (Number(l.customer_rate) || 0), 0);
+    const newTotal = existingExposure + customerRate;
+    const limit = Number(customer.credit_limit);
+    if(newTotal > limit) {
+      const over = newTotal - limit;
+      const ok = confirm(
+        `⚠️ CREDIT LIMIT EXCEEDED\n\n` +
+        `${customer.name}\n` +
+        `Credit Limit:      $${limit.toLocaleString()}\n` +
+        `Current Exposure:  $${existingExposure.toLocaleString()}\n` +
+        `This Load:         $${customerRate.toLocaleString()}\n` +
+        `New Total:         $${newTotal.toLocaleString()}\n` +
+        `OVER by:           $${over.toLocaleString()}\n\n` +
+        `Only a manager/admin should override. Proceed anyway?`
+      );
+      if(!ok) return;
+      if(currentUserRole !== 'admin') {
+        toast('⛔ Credit limit override requires admin approval', 'error');
+        return;
+      }
+    }
+  }
+  // ─────────────────────────────────────────────────────────────
+
   const payload={
     customer_id:document.getElementById('load-customer')?.value||null,
     carrier_id:carrierId||null,
@@ -2869,7 +2969,8 @@ async function editLoad(id){
   document.getElementById('load-id').value=l.id;
   document.getElementById('load-modal-title').textContent=`Edit Load ${l.load_number}`;
   const sv=(f,v)=>{const el=document.getElementById(f);if(el)el.value=v||'';};
-  sv('load-customer',l.customer_id||'');sv('load-carrier',l.carrier_id||'');
+  sv('load-customer',l.customer_id||'');
+  showCustomerCreditInfo();sv('load-carrier',l.carrier_id||'');
   sv('load-shipper-name',l.shipper_name||'');
   sv('load-origin-city',l.origin_city||'');sv('load-origin-state',l.origin_state||'');
   sv('load-receiver-name',l.receiver_name||'');
